@@ -8,6 +8,7 @@ import type {
 import { jsonFetch } from "./api-core";
 import { subscribe, ensureConnected, armStreamTimeout } from "./eventChannel";
 import { cancelInflight } from "./api-inflight";
+import { parseSseErrorPayload } from "./sseStreamError";
 
 export function postGenerate(payload: GenerateRequest): Promise<GenerateResponse> {
   return jsonFetch<GenerateResponse>("/api/generate", {
@@ -48,11 +49,7 @@ export async function postMultimodeGenerateStream(
       } else if (event === "done") {
         finish(() => resolve(data as unknown as MultimodeGenerateResponse));
       } else if (event === "error") {
-        const err = data as { error?: string; code?: string; status?: number };
-        const e = new Error(err.error ?? "Multimode generation failed") as Error & { code?: string; status?: number };
-        e.code = err.code;
-        e.status = err.status;
-        finish(() => reject(e));
+        finish(() => reject(parseSseErrorPayload(data, "Multimode generation failed")));
       }
     });
     const clearTimer = armStreamTimeout(() => {
@@ -231,11 +228,7 @@ export async function postVideoGenerateStream(
       else if (event === "done") {
         finish(() => resolve(data as unknown as VideoGenerateDone));
       } else if (event === "error") {
-        const err = data as { error?: string; code?: string; status?: number };
-        const e = new Error(err.error ?? "Video generation failed") as Error & { code?: string; status?: number };
-        e.code = err.code;
-        e.status = err.status;
-        finish(() => reject(e));
+        finish(() => reject(parseSseErrorPayload(data, "Video generation failed")));
       }
     });
     const clearTimer = armStreamTimeout(() => {

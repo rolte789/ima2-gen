@@ -9,12 +9,16 @@ interface Subscription {
 /** Max wait for done/error after async POST accepts the job (30 min). */
 export const JOB_STREAM_TIMEOUT_MS = 30 * 60 * 1000;
 
+const RECONNECT_BASE_MS = 2000;
+const RECONNECT_MAX_MS = 30_000;
+
 let source: EventSource | null = null;
 let lastEventId = "";
 const subs: Set<Subscription> = new Set();
 let resyncCallback: (() => void) | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let wasEverConnected = false;
+let reconnectAttempt = 0;
 
 const EVENT_TYPES = ["phase", "partial", "image", "done", "error", "submitted", "progress", "planning"];
 
@@ -29,6 +33,7 @@ function connect() {
 
   source.onopen = () => {
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    reconnectAttempt = 0;
     if (wasEverConnected) resyncCallback?.();
     wasEverConnected = true;
   };
@@ -40,16 +45,33 @@ function connect() {
   source.onerror = () => {
     source?.close();
     source = null;
-    reconnectTimer = setTimeout(connect, 2000);
+    const delay = Math.min(
+      RECONNECT_BASE_MS * Math.pow(1.5, reconnectAttempt),
+      RECONNECT_MAX_MS,
+    );
+    reconnectAttempt += 1;
+    reconnectTimer = setTimeout(connect, delay);
   };
 }
 
 function dispatch(eventType: string, ev: MessageEvent) {
   if (ev.lastEventId) lastEventId = ev.lastEventId;
   let data: Record<string, unknown>;
-  try { data = JSON.parse(ev.data); } catch { return; }
+  try {
+    data = JSON.parse(ev.data);
+  } catch {
+    if (import.meta.env.DEV) {
+      console.warn(`[eventChannel] invalid JSON for "${eventType}"`, ev.data);
+    }
+    return;
+  }
   const jobId = (data.jobId ?? data.requestId ?? "") as string;
-  if (!jobId) return;
+  if (!jobId) {
+    if (import.meta.env.DEV) {
+      console.warn(`[eventChannel] missing jobId on "${eventType}"`, data);
+    }
+    return;
+  }
   for (const sub of subs) {
     if (sub.jobId !== jobId) continue;
     if (sub.event !== null && sub.event !== eventType) continue;
@@ -84,6 +106,7 @@ export function disconnect() {
   subs.clear();
   lastEventId = "";
   wasEverConnected = false;
+  reconnectAttempt = 0;
 }
 
 export function ensureConnected() {

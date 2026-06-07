@@ -13,6 +13,7 @@ import { composePrompt } from "./storePersistence";
 import {
   type PersistedInFlight,
   saveInFlight,
+  isCanceledGenerationError,
 } from "./storeHelpers";
 import type { AppState, ImageNodeData } from "./storeTypes";
 import type { ClientNodeId } from "../lib/graph";
@@ -139,17 +140,39 @@ export async function runVideoGenerateImpl(
       void get().flushGraphSave("video-node-complete");
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Video generation failed";
-    if (node && get().activeSessionId === requestSessionId) {
-      set({
-        graphNodes: get().graphNodes.map((n) =>
-          n.id === nodeId
-            ? { ...n, data: { ...n.data, status: "error" as const, pendingRequestId: null, pendingPhase: null, pendingStartedAt: null, error: message } }
-            : n,
-        ),
-      });
+    if (isCanceledGenerationError(error)) {
+      if (node && get().activeSessionId === requestSessionId) {
+        set({
+          graphNodes: get().graphNodes.map((n) =>
+            n.id === nodeId
+              ? {
+                  ...n,
+                  data: {
+                    ...n.data,
+                    status: n.data.imageUrl ? ("ready" as const) : ("empty" as const),
+                    pendingRequestId: null,
+                    pendingPhase: null,
+                    pendingStartedAt: null,
+                    error: undefined,
+                  },
+                }
+              : n,
+          ),
+        });
+      }
+    } else {
+      const message = error instanceof Error ? error.message : "Video generation failed";
+      if (node && get().activeSessionId === requestSessionId) {
+        set({
+          graphNodes: get().graphNodes.map((n) =>
+            n.id === nodeId
+              ? { ...n, data: { ...n.data, status: "error" as const, pendingRequestId: null, pendingPhase: null, pendingStartedAt: null, error: message } }
+              : n,
+          ),
+        });
+      }
+      get().showToast(message, true);
     }
-    get().showToast(message, true);
   } finally {
     const remaining = get().inFlight.filter((f) => f.id !== flightId);
     saveInFlight(remaining);
@@ -188,8 +211,10 @@ export async function animateImageImpl(
       },
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Video generation failed";
-    get().showToast(message, true);
+    if (!isCanceledGenerationError(error)) {
+      const message = error instanceof Error ? error.message : "Video generation failed";
+      get().showToast(message, true);
+    }
   } finally {
     const remaining = get().inFlight.filter((f) => f.id !== flightId);
     saveInFlight(remaining);

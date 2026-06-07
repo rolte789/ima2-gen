@@ -1,6 +1,7 @@
 import type { ImageModel, Provider } from "../types";
 import { subscribe, ensureConnected, armStreamTimeout } from "./eventChannel";
 import { cancelInflight } from "./api-inflight";
+import { parseSseErrorPayload } from "./sseStreamError";
 
 export type NodeGenerateRequest = {
   parentNodeId: string | null;
@@ -98,12 +99,7 @@ export async function postNodeGenerateStream(
       } else if (event === "done") {
         finish(() => resolve(data as unknown as NodeGenerateResponse));
       } else if (event === "error") {
-        const err = data as { error?: { code?: string; message?: string }; status?: number };
-        const msg = err?.error?.message ?? "Node generation failed";
-        const e = new Error(msg) as Error & { code?: string; status?: number };
-        e.code = err?.error?.code;
-        e.status = err?.status;
-        finish(() => reject(e));
+        finish(() => reject(parseSseErrorPayload(data, "Node generation failed")));
       }
     });
     const clearTimer = armStreamTimeout(() => {

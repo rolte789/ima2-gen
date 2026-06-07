@@ -17,6 +17,7 @@ import { t } from "../i18n";
 import {
   type PersistedInFlight,
   stripDataUrlPrefix,
+  isCanceledGenerationError,
 } from "./storeHelpers";
 import type { AppState } from "./storeTypes";
 
@@ -203,6 +204,31 @@ export async function runGenerateNodeInPlaceImpl(
     // cross-session: result will be restored via recoverGraphNodesFromHistory
     // when the user returns to the originating session.
   } catch (err) {
+    if (isCanceledGenerationError(err)) {
+      if (get().activeSessionId === requestSessionId) {
+        set({
+          graphNodes: get().graphNodes.map((n) =>
+            n.id === clientId
+              ? {
+                  ...n,
+                  data: {
+                    ...n.data,
+                    status: n.data.imageUrl ? "ready" : "empty",
+                    pendingRequestId: null,
+                    recoveryRequestId: null,
+                    pendingPhase: null,
+                    pendingStartedAt: null,
+                    partialImageUrl: null,
+                    error: undefined,
+                  },
+                }
+              : n,
+          ),
+        });
+        graphMutated = true;
+      }
+      return null;
+    }
     const msg = err instanceof Error ? err.message : t("toast.nodeCreateFailed");
     if (get().activeSessionId === requestSessionId) {
       set({
