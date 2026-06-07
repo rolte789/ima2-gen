@@ -4,12 +4,10 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import express from "express";
-import { listImageTemplates, getImageTemplate } from "../lib/cardNewsTemplateStore.ts";
 import { createCardNewsDraft } from "../lib/cardNewsPlanner.ts";
 import { generateCardNewsSet } from "../lib/cardNewsGenerator.ts";
 import { listHistoryRows } from "../lib/historyList.ts";
 import { readCardNewsSetPlan } from "../lib/cardNewsManifestStore.ts";
-import { repairPlannerOutput, validatePlannerOutput } from "../lib/cardNewsPlannerSchema.ts";
 import {
   createCardNewsJob,
   getCardNewsJob,
@@ -40,13 +38,6 @@ type AnyDraft = {
   [key: string]: unknown;
 };
 const asDraft = (d: unknown): AnyDraft => d as AnyDraft;
-
-function readPngSize(buf) {
-  return {
-    width: buf.readUInt32BE(16),
-    height: buf.readUInt32BE(20),
-  };
-}
 
 type CtxLike = {
   rootDir: string;
@@ -84,13 +75,6 @@ async function listen(app) {
     baseUrl: `http://127.0.0.1:${port}`,
     close: () => new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve()))),
   };
-}
-
-async function listenPlanner(handler) {
-  const app = express();
-  app.use(express.json());
-  app.post("/v1/responses", handler);
-  return listen(app);
 }
 
 describe("Card News template contract", () => {
