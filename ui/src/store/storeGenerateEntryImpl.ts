@@ -2,6 +2,7 @@ import type { ClientNodeId } from "../lib/graph";
 import { t } from "../i18n";
 import { composePrompt, formatSize } from "./storePersistence";
 import { getCustomSizeConfirmation } from "./storeHelpers";
+import { abortFlight } from "./storeGenImpl";
 import type { StoreSet, StoreGet } from "./storeTypes";
 
 export async function generateImpl(set: StoreSet, get: StoreGet): Promise<void> {
@@ -25,7 +26,7 @@ export async function generateImpl(set: StoreSet, get: StoreGet): Promise<void> 
 export function cancelMultimodeImpl(set: StoreSet, get: StoreGet): void {
   const flightId = get().multimodePreviewFlightId;
   if (!flightId) return;
-  get().multimodeAbortControllers[flightId]?.abort();
+  abortFlight(flightId);
   void get().cancelInFlightJob(flightId);
   set((state) => {
     const current = state.multimodeSequences[flightId];

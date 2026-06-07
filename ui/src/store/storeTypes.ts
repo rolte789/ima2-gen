@@ -207,7 +207,7 @@ export type AppState = {
   multimode: boolean;
   multimodeMaxImages: Count;
   multimodeSequences: Record<string, MultimodeSequenceState>;
-  multimodeAbortControllers: Record<string, AbortController>;
+  activeFlightIds: Set<string>;
   multimodePreviewFlightId: string | null;
   promptMode: "auto" | "direct";
   prompt: string;

@@ -33,7 +33,7 @@ describe("multimode frontend UX contract", () => {
     const api = readSource("ui/src/lib/api.ts");
 
     assert.match(store, /multimodeMaxImages: Count/);
-    assert.match(store, /multimodeAbortControllers:\s*Record<string,\s*AbortController>/);
+    assert.match(store, /activeFlightIds:\s*Set<string>/);
     assert.match(store, /multimodeSequences:\s*Record<string,\s*MultimodeSequenceState>/);
     assert.match(store, /multimodePreviewFlightId:\s*string\s*\|\s*null/);
     assert.match(store, /const useMultimode = s\.uiMode === "classic" && s\.multimode/);
@@ -80,7 +80,7 @@ describe("multimode frontend UX contract", () => {
     assert.match(store, /status: "canceled"/);
     assert.doesNotMatch(store, /status: current\.images\.length > 0 \? "partial" : "empty"/);
     assert.match(preview, /canCancelSequence/);
-    assert.match(preview, /multimodeAbortControllers\[id\]/);
+    assert.match(preview, /activeFlightIds\.has\(id\)/);
     assert.match(preview, /s\.inFlight\.some\(\(job\) => job\.id === id\)/);
     assert.doesNotMatch(preview, /activeGenerations > 0/);
     assert.match(preview, /loosePartials\.shift\(\)/);

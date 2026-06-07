@@ -160,7 +160,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   multimode: storedGenerationDefaults.multimode ?? false,
   multimodeMaxImages: storedGenerationDefaults.multimodeMaxImages ?? 4,
   multimodeSequences: {},
-  multimodeAbortControllers: {},
+  activeFlightIds: new Set(),
   multimodePreviewFlightId: null,
   promptMode: storedGenerationDefaults.promptMode ?? "auto",
   prompt: storedGenerationDefaults.prompt ?? "",

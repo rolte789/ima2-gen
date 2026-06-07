@@ -10,7 +10,7 @@ export function MultimodeSequencePreview() {
   const cancelMultimode = useAppStore((s) => s.cancelMultimode);
   const canCancelSequence = useAppStore((s) => {
     const id = s.multimodePreviewFlightId;
-    return Boolean(id && (s.multimodeAbortControllers[id] || s.inFlight.some((job) => job.id === id)));
+    return Boolean(id && (s.activeFlightIds.has(id) || s.inFlight.some((job) => job.id === id)));
   });
   const selectHistory = useAppStore((s) => s.selectHistory);
   const currentImage = useAppStore((s) => s.currentImage);

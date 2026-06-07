@@ -16,6 +16,7 @@ import { MobileSettingsToggle } from "./components/MobileSettingsToggle";
 import { MobileAppBar } from "./components/MobileAppBar";
 import { MobileComposeSheet } from "./components/MobileComposeSheet";
 import { useAppStore, flushGraphSaveBeacon } from "./store/useAppStore";
+import { onResync, ensureConnected } from "./lib/eventChannel";
 import { ENABLE_AGENT_MODE, ENABLE_CARD_NEWS_MODE, ENABLE_NODE_MODE } from "./lib/devMode";
 import { useGalleryViewerNavigation } from "./hooks/useGalleryViewerNavigation";
 import { useBrowserAttentionBadge } from "./hooks/useBrowserAttentionBadge";
@@ -84,6 +85,8 @@ export default function App() {
     if (ENABLE_AGENT_MODE || ENABLE_NODE_MODE) loadSessions();
     reconcileInflight();
     startInFlightPolling();
+    ensureConnected();
+    onResync(() => reconcileInflight());
   }, [hydrateHistory, loadSessions, reconcileInflight, startInFlightPolling]);
 
   useEffect(() => {

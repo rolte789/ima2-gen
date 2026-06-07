@@ -29,6 +29,12 @@ import type { AppState } from "./storeTypes";
 type StoreSet = (p: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => void;
 type StoreGet = () => AppState;
 
+const flightControllers = new Map<string, AbortController>();
+export function abortFlight(id: string) {
+  flightControllers.get(id)?.abort();
+  flightControllers.delete(id);
+}
+
 export async function generateMultimodeImpl(
   sizeOverride: string | undefined,
   set: StoreSet,
@@ -43,6 +49,7 @@ export async function generateMultimodeImpl(
   const size = sizeOverride ?? s.getResolvedSize();
   const flightId = `mm_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   const controller = new AbortController();
+  flightControllers.set(flightId, controller);
   const startedAt = Date.now();
   const requested = normalizeCount(s.multimodeMaxImages);
   const nextInFlight: PersistedInFlight[] = [
@@ -69,7 +76,7 @@ export async function generateMultimodeImpl(
   set({
     activeGenerations: s.activeGenerations + 1,
     inFlight: nextInFlight,
-    multimodeAbortControllers: { ...s.multimodeAbortControllers, [flightId]: controller },
+    activeFlightIds: new Set([...s.activeFlightIds, flightId]),
     multimodeSequences: { ...s.multimodeSequences, [flightId]: initialSequence },
     multimodePreviewFlightId: flightId,
   });
@@ -207,14 +214,15 @@ export async function generateMultimodeImpl(
   } finally {
     const remaining = get().inFlight.filter((f) => f.id !== flightId);
     saveInFlight(remaining);
+    flightControllers.delete(flightId);
     set((state) => {
-      const nextControllers = { ...state.multimodeAbortControllers };
-      delete nextControllers[flightId];
+      const nextFlights = new Set(state.activeFlightIds);
+      nextFlights.delete(flightId);
       let nextPreview = state.multimodePreviewFlightId;
       const finalStatus = state.multimodeSequences[flightId]?.status;
       const isCleanFinish = finalStatus === "complete" || finalStatus === "partial";
       if (nextPreview === flightId && !isCleanFinish) {
-        const fallbackIds = Object.keys(nextControllers);
+        const fallbackIds = [...nextFlights];
         nextPreview = fallbackIds.length > 0
           ? fallbackIds[fallbackIds.length - 1]
           : null;
@@ -226,7 +234,7 @@ export async function generateMultimodeImpl(
       return {
         activeGenerations: Math.max(0, state.activeGenerations - 1),
         inFlight: remaining,
-        multimodeAbortControllers: nextControllers,
+        activeFlightIds: nextFlights,
         multimodePreviewFlightId: nextPreview,
         multimodeSequences: nextSequences,
       };
