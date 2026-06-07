@@ -29,10 +29,16 @@ import {
 import { errInfo } from "../lib/errInfo.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { validateModeration, imageFormatFromMime, writeSse } from "../lib/routeHelpers.js";
+import { publish } from "../lib/eventBus.js";
 import {
   normalizeMaxImages, sequenceStatus,
   type MultimodeImage, type MultimodeRouteItem,
 } from "../lib/multimodeHelpers.js";
+
+function dualEmitMultimode(res: Response, requestId: string, event: string, data: unknown) {
+  writeSse(res, event, data);
+  publish(requestId, event, data as Record<string, unknown>);
+}
 
 export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   const ctx = requireRuntimeContext(ctxRaw);
@@ -100,7 +106,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
         finishStatus = "error";
         finishHttpStatus = providerOptions.status;
         finishErrorCode = providerOptions.code;
-        writeSse(res, "error", { error: providerOptions.error, code: providerOptions.code, status: providerOptions.status, requestId });
+        dualEmitMultimode(res, requestId, "error", { error: providerOptions.error, code: providerOptions.code, status: providerOptions.status, requestId });
         return;
       }
       const imageModel = providerOptions.model;
@@ -112,7 +118,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
         finishStatus = "error";
         finishHttpStatus = 400;
         finishErrorCode = "PROMPT_REQUIRED";
-        writeSse(res, "error", { error: "Prompt is required", code: finishErrorCode, status: 400, requestId });
+        dualEmitMultimode(res, requestId, "error", { error: "Prompt is required", code: finishErrorCode, status: 400, requestId });
         return;
       }
       const moderationCheck = validateModeration(ctx, moderation);
@@ -120,7 +126,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
         finishStatus = "error";
         finishHttpStatus = 400;
         finishErrorCode = "INVALID_MODERATION";
-        writeSse(res, "error", { error: moderationCheck.error, code: finishErrorCode, status: 400, requestId });
+        dualEmitMultimode(res, requestId, "error", { error: moderationCheck.error, code: finishErrorCode, status: 400, requestId });
         return;
       }
       const refCheckResult = validateAndNormalizeRefs(references);
@@ -128,7 +134,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
         finishStatus = "error";
         finishHttpStatus = 400;
         finishErrorCode = refCheckResult.code;
-        writeSse(res, "error", { error: refCheckResult.error, code: refCheckResult.code, status: 400, requestId });
+        dualEmitMultimode(res, requestId, "error", { error: refCheckResult.error, code: refCheckResult.code, status: 400, requestId });
         return;
       }
       const refCheck = refCheckResult as Extract<typeof refCheckResult, { refs: string[] }>;
@@ -249,10 +255,10 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
         };
         persistedIndexes.add(index);
         images.push(item);
-        writeSse(res, "image", item);
+        dualEmitMultimode(res, requestId, "image", item);
       };
 
-      writeSse(res, "phase", { phase: "streaming", requestId, sequenceId, maxImages });
+      dualEmitMultimode(res, requestId, "phase", { phase: "streaming", requestId, sequenceId, maxImages });
 
       let generated: { images: Array<{ b64: string; revisedPrompt?: string | null }>; usage: Record<string, number> | null; webSearchCalls?: number; extraIgnored?: number };
 
@@ -312,15 +318,12 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
             maxImages,
             reasoningEffort,
             webSearchEnabled,
-            onPartialImage: (partial) =>
-              isJobCanceled(requestId)
-                ? undefined
-                : writeSse(res, "partial", {
-                    image: `data:${mime};base64,${partial.b64}`,
-                    requestId,
-                    sequenceId,
-                    index: partial.index,
-                  }),
+            onPartialImage: (partial) => {
+                if (isJobCanceled(requestId)) return;
+                const pd = { image: `data:${mime};base64,${partial.b64}`, requestId, sequenceId, index: partial.index };
+                writeSse(res, "partial", pd);
+                publish(requestId, "partial", pd);
+              },
             onFinalImage: async (image, index) => {
               const totalReturned = Math.max(index + 1, images.length + 1);
               await persistAndSendImage(image, index, totalReturned, sequenceStatus(totalReturned, maxImages));
@@ -351,7 +354,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
         finishHttpStatus = 422;
         finishErrorCode = "EMPTY_RESPONSE";
         finishMeta = { sequenceId, filenames: [], imageCount: 0, maxImages, status, composerPrompt: routeComposerPrompt, composerInsertedPrompts: routeComposerInsertedPrompts };
-        writeSse(res, "error", {
+        dualEmitMultimode(res, requestId, "error", {
           error: "No image data returned from the multimode stream",
           code: finishErrorCode,
           status: finishHttpStatus,
@@ -370,7 +373,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
         composerInsertedPrompts: routeComposerInsertedPrompts,
       };
       finishHttpStatus = 200;
-      writeSse(res, "done", {
+      dualEmitMultimode(res, requestId, "done", {
         ok: true,
         requestId,
         sequenceId,
@@ -408,7 +411,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
         finishCanceled = true;
         finishHttpStatus = canceled.status;
         finishErrorCode = canceled.code;
-        writeSse(res, "error", {
+        dualEmitMultimode(res, requestId, "error", {
           error: canceled.message,
           code: canceled.code,
           status: canceled.status,
@@ -431,7 +434,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
           composerPrompt: routeComposerPrompt,
           composerInsertedPrompts: routeComposerInsertedPrompts,
         };
-        writeSse(res, "done", {
+        dualEmitMultimode(res, requestId, "done", {
           ok: true,
           partial: true,
           requestId,
@@ -469,7 +472,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
       finishHttpStatus = err.status || 500;
       finishErrorCode = fallbackCode || "MULTIMODE_GENERATE_FAILED";
       logError("multimode", "error", err.raw, { requestId, code: finishErrorCode });
-      writeSse(res, "error", {
+      dualEmitMultimode(res, requestId, "error", {
         error: err.message,
         code: finishErrorCode,
         status: finishHttpStatus,

@@ -5,6 +5,7 @@ import type { GrokReferenceImage } from "./grokImageAdapter.js";
 import type { UpstreamErr } from "./generationErrors.js";
 import type { RuntimeContext } from "./runtimeContext.js";
 import { writeSse } from "./routeHelpers.js";
+import { publish } from "./eventBus.js";
 
 export interface NodeGenerateBody {
   prompt?: string;
@@ -43,23 +44,21 @@ export function writeNodeError(
   message: string,
   parentNodeId: string | null,
   details: Record<string, unknown> = {},
+  requestId?: string,
 ) {
-  if (res.headersSent) {
-    writeSse(res, "error", {
-      error: { code, message },
-      parentNodeId,
-      status,
-      ...details,
-    });
-    res.end();
-    return;
-  }
-  res.status(status).json({
+  const payload = {
     error: { code, message },
     parentNodeId,
     status,
     ...details,
-  });
+  };
+  if (requestId) publish(requestId, "error", payload);
+  if (res.headersSent) {
+    writeSse(res, "error", payload);
+    res.end();
+    return;
+  }
+  res.status(status).json(payload);
 }
 
 export async function loadParentNodeB64(ctx: RuntimeContext, nodeId: string) {

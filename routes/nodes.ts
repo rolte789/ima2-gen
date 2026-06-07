@@ -25,6 +25,7 @@ import { logEvent, logError } from "../lib/logger.js";
 import { errInfo } from "../lib/errInfo.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { validateModeration, imageFormatFromMime, writeSse, dataUrlFromB64 } from "../lib/routeHelpers.js";
+import { publish } from "../lib/eventBus.js";
 import {
   type NodeGenerateBody, asUpstream, wantsSse, writeNodeError,
   loadParentNodeB64, toGrokReferences, nodeErrorDetails,
@@ -209,6 +210,7 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           Connection: "keep-alive",
         });
         writeSse(res, "phase", { requestId, phase: "streaming" });
+        publish(requestId, "phase", { requestId, phase: "streaming" });
       }
 
       let b64: string | undefined, usage: unknown, webSearchCalls = 0, revisedPrompt: string | null = null;
@@ -289,14 +291,12 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
                     signal: cancelController.signal,
                     partialImages: streamResponse ? 2 : 0,
                     onPartialImage: streamResponse
-                      ? (partial) =>
-                          isJobCanceled(requestId)
-                            ? undefined
-                            : writeSse(res, "partial", {
-                                requestId,
-                                image: dataUrlFromB64(format, partial.b64),
-                                index: partial.index,
-                              })
+                      ? (partial) => {
+                          if (isJobCanceled(requestId)) return;
+                          const pd = { requestId, image: dataUrlFromB64(format, partial.b64), index: partial.index };
+                          writeSse(res, "partial", pd);
+                          publish(requestId, "partial", pd);
+                        }
                       : null,
                   },
                 );
@@ -358,6 +358,7 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           finalErr.message,
           parentNodeId,
           nodeErrorDetails(finalErr, lastErr),
+          requestId,
         );
       }
 
@@ -439,8 +440,10 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
 
       if (streamResponse) {
         writeSse(res, "done", payload);
+        publish(requestId, "done", payload);
         res.end();
       } else {
+        publish(requestId, "done", payload);
         res.json(payload);
       }
     } catch (e) {
@@ -458,6 +461,8 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           canceled.code,
           canceled.message,
           parentNodeId,
+          {},
+          requestId,
         );
       }
       finishStatus = "error";
@@ -468,7 +473,7 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         upstreamCode: ext.upstreamCode || null,
         upstreamType: ext.upstreamType || null,
         upstreamParam: ext.upstreamParam || null,
-      });
+      }, requestId);
     } finally {
       finishJob(requestId, {
         canceled: finishCanceled,

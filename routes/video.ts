@@ -38,10 +38,16 @@ import {
 import { errInfo } from "../lib/errInfo.js";
 import { requireRuntimeContext, type RouteRuntimeContext, type RuntimeContext } from "../lib/runtimeContext.js";
 import { generateVideoThumbnail } from "../lib/videoThumb.js";
+import { publish } from "../lib/eventBus.js";
 
 function sendSse(res: Response, event: string, data: unknown) {
   res.write(`event: ${event}\n`);
   res.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+function dualEmitVideo(res: Response, requestId: string, event: string, data: unknown) {
+  sendSse(res, event, data);
+  publish(requestId, event, data as Record<string, unknown>);
 }
 
 function toArray(v: unknown): unknown[] {
@@ -137,7 +143,7 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       finishStatus = "error";
       finishHttpStatus = httpStatus;
       finishErrorCode = code;
-      sendSse(res, "error", { error, code, status: httpStatus, requestId, ...extra });
+      dualEmitVideo(res, requestId, "error", { error, code, status: httpStatus, requestId, ...extra });
     };
 
     try {
@@ -251,7 +257,7 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       const onEvent = (ev: GrokVideoEvent) => {
         if (ev.phase === "submitted") {
           setJobPhase(requestId, "streaming");
-          sendSse(res, "submitted", {
+          dualEmitVideo(res, requestId, "submitted", {
             requestId,
             xaiVideoRequestId: ev.xaiVideoRequestId,
             requestedModel: ev.requestedModel,
@@ -259,10 +265,10 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
             modelFallback: ev.modelFallback ?? null,
           });
         } else if (ev.phase === "progress") {
-          sendSse(res, "progress", { requestId, progress: typeof ev.progress === "number" ? ev.progress / 100 : null, stalled: Boolean(ev.stalled) });
+          dualEmitVideo(res, requestId, "progress", { requestId, progress: typeof ev.progress === "number" ? ev.progress / 100 : null, stalled: Boolean(ev.stalled) });
         } else {
           setJobPhase(requestId, "planning");
-          sendSse(res, "planning", { requestId });
+          dualEmitVideo(res, requestId, "planning", { requestId });
         }
       };
 
@@ -348,7 +354,7 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
 
       finishMeta = { filename, xaiVideoRequestId: result.xaiVideoRequestId };
       logEvent("video", "saved", { requestId, filename, bytes: result.videoBuffer.length, elapsedMs: Date.now() - startTime });
-      sendSse(res, "done", {
+      dualEmitVideo(res, requestId, "done", {
         requestId,
         filename,
         url: `/generated/${encodeURIComponent(filename)}`,
@@ -370,13 +376,13 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         finishCanceled = true;
         finishHttpStatus = canceled.status;
         finishErrorCode = canceled.code;
-        sendSse(res, "error", { error: canceled.message, code: canceled.code, status: canceled.status, requestId });
+        dualEmitVideo(res, requestId, "error", { error: canceled.message, code: canceled.code, status: canceled.status, requestId });
       } else {
         finishStatus = "error";
         finishHttpStatus = err.status || 500;
         finishErrorCode = err.code || "GROK_VIDEO_FAILED";
         logError("video", "error", err.raw, { requestId, code: finishErrorCode });
-        sendSse(res, "error", { error: err.message, code: finishErrorCode, status: finishHttpStatus, requestId });
+        dualEmitVideo(res, requestId, "error", { error: err.message, code: finishErrorCode, status: finishHttpStatus, requestId });
       }
     } finally {
       finishJob(requestId, { canceled: finishCanceled, status: finishStatus, httpStatus: finishHttpStatus, errorCode: finishErrorCode, meta: finishMeta });
