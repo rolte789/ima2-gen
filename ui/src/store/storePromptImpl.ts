@@ -8,7 +8,7 @@ import {
 } from "../lib/api";
 import { t } from "../i18n";
 import { saveGenerationDefaultsPatch } from "./storePersistence";
-import type { AppState, InsertedPrompt, StoreSet, StoreGet } from "./storeTypes";
+import type { InsertedPrompt, StoreSet, StoreGet } from "./storeTypes";
 
 export function insertPromptToComposerImpl(prompt: InsertedPrompt, set: StoreSet): void {
   set((state) => {
@@ -89,7 +89,7 @@ export async function loadPromptLibraryImpl(set: StoreSet): Promise<void> {
 
 export async function savePromptToLibraryImpl(
   payload: { name?: string; text: string; tags?: string[]; folderId?: string; mode?: "auto" | "direct" },
-  set: StoreSet,
+  _set: StoreSet,
   get: StoreGet,
 ): Promise<void> {
   try {
@@ -102,7 +102,7 @@ export async function savePromptToLibraryImpl(
   }
 }
 
-export async function deletePromptFromLibraryImpl(id: string, set: StoreSet, get: StoreGet): Promise<void> {
+export async function deletePromptFromLibraryImpl(id: string, _set: StoreSet, get: StoreGet): Promise<void> {
   try {
     await deletePrompt(id);
     await get().loadPromptLibrary();
@@ -111,7 +111,7 @@ export async function deletePromptFromLibraryImpl(id: string, set: StoreSet, get
   }
 }
 
-export async function togglePromptFavoriteImpl(id: string, set: StoreSet, get: StoreGet): Promise<void> {
+export async function togglePromptFavoriteImpl(id: string, _set: StoreSet, get: StoreGet): Promise<void> {
   try {
     await togglePromptFavorite(id);
     await get().loadPromptLibrary();
@@ -120,7 +120,7 @@ export async function togglePromptFavoriteImpl(id: string, set: StoreSet, get: S
   }
 }
 
-export async function importPromptsToLibraryImpl(files: File[], set: StoreSet, get: StoreGet): Promise<void> {
+export async function importPromptsToLibraryImpl(files: File[], _set: StoreSet, get: StoreGet): Promise<void> {
   try {
     const prompts: Array<{ name: string; text: string; tags: string[] }> = [];
     for (const file of files) {
@@ -143,7 +143,7 @@ export async function importPromptsToLibraryImpl(files: File[], set: StoreSet, g
   }
 }
 
-export async function toggleGalleryFavoriteImpl(filename: string, set: StoreSet, get: StoreGet): Promise<void> {
+export async function toggleGalleryFavoriteImpl(filename: string, set: StoreSet, _get: StoreGet): Promise<void> {
   try {
     const result = await toggleGalleryFavorite(filename);
     set((s) => {

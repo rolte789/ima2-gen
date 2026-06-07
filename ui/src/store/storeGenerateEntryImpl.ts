@@ -141,7 +141,7 @@ export async function generateNodeVariationImpl(
 export async function runGenerateNodeImpl(
   clientId: ClientNodeId,
   sizeOverride: string | undefined,
-  set: StoreSet,
+  _set: StoreSet,
   get: StoreGet,
 ): Promise<void> {
   const requestedNode = get().graphNodes.find((n) => n.id === clientId);

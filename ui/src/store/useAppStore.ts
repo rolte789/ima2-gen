@@ -13,7 +13,7 @@ import {
   GALLERY_SCOPE_STORAGE_KEY,
 } from "./persistenceRegistry";
 import { applySelectedNodeIds } from "../lib/nodeSelection";
-import { t, loadLocale, saveLocale } from "../i18n";
+import { loadLocale, saveLocale } from "../i18n";
 import {
   loadRightPanelOpen,
   loadUIMode,
@@ -138,7 +138,7 @@ import {
 
 export type { GalleryScope, ComposeSheetTab, ImageNodeStatus, ImageNodeData, GraphNode, GraphEdge, MultimodeSequenceState } from "./storeTypes";
 export { flushGraphSaveBeacon, selectCurrentSessionId } from "./storeGraphSave";
-import type { AppState, GraphNode, GraphEdge } from "./storeTypes";
+import type { AppState } from "./storeTypes";
 const storedGenerationDefaults = loadGenerationDefaults();
 const storedImageModel = loadImageModel();
 const storedVideoDefaults = loadVideoDefaults();

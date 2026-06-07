@@ -10,7 +10,7 @@ import { clearNodeRefs as clearStoredNodeRefs } from "../lib/nodeRefStorage";
 import { isVideoUrl, extractLastFrame } from "../lib/videoMedia";
 import { t } from "../i18n";
 import { compressReferenceSource } from "./storeHelpers";
-import type { AppState, GraphNode, GraphEdge, StoreSet, StoreGet } from "./storeTypes";
+import type { GraphNode, GraphEdge, StoreSet, StoreGet } from "./storeTypes";
 
 const DEFAULT_CHILD_SOURCE_HANDLE = "source-right";
 const DEFAULT_CHILD_TARGET_HANDLE = "target-left";

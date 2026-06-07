@@ -6,6 +6,7 @@ import {
   permanentlyDeleteHistoryItem,
   importLocalImage,
 } from "../lib/api";
+import type { GalleryShortcutAction } from "../lib/galleryShortcuts";
 import {
   getNeighborAfterRemoval,
   getShortcutTarget,
@@ -187,8 +188,8 @@ export function showHistorySequenceImpl(sequenceId: string, set: StoreSet, get: 
 }
 
 export function selectHistoryShortcutTargetImpl(
-  action: "prev" | "next",
-  set: StoreSet,
+  action: GalleryShortcutAction,
+  _set: StoreSet,
   get: StoreGet,
 ): void {
   const state = get();
@@ -401,7 +402,7 @@ export async function importLocalImageToHistoryImpl(
   }
 }
 
-export function hydrateHistoryImpl(set: StoreSet, get: StoreGet): void {
+export function hydrateHistoryImpl(set: StoreSet, _get: StoreGet): void {
   void (async () => {
     try {
       const res = await getHistory({ limit: HISTORY_LIMIT });

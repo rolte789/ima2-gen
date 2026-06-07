@@ -25,8 +25,6 @@ import {
 import {
   loadImageModel,
   loadSelectedFilename,
-  loadThemePreference,
-  loadThemeFamily,
   loadVideoDefaults,
   resolveThemePreference,
   persistCanvasExportBackground,
@@ -37,11 +35,11 @@ import {
   retainHistoryItems,
   saveInFlight,
 } from "./storeHelpers";
-import type { AppState, GalleryScope, GraphNode, GraphEdge, StoreSet, StoreGet } from "./storeTypes";
+import type { GalleryScope, GraphNode, GraphEdge, StoreSet, StoreGet } from "./storeTypes";
 import type { ClientNodeId } from "../lib/graph";
 import type { ImaErrorCode } from "../lib/errorCodes";
 import type { CanvasExportBackground, HexColor } from "../types/canvas";
-import type { ThemePreference, ThemeFamily, HistoryStripLayout, UIMode, SettingsSection } from "../types";
+import type { ThemePreference, ThemeFamily, HistoryStripLayout, UIMode } from "../types";
 
 export async function cancelInFlightJobImpl(
   requestId: string,

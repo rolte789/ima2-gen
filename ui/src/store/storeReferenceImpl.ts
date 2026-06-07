@@ -123,7 +123,7 @@ export function applyMetadataRestoreImpl(set: StoreSet, get: StoreGet): void {
   get().showToast(t("metadata.applied"));
 }
 
-export function removeReferenceImpl(index: number, set: StoreSet, get: StoreGet): void {
+export function removeReferenceImpl(index: number, set: StoreSet, _get: StoreGet): void {
   set((s) => {
     const referenceImages = s.referenceImages.filter((_, i) => i !== index);
     const clearContinuity = referenceImages.length === 0;
