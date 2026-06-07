@@ -47,7 +47,7 @@ assert.ok(nodeSrc.includes("userPrompt"), "node userPrompt meta field missing");
 assert.ok(nodeSrc.includes("refsCount"), "node refsCount meta field missing");
 assert.ok(nodeSrc.includes("partialImages: streamResponse ? 2 : 0"), "node partial_images opt-in missing");
 assert.ok(apiSrc.includes("postNodeGenerateStream"), "node SSE client missing");
-assert.ok(nodeApiSrc.includes('Accept: "text/event-stream"'), "node SSE Accept header missing");
+assert.ok(nodeApiSrc.includes("async: true"), "node async mode missing");
 
 assert.equal(PROMPT_FIDELITY_SUFFIX, AUTO_PROMPT_FIDELITY_SUFFIX);
 assert.ok(AUTO_PROMPT_FIDELITY_SUFFIX.includes("treat the user's prompt as the source of truth"));

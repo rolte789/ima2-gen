@@ -1,4 +1,6 @@
 import type { ImageModel, Provider } from "../types";
+import { subscribe, ensureConnected } from "./eventChannel";
+import { cancelInflight } from "./api-inflight";
 
 export type NodeGenerateRequest = {
   parentNodeId: string | null;
@@ -67,89 +69,71 @@ export async function postNodeGenerate(payload: NodeGenerateRequest): Promise<No
   return data as NodeGenerateResponse;
 }
 
-function parseSseBlock(block: string): { event: string; data: unknown } | null {
-  let event = "message";
-  const dataLines: string[] = [];
-  for (const line of block.split("\n")) {
-    if (line.startsWith("event:")) event = line.slice(6).trim();
-    if (line.startsWith("data:")) dataLines.push(line.slice(5).trimStart());
-  }
-  if (dataLines.length === 0) return null;
-  const raw = dataLines.join("\n");
-  if (!raw || raw === "[DONE]") return null;
-  return { event, data: JSON.parse(raw) };
-}
-
 export async function postNodeGenerateStream(
   payload: NodeGenerateRequest,
   handlers: {
     onPartial?: (partial: { image: string; requestId?: string | null; index?: number | null }) => void;
     onPhase?: (phase: { phase?: string; requestId?: string | null }) => void;
   } = {},
+  options: { signal?: AbortSignal } = {},
 ): Promise<NodeGenerateResponse> {
+  const requestId = payload.requestId ?? `nreq_${Date.now().toString(36)}`;
+  ensureConnected();
+
   const res = await fetch("/api/node/generate", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
-    body: JSON.stringify(payload),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...payload, async: true, requestId }),
   });
 
-  const contentType = res.headers.get("content-type") ?? "";
-  if (!contentType.includes("text/event-stream")) {
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const err = data as NodeErrorResponse;
-      const msg = err?.error?.message ?? `Request failed: ${res.status}`;
-      const e = new Error(msg) as Error & { code?: string; status?: number };
-      e.code = err?.error?.code;
-      e.status = err?.status ?? res.status;
-      throw e;
-    }
-    return data as NodeGenerateResponse;
-  }
-
-  if (!res.ok || !res.body) {
-    throw new Error(`Request failed: ${res.status}`);
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let finalPayload: NodeGenerateResponse | null = null;
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    let boundary = buffer.indexOf("\n\n");
-    while (boundary !== -1) {
-      const block = buffer.slice(0, boundary);
-      buffer = buffer.slice(boundary + 2);
-      const parsed = parseSseBlock(block);
-      if (parsed) {
-        if (parsed.event === "partial") {
-          handlers.onPartial?.(parsed.data as { image: string; requestId?: string | null; index?: number | null });
-        } else if (parsed.event === "phase") {
-          handlers.onPhase?.(parsed.data as { phase?: string; requestId?: string | null });
-        } else if (parsed.event === "done") {
-          finalPayload = parsed.data as NodeGenerateResponse;
-        } else if (parsed.event === "error") {
-          const err = parsed.data as NodeErrorResponse;
-          const msg = err?.error?.message ?? "Node generation failed";
-          const e = new Error(msg) as Error & { code?: string; status?: number };
-          e.code = err?.error?.code;
-          e.status = err?.status;
-          throw e;
-        }
-      }
-      boundary = buffer.indexOf("\n\n");
-    }
-  }
-
-  if (!finalPayload) {
-    const e = new Error("No image data returned from the node stream") as Error & { code?: string; status?: number };
-    e.code = "EMPTY_RESPONSE";
-    e.status = 422;
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({})) as NodeErrorResponse;
+    const msg = data?.error?.message ?? `Request failed: ${res.status}`;
+    const e = new Error(msg) as Error & { code?: string; status?: number };
+    e.code = data?.error?.code;
+    e.status = data?.status ?? res.status;
     throw e;
   }
-  return finalPayload;
+
+  return new Promise<NodeGenerateResponse>((resolve, reject) => {
+    let settled = false;
+    const unsub = subscribe(requestId, null, (event, data) => {
+      if (settled) return;
+      if (event === "partial") {
+        handlers.onPartial?.(data as { image: string; requestId?: string | null; index?: number | null });
+      } else if (event === "phase") {
+        handlers.onPhase?.(data as { phase?: string; requestId?: string | null });
+      } else if (event === "done") {
+        settled = true;
+        unsub();
+        resolve(data as unknown as NodeGenerateResponse);
+      } else if (event === "error") {
+        settled = true;
+        unsub();
+        const err = data as { error?: { code?: string; message?: string }; status?: number };
+        const msg = err?.error?.message ?? "Node generation failed";
+        const e = new Error(msg) as Error & { code?: string; status?: number };
+        e.code = err?.error?.code;
+        e.status = err?.status;
+        reject(e);
+      }
+    });
+
+    if (options.signal) {
+      if (options.signal.aborted) {
+        settled = true;
+        unsub();
+        void cancelInflight(requestId);
+        reject(new DOMException("Aborted", "AbortError"));
+        return;
+      }
+      options.signal.addEventListener("abort", () => {
+        if (settled) return;
+        settled = true;
+        unsub();
+        void cancelInflight(requestId);
+        reject(new DOMException("Aborted", "AbortError"));
+      }, { once: true });
+    }
+  });
 }
