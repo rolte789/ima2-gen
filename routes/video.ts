@@ -46,7 +46,7 @@ function sendSse(res: Response, event: string, data: unknown) {
 }
 
 function dualEmitVideo(res: Response, requestId: string, event: string, data: unknown) {
-  sendSse(res, event, data);
+  if (!res.writableEnded) sendSse(res, event, data);
   publish(requestId, event, data as Record<string, unknown>);
 }
 
@@ -126,6 +126,7 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         : typeof req.body?.clientRequestId === "string"
           ? req.body.clientRequestId
           : req.id;
+    const asyncMode = req.body?.async === true;
     let finishStatus = "completed";
     let finishHttpStatus = 200;
     let finishErrorCode: string | undefined;
@@ -133,10 +134,12 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
     let finishCanceled = false;
     const cancelController = new AbortController();
 
-    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-    res.setHeader("Cache-Control", "no-cache, no-transform");
-    res.setHeader("Connection", "keep-alive");
-    res.flushHeaders?.();
+    if (!asyncMode) {
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
+      res.setHeader("Connection", "keep-alive");
+      res.flushHeaders?.();
+    }
 
     const fail = (status: number | undefined, code: string, error: string, extra: Record<string, unknown> = {}) => {
       const httpStatus = status ?? 500;
@@ -249,6 +252,7 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         meta: { kind: "video", sessionId, clientNodeId, model: modelCheck.model, mode, duration, resolution: resolutionCheck.resolution },
       });
       registerJobAbortController(requestId, cancelController);
+      if (asyncMode) res.status(202).json({ requestId });
       await mkdir(ctx.config.storage.generatedDir, { recursive: true });
 
       logEvent("video", "request", { requestId, mode, duration, resolution: resolutionCheck.resolution, aspectRatio: aspectCheck.aspectRatio });
@@ -386,7 +390,7 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       }
     } finally {
       finishJob(requestId, { canceled: finishCanceled, status: finishStatus, httpStatus: finishHttpStatus, errorCode: finishErrorCode, meta: finishMeta });
-      res.end();
+      if (!res.writableEnded) res.end();
     }
   });
 }

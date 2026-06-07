@@ -35,7 +35,8 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   const ctx = requireRuntimeContext(ctxRaw);
   app.post("/api/node/generate", async (req: Request, res: Response) => {
     const body = (req.body ?? {}) as NodeGenerateBody;
-    const streamResponse = wantsSse(req);
+    const asyncMode = body.async === true;
+    const streamResponse = !asyncMode && wantsSse(req);
     const parentNodeId = (typeof body.parentNodeId === "string" ? body.parentNodeId : null);
     const requestId = typeof body.requestId === "string" ? body.requestId : (req.id ?? "");
     const sessionId = typeof body.sessionId === "string" ? body.sessionId : null;
@@ -62,6 +63,7 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       },
     });
     registerJobAbortController(requestId, cancelController);
+    if (asyncMode) res.status(202).json({ requestId });
 
     try {
       const {
@@ -438,12 +440,13 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         promptMode: normalizedPromptMode,
       };
 
-      if (streamResponse) {
+      publish(requestId, "done", payload);
+      if (res.writableEnded) {
+        // async mode — response already sent
+      } else if (streamResponse) {
         writeSse(res, "done", payload);
-        publish(requestId, "done", payload);
         res.end();
       } else {
-        publish(requestId, "done", payload);
         res.json(payload);
       }
     } catch (e) {

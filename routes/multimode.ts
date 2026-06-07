@@ -36,7 +36,7 @@ import {
 } from "../lib/multimodeHelpers.js";
 
 function dualEmitMultimode(res: Response, requestId: string, event: string, data: unknown) {
-  writeSse(res, event, data);
+  if (!res.writableEnded) writeSse(res, event, data);
   publish(requestId, event, data as Record<string, unknown>);
 }
 
@@ -44,6 +44,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
   const ctx = requireRuntimeContext(ctxRaw);
   app.post("/api/generate/multimode", async (req: Request, res: Response) => {
     const requestId = typeof req.body?.requestId === "string" ? req.body.requestId : req.id;
+    const asyncMode = req.body?.async === true;
     let finishStatus = "completed";
     let finishHttpStatus = 200;
     let finishErrorCode;
@@ -69,10 +70,12 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
     let latestWebSearchCalls = 0;
     let latestExtraIgnored = 0;
 
-    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-    res.setHeader("Cache-Control", "no-cache, no-transform");
-    res.setHeader("Connection", "keep-alive");
-    res.flushHeaders?.();
+    if (!asyncMode) {
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
+      res.setHeader("Connection", "keep-alive");
+      res.flushHeaders?.();
+    }
 
     try {
       const {
@@ -158,6 +161,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
         },
       });
       registerJobAbortController(requestId, cancelController);
+      if (asyncMode) res.status(202).json({ requestId });
 
       logEvent("multimode", "request", {
         requestId,
@@ -489,7 +493,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
         errorCode: finishErrorCode,
         meta: finishMeta,
       });
-      res.end();
+      if (!res.writableEnded) res.end();
     }
   });
 }

@@ -26,6 +26,7 @@ export interface NodeGenerateBody {
   reasoningEffort?: string;
   provider?: string;
   webSearchEnabled?: boolean;
+  async?: boolean;
 }
 
 export function asUpstream(e: unknown): UpstreamErr {
@@ -53,6 +54,7 @@ export function writeNodeError(
     ...details,
   };
   if (requestId) publish(requestId, "error", payload);
+  if (res.writableEnded) return;
   if (res.headersSent) {
     writeSse(res, "error", payload);
     res.end();
