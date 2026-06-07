@@ -146,7 +146,12 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       finishStatus = "error";
       finishHttpStatus = httpStatus;
       finishErrorCode = code;
-      dualEmitVideo(res, requestId, "error", { error, code, status: httpStatus, requestId, ...extra });
+      const payload = { error, code, status: httpStatus, requestId, ...extra };
+      publish(requestId, "error", payload);
+      if (asyncMode && !res.headersSent) {
+        return res.status(httpStatus).json(payload);
+      }
+      if (!res.writableEnded) sendSse(res, "error", payload);
     };
 
     try {

@@ -1,5 +1,6 @@
 import { config } from "../config.js";
 import { getDb } from "./db.js";
+import { publish } from "./eventBus.js";
 import { logEvent } from "./logger.js";
 
 // SQLite-backed inflight job registry.
@@ -119,6 +120,14 @@ export function abortJob(requestId: string | null | undefined) {
   if (controller && !controller.signal.aborted) {
     controller.abort();
     aborted = true;
+  }
+  if (active || aborted) {
+    publish(requestId, "error", {
+      error: "Generation canceled",
+      code: "GENERATION_CANCELED",
+      status: 499,
+      requestId,
+    });
   }
   finishJob(requestId, {
     canceled: true,

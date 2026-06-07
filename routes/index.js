@@ -1,4 +1,5 @@
 import { registerCapabilitiesRoutes } from "./capabilities.js";
+import { registerEventsRoute } from "./events.js";
 import { registerHealthRoutes } from "./health.js";
 import { registerHistoryRoutes } from "./history.js";
 import { registerSessionRoutes } from "./sessions.js";
@@ -27,6 +28,7 @@ import { mountKeyRoutes } from "./keys.js";
 import { requireRuntimeContext } from "../lib/runtimeContext.js";
 export function configureRoutes(app, ctxRaw) {
     const ctx = requireRuntimeContext(ctxRaw);
+    registerEventsRoute(app, ctx);
     registerHealthRoutes(app, ctx);
     registerCapabilitiesRoutes(app, ctx);
     registerStorageRoutes(app, ctx);

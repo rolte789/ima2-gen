@@ -54,7 +54,7 @@ export function writeNodeError(
     ...details,
   };
   if (requestId) publish(requestId, "error", payload);
-  if (res.writableEnded) return;
+  if (res.writableEnded || res.destroyed) return;
   if (res.headersSent) {
     writeSse(res, "error", payload);
     res.end();

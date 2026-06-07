@@ -7,19 +7,34 @@ export interface BusEvent {
   data: Record<string, unknown>;
 }
 
-const RING_SIZE = 500;
+/** Global replay window — sized for 7+ concurrent jobs (~15 events each) with reconnect headroom. */
+export const RING_SIZE = 2000;
+/** Align with /api/events connection cap — avoids MaxListenersExceededWarning under load. */
+export const MAX_SSE_LISTENERS = 512;
 const bus = new EventEmitter();
-bus.setMaxListeners(100);
+bus.setMaxListeners(MAX_SSE_LISTENERS);
 
 let seq = 0;
 const ring: BusEvent[] = [];
 
+function toRingEntry(entry: BusEvent): BusEvent | null {
+  const image = entry.data.image;
+  const hasLargeImage = typeof image === "string" && image.length > 1000;
+  if (!hasLargeImage) return entry;
+  // Keep terminal/partial metadata replayable; omit multi-MB base64 from the ring.
+  if (entry.event === "partial" || entry.event === "image" || entry.event === "done") {
+    const { image: _omit, ...rest } = entry.data as Record<string, unknown> & { image?: string };
+    return { ...entry, data: { ...rest, _imageOmitted: true } };
+  }
+  return null;
+}
+
 export function publish(jobId: string, event: string, data: Record<string, unknown>): void {
   seq++;
   const entry: BusEvent = { id: seq, jobId, event, data };
-  const hasLargeImage = typeof (data as any).image === "string" && (data as any).image.length > 1000;
-  if (!hasLargeImage) {
-    ring.push(entry);
+  const ringEntry = toRingEntry(entry);
+  if (ringEntry) {
+    ring.push(ringEntry);
     if (ring.length > RING_SIZE) ring.shift();
   }
   bus.emit("event", entry);

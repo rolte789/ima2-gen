@@ -40,6 +40,23 @@ function dualEmitMultimode(res: Response, requestId: string, event: string, data
   publish(requestId, event, data as Record<string, unknown>);
 }
 
+function respondMultimodeValidationError(
+  res: Response,
+  requestId: string,
+  asyncMode: boolean,
+  status: number,
+  payload: Record<string, unknown>,
+) {
+  publish(requestId, "error", payload);
+  if (asyncMode && !res.headersSent) {
+    return res.status(status).json(payload);
+  }
+  if (!res.writableEnded) {
+    writeSse(res, "error", payload);
+    res.end();
+  }
+}
+
 export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   const ctx = requireRuntimeContext(ctxRaw);
   app.post("/api/generate/multimode", async (req: Request, res: Response) => {
@@ -109,8 +126,12 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
         finishStatus = "error";
         finishHttpStatus = providerOptions.status;
         finishErrorCode = providerOptions.code;
-        dualEmitMultimode(res, requestId, "error", { error: providerOptions.error, code: providerOptions.code, status: providerOptions.status, requestId });
-        return;
+        return respondMultimodeValidationError(res, requestId, asyncMode, providerOptions.status, {
+          error: providerOptions.error,
+          code: providerOptions.code,
+          status: providerOptions.status,
+          requestId,
+        });
       }
       const imageModel = providerOptions.model;
       const reasoningEffort = providerOptions.reasoningEffort;
@@ -121,24 +142,36 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
         finishStatus = "error";
         finishHttpStatus = 400;
         finishErrorCode = "PROMPT_REQUIRED";
-        dualEmitMultimode(res, requestId, "error", { error: "Prompt is required", code: finishErrorCode, status: 400, requestId });
-        return;
+        return respondMultimodeValidationError(res, requestId, asyncMode, 400, {
+          error: "Prompt is required",
+          code: finishErrorCode,
+          status: 400,
+          requestId,
+        });
       }
       const moderationCheck = validateModeration(ctx, moderation);
       if (moderationCheck.error) {
         finishStatus = "error";
         finishHttpStatus = 400;
         finishErrorCode = "INVALID_MODERATION";
-        dualEmitMultimode(res, requestId, "error", { error: moderationCheck.error, code: finishErrorCode, status: 400, requestId });
-        return;
+        return respondMultimodeValidationError(res, requestId, asyncMode, 400, {
+          error: moderationCheck.error,
+          code: finishErrorCode,
+          status: 400,
+          requestId,
+        });
       }
       const refCheckResult = validateAndNormalizeRefs(references);
       if (refCheckResult.error) {
         finishStatus = "error";
         finishHttpStatus = 400;
         finishErrorCode = refCheckResult.code;
-        dualEmitMultimode(res, requestId, "error", { error: refCheckResult.error, code: refCheckResult.code, status: 400, requestId });
-        return;
+        return respondMultimodeValidationError(res, requestId, asyncMode, 400, {
+          error: refCheckResult.error,
+          code: refCheckResult.code,
+          status: 400,
+          requestId,
+        });
       }
       const refCheck = refCheckResult as Extract<typeof refCheckResult, { refs: string[] }>;
       const referencePayload = summarizeReferencePayload(references);
