@@ -1,6 +1,6 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { publish, subscribe, replaySince, _resetForTest } from "../lib/eventBus.js";
+import { publish, subscribe, replaySince, RING_SIZE, _resetForTest } from "../lib/eventBus.js";
 
 describe("eventBus", () => {
   beforeEach(() => _resetForTest());
@@ -49,22 +49,26 @@ describe("eventBus", () => {
     assert.deepEqual(replayed, []);
   });
 
-  it("ring buffer caps at 500", () => {
-    for (let i = 0; i < 600; i++) {
+  it("ring buffer caps at RING_SIZE", () => {
+    for (let i = 0; i < RING_SIZE + 100; i++) {
       publish(`job${i}`, "phase", {});
     }
     const all = replaySince(0);
-    assert.equal(all.length, 500);
+    assert.equal(all.length, RING_SIZE);
     assert.equal(all[0].id, 101);
   });
 
-  it("excludes large base64 images from ring buffer", () => {
+  it("stores stripped metadata for large image events in ring buffer", () => {
     const largeImage = "data:image/png;base64," + "A".repeat(2000);
-    publish("img1", "partial", { image: largeImage, requestId: "img1" });
-    publish("other", "done", { requestId: "other" });
+    publish("img1", "partial", { image: largeImage, requestId: "img1", index: 0 });
+    publish("img1", "done", { image: largeImage, requestId: "img1", filename: "out.png", url: "/generated/out.png" });
     const replayed = replaySince(0);
-    assert.equal(replayed.length, 1);
-    assert.equal(replayed[0].jobId, "other");
+    assert.equal(replayed.length, 2);
+    assert.equal(replayed[0].event, "partial");
+    assert.equal((replayed[0].data as { _imageOmitted?: boolean })._imageOmitted, true);
+    assert.equal(replayed[1].event, "done");
+    assert.equal((replayed[1].data as { filename?: string }).filename, "out.png");
+    assert.equal((replayed[1].data as { _imageOmitted?: boolean })._imageOmitted, true);
   });
 
   it("still delivers large image events to live subscribers", () => {
