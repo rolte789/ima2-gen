@@ -48,22 +48,6 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
     let finishCanceled = false;
     const cancelController = new AbortController();
     const referencePayload = summarizeReferencePayload(body.references);
-    startJob({
-      requestId,
-      kind: "node",
-      prompt: body.prompt,
-      meta: {
-        kind: "node",
-        sessionId,
-        parentNodeId,
-        clientNodeId,
-        refsCount: referencePayload.refsCount,
-        referenceBytes: referencePayload.referenceBytes,
-        referenceB64Chars: referencePayload.referenceB64Chars,
-      },
-    });
-    registerJobAbortController(requestId, cancelController);
-    if (asyncMode) res.status(202).json({ requestId });
 
     try {
       const {
@@ -181,6 +165,22 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           parentNodeId,
         });
       }
+      startJob({
+        requestId,
+        kind: "node",
+        prompt: body.prompt,
+        meta: {
+          kind: "node",
+          sessionId,
+          parentNodeId,
+          clientNodeId,
+          refsCount: referencePayload.refsCount,
+          referenceBytes: referencePayload.referenceBytes,
+          referenceB64Chars: referencePayload.referenceB64Chars,
+        },
+      });
+      registerJobAbortController(requestId, cancelController);
+      if (asyncMode) res.status(202).json({ requestId });
       logEvent("node", "request", {
         requestId,
         operation,
