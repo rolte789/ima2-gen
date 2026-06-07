@@ -77,23 +77,8 @@ export async function postNodeGenerateStream(
   } = {},
   options: { signal?: AbortSignal } = {},
 ): Promise<NodeGenerateResponse> {
-  const requestId = payload.requestId ?? `nreq_${Date.now().toString(36)}`;
+  const requestId = payload.requestId ?? `nreq_${crypto.randomUUID()}`;
   ensureConnected();
-
-  const res = await fetch("/api/node/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...payload, async: true, requestId }),
-  });
-
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({})) as NodeErrorResponse;
-    const msg = data?.error?.message ?? `Request failed: ${res.status}`;
-    const e = new Error(msg) as Error & { code?: string; status?: number };
-    e.code = data?.error?.code;
-    e.status = data?.status ?? res.status;
-    throw e;
-  }
 
   return new Promise<NodeGenerateResponse>((resolve, reject) => {
     let settled = false;
@@ -143,5 +128,23 @@ export async function postNodeGenerateStream(
         });
       }, { once: true });
     }
+
+    void fetch("/api/node/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...payload, async: true, requestId }),
+    }).then(async (res) => {
+      if (settled) return;
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as NodeErrorResponse;
+        const msg = data?.error?.message ?? `Request failed: ${res.status}`;
+        const e = new Error(msg) as Error & { code?: string; status?: number };
+        e.code = data?.error?.code;
+        e.status = data?.status ?? res.status;
+        finish(() => reject(e));
+      }
+    }).catch((err) => {
+      finish(() => reject(err instanceof Error ? err : new Error(String(err))));
+    });
   });
 }

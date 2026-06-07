@@ -25,22 +25,8 @@ export async function postMultimodeGenerateStream(
   } = {},
   options: { signal?: AbortSignal } = {},
 ): Promise<MultimodeGenerateResponse> {
-  const requestId = payload.requestId ?? `req_${Date.now().toString(36)}`;
+  const requestId = payload.requestId ?? `req_${crypto.randomUUID()}`;
   ensureConnected();
-
-  const res = await fetch("/api/generate/multimode", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...payload, async: true, requestId }),
-  });
-
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({})) as { error?: string; code?: string; status?: number };
-    const e = new Error(data.error ?? `Request failed: ${res.status}`) as Error & { code?: string; status?: number };
-    e.code = data.code;
-    e.status = data.status ?? res.status;
-    throw e;
-  }
 
   return new Promise<MultimodeGenerateResponse>((resolve, reject) => {
     let settled = false;
@@ -91,6 +77,23 @@ export async function postMultimodeGenerateStream(
         });
       }, { once: true });
     }
+
+    void fetch("/api/generate/multimode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...payload, async: true, requestId }),
+    }).then(async (res) => {
+      if (settled) return;
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as { error?: string; code?: string; status?: number };
+        const e = new Error(data.error ?? `Request failed: ${res.status}`) as Error & { code?: string; status?: number };
+        e.code = data.code;
+        e.status = data.status ?? res.status;
+        finish(() => reject(e));
+      }
+    }).catch((err) => {
+      finish(() => reject(err instanceof Error ? err : new Error(String(err))));
+    });
   });
 }
 
@@ -208,22 +211,8 @@ export async function postVideoGenerateStream(
   } = {},
   options: { signal?: AbortSignal } = {},
 ): Promise<VideoGenerateDone> {
-  const requestId = payload.requestId ?? `vreq_${Date.now().toString(36)}`;
+  const requestId = payload.requestId ?? `vreq_${crypto.randomUUID()}`;
   ensureConnected();
-
-  const res = await fetch("/api/video/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ provider: "grok", ...payload, async: true, requestId }),
-  });
-
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({})) as { error?: string; code?: string; status?: number };
-    const e = new Error(data.error ?? `Request failed: ${res.status}`) as Error & { code?: string; status?: number };
-    e.code = data.code;
-    e.status = data.status ?? res.status;
-    throw e;
-  }
 
   return new Promise<VideoGenerateDone>((resolve, reject) => {
     let settled = false;
@@ -271,5 +260,22 @@ export async function postVideoGenerateStream(
         });
       }, { once: true });
     }
+
+    void fetch("/api/video/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider: "grok", ...payload, async: true, requestId }),
+    }).then(async (res) => {
+      if (settled) return;
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as { error?: string; code?: string; status?: number };
+        const e = new Error(data.error ?? `Request failed: ${res.status}`) as Error & { code?: string; status?: number };
+        e.code = data.code;
+        e.status = data.status ?? res.status;
+        finish(() => reject(e));
+      }
+    }).catch((err) => {
+      finish(() => reject(err instanceof Error ? err : new Error(String(err))));
+    });
   });
 }
