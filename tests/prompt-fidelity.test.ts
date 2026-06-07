@@ -45,7 +45,7 @@ assert.ok(historySrc.includes("requestId"), "history requestId field missing");
 assert.ok(nodeSrc.includes("normalizedPromptMode"), "node prompt mode propagation missing");
 assert.ok(nodeSrc.includes("userPrompt"), "node userPrompt meta field missing");
 assert.ok(nodeSrc.includes("refsCount"), "node refsCount meta field missing");
-assert.ok(nodeSrc.includes("partialImages: streamResponse ? 2 : 0"), "node partial_images opt-in missing");
+assert.ok(nodeSrc.includes("partialImages: emitProgress ? 2 : 0"), "node partial_images opt-in missing");
 assert.ok(apiSrc.includes("postNodeGenerateStream"), "node SSE client missing");
 assert.ok(nodeApiSrc.includes("async: true"), "node async mode missing");
 

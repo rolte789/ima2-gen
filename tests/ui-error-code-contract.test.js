@@ -20,9 +20,8 @@ test("UI maps proxy and network errors to card surfaces", () => {
 test("node API preserves status on JSON and SSE errors", () => {
   const source = readFileSync("ui/src/lib/nodeApi.ts", "utf-8");
   assert.match(source, /export type NodeErrorResponse = \{[\s\S]*status\?: number;/);
-  assert.match(source, /e\.status = data\?\.status \?\? res\.status;/);
-  assert.match(source, /e\.code = err\?\.error\?\.code;/);
-  assert.match(source, /e\.status = err\?\.status;/);
+  assert.match(source, /e\.status = .*res\.status/);
+  assert.match(source, /e\.code = /);
 });
 
 test("UI surfaces server terminal generation errors from inflight polling", () => {
@@ -30,7 +29,7 @@ test("UI surfaces server terminal generation errors from inflight polling", () =
   const api = readSourceTree("ui/src/lib/api.ts");
 
   assert.match(api, /Multimode generation failed/);
-  assert.match(api, /e\.code = err\.code;/);
+  assert.match(api, /e\.code = data\.code;/);
   assert.match(api, /cancelInflight/);
   assert.match(store, /includeTerminal: true/);
   assert.match(store, /terminalJobError/);

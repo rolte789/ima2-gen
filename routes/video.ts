@@ -39,6 +39,7 @@ import { errInfo } from "../lib/errInfo.js";
 import { requireRuntimeContext, type RouteRuntimeContext, type RuntimeContext } from "../lib/runtimeContext.js";
 import { generateVideoThumbnail } from "../lib/videoThumb.js";
 import { publish } from "../lib/eventBus.js";
+import { publishJobEvent } from "../lib/ssePublish.js";
 
 function sendSse(res: Response, event: string, data: unknown) {
   res.write(`event: ${event}\n`);
@@ -47,7 +48,11 @@ function sendSse(res: Response, event: string, data: unknown) {
 
 function dualEmitVideo(res: Response, requestId: string, event: string, data: unknown) {
   if (!res.writableEnded) sendSse(res, event, data);
-  publish(requestId, event, data as Record<string, unknown>);
+  if (event === "done") {
+    publishJobEvent(requestId, event, data as Record<string, unknown>);
+  } else {
+    publish(requestId, event, data as Record<string, unknown>);
+  }
 }
 
 function toArray(v: unknown): unknown[] {

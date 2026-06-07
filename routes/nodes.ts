@@ -26,6 +26,7 @@ import { errInfo } from "../lib/errInfo.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { validateModeration, imageFormatFromMime, writeSse, dataUrlFromB64 } from "../lib/routeHelpers.js";
 import { publish } from "../lib/eventBus.js";
+import { publishJobEvent } from "../lib/ssePublish.js";
 import {
   type NodeGenerateBody, asUpstream, wantsSse, writeNodeError,
   loadParentNodeB64, toGrokReferences, nodeErrorDetails,
@@ -205,6 +206,7 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         promptMode: normalizedPromptMode,
       });
 
+      const emitProgress = streamResponse || asyncMode;
       if (streamResponse) {
         res.writeHead(200, {
           "Content-Type": "text/event-stream; charset=utf-8",
@@ -212,6 +214,8 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           Connection: "keep-alive",
         });
         writeSse(res, "phase", { requestId, phase: "streaming" });
+        publish(requestId, "phase", { requestId, phase: "streaming" });
+      } else if (asyncMode) {
         publish(requestId, "phase", { requestId, phase: "streaming" });
       }
 
@@ -291,12 +295,12 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
                     reasoningEffort,
                     webSearchEnabled,
                     signal: cancelController.signal,
-                    partialImages: streamResponse ? 2 : 0,
-                    onPartialImage: streamResponse
+                    partialImages: emitProgress ? 2 : 0,
+                    onPartialImage: emitProgress
                       ? (partial) => {
                           if (isJobCanceled(requestId)) return;
                           const pd = { requestId, image: dataUrlFromB64(format, partial.b64), index: partial.index };
-                          writeSse(res, "partial", pd);
+                          if (streamResponse) writeSse(res, "partial", pd);
                           publish(requestId, "partial", pd);
                         }
                       : null,
@@ -440,7 +444,7 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         promptMode: normalizedPromptMode,
       };
 
-      publish(requestId, "done", payload);
+      publishJobEvent(requestId, "done", payload);
       if (res.writableEnded) {
         // async mode — response already sent
       } else if (streamResponse) {

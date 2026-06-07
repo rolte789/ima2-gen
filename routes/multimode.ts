@@ -30,6 +30,7 @@ import { errInfo } from "../lib/errInfo.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { validateModeration, imageFormatFromMime, writeSse } from "../lib/routeHelpers.js";
 import { publish } from "../lib/eventBus.js";
+import { publishJobEvent } from "../lib/ssePublish.js";
 import {
   normalizeMaxImages, sequenceStatus,
   type MultimodeImage, type MultimodeRouteItem,
@@ -37,7 +38,11 @@ import {
 
 function dualEmitMultimode(res: Response, requestId: string, event: string, data: unknown) {
   if (!res.writableEnded) writeSse(res, event, data);
-  publish(requestId, event, data as Record<string, unknown>);
+  if (event === "done") {
+    publishJobEvent(requestId, event, data as Record<string, unknown>);
+  } else {
+    publish(requestId, event, data as Record<string, unknown>);
+  }
 }
 
 function respondMultimodeValidationError(

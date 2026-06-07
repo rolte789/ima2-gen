@@ -85,6 +85,11 @@ routes/
 | `routes/cardNews.ts` | 183 | Dev-gated card-news templates, sets, drafts, jobs, regenerate, export (only registered when `config.features.cardNews`) |
 | `routes/agent.ts` | 308 | Agent Mode API — sessions, turns, durable queue, compact, manifest, tools (`/api/agent/*`); backed by `lib/agent*.ts`; no CLI wrapper |
 | `routes/promptBuilder.ts` | 37 | `POST /api/prompt-builder/chat` prompt-builder assistant (`lib/promptBuilder/client.ts`); wrapped by `ima2 prompt build` |
+| `routes/events.ts` | 68 | `GET /api/events` — SSE multiplexing endpoint; single persistent stream for all async job progress; ring replay + `replay-gap` + heartbeat |
+| `lib/eventBus.ts` | 60 | Global pub/sub event bus with ring buffer (2000), monotonic `seq`, `replaySince`, `hasReplayGap` |
+| `lib/ssePublish.ts` | 16 | `publishJobEvent` — terminal `done` suppression after cancel (cancel↔done race guard) |
+| `ui/src/lib/eventChannel.ts` | 90 | Browser singleton `EventSource` for `/api/events`; exponential backoff reconnect; `subscribe(jobId)` routing |
+| `ui/src/lib/sseStreamError.ts` | 24 | Shared `parseSseErrorPayload` — normalizes flat/nested SSE error shapes |
 | `bin/ima2.ts` | 444 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
 | `bin/commands/gen.ts` | 214 | CLI image-generation client with references, provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, and output-dir options |
 | `bin/commands/edit.ts` | 150 | CLI image-edit client with provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, and output options |

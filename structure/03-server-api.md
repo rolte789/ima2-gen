@@ -21,6 +21,7 @@ graph TD
     API["server.ts + routes/* /api"] --> STATUS["status<br/>providers health oauth billing"]
     API --> IMG["classic image<br/>generate edit history"]
     API --> JOBS["inflight jobs"]
+    API --> EVENTS["events multiplex<br/>GET /api/events SSE"]
     API --> NODE["node mode<br/>node generate node fetch"]
     API --> SESS["sessions<br/>sqlite graph + style sheet"]
     API --> META["metadata read<br/>embedded XMP"]
@@ -33,6 +34,7 @@ graph TD
     API --> CARD["cardnews dev-only<br/>templates jobs sets"]
     IMG --> FILES["~/.ima2/generated<br/>sidecar metadata + embedded XMP"]
     NODE --> FILES
+    EVENTS --> JOBS
     SESS --> DB["SQLite"]
     PROMPTS --> DB
     CARD --> FILES
@@ -151,6 +153,51 @@ Canvas annotation and canvas-version routes are internal editor persistence surf
 | `DELETE` | `/api/inflight/:requestId` | none | `{ requestId, active, aborted }` |
 
 The inflight registry tracks classic, node, and multimode jobs. The default response is active-only so the UI never renders completed jobs as still running. `includeTerminal=1` is an opt-in debug surface that keeps recent completed/error/canceled jobs briefly for request tracing. Cancellation records a terminal `canceled` snapshot and aborts the upstream request when the active job still has a registered `AbortController`.
+
+## Events Multiplexing (SSE)
+
+The browser UI uses a single persistent SSE channel (`GET /api/events`) for all async generation progress. This replaces per-request SSE streams that previously consumed one HTTP connection each and caused gallery hangs at the browser's 6-connection limit.
+
+| Method | Path | Query | Response |
+|---|---|---|---|
+| `GET` | `/api/events` | `lastEventId` (optional, for replay) | `text/event-stream` (persistent) |
+
+### Connection lifecycle
+
+1. Client opens `EventSource("/api/events")`.
+2. Server responds with `text/event-stream`, sets `X-Accel-Buffering: no`, starts 15s heartbeat pings.
+3. If `activeConnections >= MAX_SSE_LISTENERS` (512): responds `503 SSE_CAPACITY`.
+4. Events are fan-out: every connected client receives all job events.
+5. On disconnect: listener removed, heartbeat cleared, `res.end()` called.
+
+### Replay
+
+- Client sends `Last-Event-ID` header or `?lastEventId=` query on reconnect.
+- Server replays from ring buffer (size 2000). Large image payloads (>1000 chars) are stripped in replay with `_imageOmitted: true`.
+- If the requested ID is older than the ring's oldest entry, a `replay-gap` event is emitted and the client triggers `reconcileInflight()` for state recovery.
+
+### Event envelope
+
+All events carry: `id` (global monotonic seq), `event` (type name), `data` (JSON with `jobId` for client-side routing).
+
+### Event types
+
+| Event | Emitted by | Payload |
+|---|---|---|
+| `phase` | node, multimode, video | `{ requestId, phase, sequenceId?, maxImages? }` |
+| `partial` | node, multimode | `{ requestId, image (base64 data URL), index }` |
+| `image` | multimode | full `GenerateItem` |
+| `done` | node, multimode, video | route-specific response |
+| `error` | routes + `abortJob` | `{ requestId, error, code?, status? }` |
+| `replay-gap` | events route | `{ oldestId, requestedId }` |
+
+### Async generation (UI path)
+
+POST routes (`/api/node/generate`, `/api/generate/multimode`, `/api/video/generate`) accept `{ async: true, requestId }`. They respond immediately with `202 { requestId }` and emit progress via `eventBus.publish()` → `GET /api/events`. CLI/legacy clients omit `async` and receive per-request SSE on the same response (dual-emit: both legacy SSE write and eventBus publish).
+
+### Cancel-done race guard
+
+`lib/ssePublish.ts` suppresses `done` events after `abortJob` has already emitted `error`, preventing clients from resolving success on a canceled job.
 
 ## Node Mode API
 

@@ -1,6 +1,6 @@
 import type { Express, Response } from "express";
 import type { RouteRuntimeContext } from "../lib/runtimeContext.js";
-import { subscribe, replaySince, MAX_SSE_LISTENERS } from "../lib/eventBus.js";
+import { subscribe, replaySince, hasReplayGap, replayOldestId, MAX_SSE_LISTENERS } from "../lib/eventBus.js";
 
 let activeConnections = 0;
 
@@ -29,6 +29,7 @@ export function registerEventsRoute(app: Express, _ctx: RouteRuntimeContext) {
     res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
     res.setHeader("Cache-Control", "no-cache, no-transform");
     res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders?.();
 
     activeConnections++;
@@ -37,6 +38,16 @@ export function registerEventsRoute(app: Express, _ctx: RouteRuntimeContext) {
     const queryLastId = parseInt(String(req.query.lastEventId ?? ""), 10);
     const lastId = !Number.isNaN(headerLastId) ? headerLastId : queryLastId;
     if (!Number.isNaN(lastId)) {
+      if (hasReplayGap(lastId)) {
+        const gapPayload = JSON.stringify({
+          lastEventId: lastId,
+          oldestAvailableId: replayOldestId(),
+        });
+        if (!safeWrite(res, `event: replay-gap\ndata: ${gapPayload}\n\n`)) {
+          activeConnections = Math.max(0, activeConnections - 1);
+          return;
+        }
+      }
       for (const ev of replaySince(lastId)) {
         if (!safeWrite(res, formatSse(ev))) break;
       }
@@ -57,6 +68,13 @@ export function registerEventsRoute(app: Express, _ctx: RouteRuntimeContext) {
       unsub();
       clearInterval(heartbeat);
       activeConnections = Math.max(0, activeConnections - 1);
+      if (!res.writableEnded && !res.destroyed) {
+        try {
+          res.end();
+        } catch {
+          /* socket already torn down */
+        }
+      }
     }
 
     req.on("close", cleanup);
