@@ -6,7 +6,7 @@ import type {
   GenerateItem,
 } from "../types";
 import { jsonFetch } from "./api-core";
-import { subscribe, ensureConnected } from "./eventChannel";
+import { subscribe, ensureConnected, armStreamTimeout } from "./eventChannel";
 import { cancelInflight } from "./api-inflight";
 
 export function postGenerate(payload: GenerateRequest): Promise<GenerateResponse> {
@@ -44,6 +44,13 @@ export async function postMultimodeGenerateStream(
 
   return new Promise<MultimodeGenerateResponse>((resolve, reject) => {
     let settled = false;
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimer();
+      unsub();
+      fn();
+    };
     const unsub = subscribe(requestId, null, (event, data) => {
       if (settled) return;
       if (event === "partial") {
@@ -53,34 +60,35 @@ export async function postMultimodeGenerateStream(
       } else if (event === "phase") {
         handlers.onPhase?.(data as { phase?: string; requestId?: string | null; sequenceId?: string | null; maxImages?: number });
       } else if (event === "done") {
-        settled = true;
-        unsub();
-        resolve(data as unknown as MultimodeGenerateResponse);
+        finish(() => resolve(data as unknown as MultimodeGenerateResponse));
       } else if (event === "error") {
-        settled = true;
-        unsub();
         const err = data as { error?: string; code?: string; status?: number };
         const e = new Error(err.error ?? "Multimode generation failed") as Error & { code?: string; status?: number };
         e.code = err.code;
         e.status = err.status;
-        reject(e);
+        finish(() => reject(e));
       }
+    });
+    const clearTimer = armStreamTimeout(() => {
+      finish(() => {
+        void cancelInflight(requestId);
+        reject(new Error("Multimode generation stream timed out"));
+      });
     });
 
     if (options.signal) {
       if (options.signal.aborted) {
-        settled = true;
-        unsub();
-        void cancelInflight(requestId);
-        reject(new DOMException("Aborted", "AbortError"));
+        finish(() => {
+          void cancelInflight(requestId);
+          reject(new DOMException("Aborted", "AbortError"));
+        });
         return;
       }
       options.signal.addEventListener("abort", () => {
-        if (settled) return;
-        settled = true;
-        unsub();
-        void cancelInflight(requestId);
-        reject(new DOMException("Aborted", "AbortError"));
+        finish(() => {
+          void cancelInflight(requestId);
+          reject(new DOMException("Aborted", "AbortError"));
+        });
       }, { once: true });
     }
   });
@@ -219,40 +227,48 @@ export async function postVideoGenerateStream(
 
   return new Promise<VideoGenerateDone>((resolve, reject) => {
     let settled = false;
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimer();
+      unsub();
+      fn();
+    };
     const unsub = subscribe(requestId, null, (event, data) => {
       if (settled) return;
       if (event === "planning") handlers.onPlanning?.();
       else if (event === "submitted") handlers.onSubmitted?.(data as { xaiVideoRequestId?: string });
       else if (event === "progress") handlers.onProgress?.(data as { progress?: number | null; stalled?: boolean });
       else if (event === "done") {
-        settled = true;
-        unsub();
-        resolve(data as unknown as VideoGenerateDone);
+        finish(() => resolve(data as unknown as VideoGenerateDone));
       } else if (event === "error") {
-        settled = true;
-        unsub();
         const err = data as { error?: string; code?: string; status?: number };
         const e = new Error(err.error ?? "Video generation failed") as Error & { code?: string; status?: number };
         e.code = err.code;
         e.status = err.status;
-        reject(e);
+        finish(() => reject(e));
       }
+    });
+    const clearTimer = armStreamTimeout(() => {
+      finish(() => {
+        void cancelInflight(requestId);
+        reject(new Error("Video generation stream timed out"));
+      });
     });
 
     if (options.signal) {
       if (options.signal.aborted) {
-        settled = true;
-        unsub();
-        void cancelInflight(requestId);
-        reject(new DOMException("Aborted", "AbortError"));
+        finish(() => {
+          void cancelInflight(requestId);
+          reject(new DOMException("Aborted", "AbortError"));
+        });
         return;
       }
       options.signal.addEventListener("abort", () => {
-        if (settled) return;
-        settled = true;
-        unsub();
-        void cancelInflight(requestId);
-        reject(new DOMException("Aborted", "AbortError"));
+        finish(() => {
+          void cancelInflight(requestId);
+          reject(new DOMException("Aborted", "AbortError"));
+        });
       }, { once: true });
     }
   });

@@ -1,5 +1,5 @@
 import type { ImageModel, Provider } from "../types";
-import { subscribe, ensureConnected } from "./eventChannel";
+import { subscribe, ensureConnected, armStreamTimeout } from "./eventChannel";
 import { cancelInflight } from "./api-inflight";
 
 export type NodeGenerateRequest = {
@@ -97,6 +97,13 @@ export async function postNodeGenerateStream(
 
   return new Promise<NodeGenerateResponse>((resolve, reject) => {
     let settled = false;
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimer();
+      unsub();
+      fn();
+    };
     const unsub = subscribe(requestId, null, (event, data) => {
       if (settled) return;
       if (event === "partial") {
@@ -104,35 +111,36 @@ export async function postNodeGenerateStream(
       } else if (event === "phase") {
         handlers.onPhase?.(data as { phase?: string; requestId?: string | null });
       } else if (event === "done") {
-        settled = true;
-        unsub();
-        resolve(data as unknown as NodeGenerateResponse);
+        finish(() => resolve(data as unknown as NodeGenerateResponse));
       } else if (event === "error") {
-        settled = true;
-        unsub();
         const err = data as { error?: { code?: string; message?: string }; status?: number };
         const msg = err?.error?.message ?? "Node generation failed";
         const e = new Error(msg) as Error & { code?: string; status?: number };
         e.code = err?.error?.code;
         e.status = err?.status;
-        reject(e);
+        finish(() => reject(e));
       }
+    });
+    const clearTimer = armStreamTimeout(() => {
+      finish(() => {
+        void cancelInflight(requestId);
+        reject(new Error("Node generation stream timed out"));
+      });
     });
 
     if (options.signal) {
       if (options.signal.aborted) {
-        settled = true;
-        unsub();
-        void cancelInflight(requestId);
-        reject(new DOMException("Aborted", "AbortError"));
+        finish(() => {
+          void cancelInflight(requestId);
+          reject(new DOMException("Aborted", "AbortError"));
+        });
         return;
       }
       options.signal.addEventListener("abort", () => {
-        if (settled) return;
-        settled = true;
-        unsub();
-        void cancelInflight(requestId);
-        reject(new DOMException("Aborted", "AbortError"));
+        finish(() => {
+          void cancelInflight(requestId);
+          reject(new DOMException("Aborted", "AbortError"));
+        });
       }, { once: true });
     }
   });

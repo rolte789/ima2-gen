@@ -6,21 +6,31 @@ interface Subscription {
   handler: EventHandler;
 }
 
+/** Max wait for done/error after async POST accepts the job (30 min). */
+export const JOB_STREAM_TIMEOUT_MS = 30 * 60 * 1000;
+
 let source: EventSource | null = null;
 let lastEventId = "";
 const subs: Set<Subscription> = new Set();
 let resyncCallback: (() => void) | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let wasEverConnected = false;
 
 const EVENT_TYPES = ["phase", "partial", "image", "done", "error", "submitted", "progress", "planning"];
 
+function buildEventsUrl(): string {
+  if (!lastEventId) return "/api/events";
+  return `/api/events?lastEventId=${encodeURIComponent(lastEventId)}`;
+}
+
 function connect() {
   if (source && source.readyState !== EventSource.CLOSED) return;
-  source = new EventSource("/api/events");
+  source = new EventSource(buildEventsUrl());
 
   source.onopen = () => {
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
-    if (lastEventId) resyncCallback?.();
+    if (wasEverConnected) resyncCallback?.();
+    wasEverConnected = true;
   };
 
   for (const type of EVENT_TYPES) {
@@ -39,6 +49,7 @@ function dispatch(eventType: string, ev: MessageEvent) {
   let data: Record<string, unknown>;
   try { data = JSON.parse(ev.data); } catch { return; }
   const jobId = (data.jobId ?? data.requestId ?? "") as string;
+  if (!jobId) return;
   for (const sub of subs) {
     if (sub.jobId !== jobId) continue;
     if (sub.event !== null && sub.event !== eventType) continue;
@@ -57,6 +68,11 @@ export function subscribe(
   return () => { subs.delete(sub); };
 }
 
+export function armStreamTimeout(onTimeout: () => void, ms = JOB_STREAM_TIMEOUT_MS): () => void {
+  const timer = setTimeout(onTimeout, ms);
+  return () => clearTimeout(timer);
+}
+
 export function onResync(cb: () => void) {
   resyncCallback = cb;
 }
@@ -67,6 +83,7 @@ export function disconnect() {
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
   subs.clear();
   lastEventId = "";
+  wasEverConnected = false;
 }
 
 export function ensureConnected() {
