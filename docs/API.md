@@ -277,7 +277,7 @@ Body fields:
 }
 ```
 
-When `parentNodeId` is present, the server loads the stored parent node image and uses the edit path. Extra node references are currently supported only for root nodes.
+When `parentNodeId` is present, the server loads the stored parent node image and uses the edit path. Node-local references are allowed on both root and child/edit nodes; for child/edit nodes the parent image is sent first, then references, then the text prompt.
 
 With `provider: "grok"`, Node Mode uses the same xAI search + `grok-4.3` planner + Images API pipeline as classic generation. A parent node image, `externalSrc`, or extra references are passed to the planner and then to xAI `/v1/images/edits`; otherwise the final call uses `/v1/images/generations`. Grok Node requests are capped at three total input images, counting the parent/current image plus references, and return `GROK_REF_TOO_MANY` before upstream when that limit is exceeded. `quality: "high"` promotes the final image model to `grok-imagine-image-quality`.
 
@@ -377,7 +377,7 @@ Generate a video via the Grok video provider. Returns Server-Sent Events on the 
 | Field | Type | Default | Notes |
 |---|---|---|---|
 | `prompt` | string | — | Required |
-| `provider` | string | `"grok"` | Must be `"grok"` |
+| `provider` | string | `"grok"` | `"grok"` or `"grok-api"` |
 | `model` | string | `grok-imagine-video` | Video model |
 | `duration` | integer | `5` | 1–15 seconds (clamped to 10 for reference-to-video) |
 | `resolution` | string | `"480p"` | `480p` or `720p` |
@@ -646,7 +646,7 @@ Most server routes under `/api/*` have a CLI wrapper. The exception is **Agent M
 | `POST /api/node/generate` (SSE) / `GET /api/node/:id` | `ima2 node generate` / `ima2 node show` |
 | `GET /api/history` | `ima2 ls` |
 | `DELETE /api/history/:name` / `…/permanent` | `ima2 history rm [--permanent]` |
-| `POST /api/history/restore` | `ima2 history restore --trash-id` |
+| `POST /api/history/:filename/restore` | `ima2 history restore --trash-id` |
 | `POST /api/history/favorite` | `ima2 history favorite` |
 | `POST /api/history/import-local` | `ima2 history import` |
 | `POST /api/metadata/read` | `ima2 metadata` / `ima2 show --metadata` |
@@ -668,6 +668,9 @@ Most server routes under `/api/*` have a CLI wrapper. The exception is **Agent M
 | `POST /api/auth/switch` / `GET /api/auth/switch/:sessionId` | Web UI only (Settings > QuotaCard > Switch Account) |
 | `GET /api/health` | `ima2 ping` |
 | `GET /api/capabilities` | `ima2 capabilities` |
+| `GET /api/config/grok-planner` | — (Grok planner model query) |
+| `PATCH /api/config/grok-planner` | — (Grok planner model update) |
+| `GET /api/agy/status` | — (Antigravity CLI install status) |
 | `POST /api/history/backfill-thumbnails` | `ima2 backfill-thumbs` |
 | `GET /api/keys/status`, `PUT/DELETE /api/keys/:provider`, `PUT/DELETE /api/keys/vertex` | Web UI only (Settings > API Keys) |
 | `GET/POST/PATCH/DELETE /api/agent/*` (sessions, turns, queue) | — (Agent Mode; web UI only, no CLI) |

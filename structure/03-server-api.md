@@ -189,7 +189,10 @@ All events carry: `id` (global monotonic seq), `event` (type name), `data` (JSON
 | `image` | multimode | full `GenerateItem` |
 | `done` | node, multimode, video | route-specific response |
 | `error` | routes + `abortJob` | `{ requestId, error, code?, status? }` |
-| `replay-gap` | events route | `{ oldestId, requestedId }` |
+| `replay-gap` | events route | `{ lastEventId, oldestAvailableId }` |
+| `submitted` | video | `{ requestId, jobId }` |
+| `progress` | video | `{ requestId, progress (0–100) }` |
+| `planning` | video | `{ requestId, status }` |
 
 ### Async generation (UI path)
 
@@ -208,7 +211,7 @@ POST routes (`/api/node/generate`, `/api/generate/multimode`, `/api/video/genera
 
 When `parentNodeId` is present, the server reads the stored parent image and uses the edit path. Node-local `references` are allowed on both root and child/edit nodes. For child/edit nodes, the parent image is sent first, then reference images, then the text prompt. `refsCount` is stored as numeric metadata only; reference image base64 is not written to sidecars. `externalSrc` is a controlled fallback for promoting an existing history asset into a node workflow.
 
-Node context is explicit. `contextMode` defaults to `parent-plus-refs`, meaning immediate parent image plus explicit node-local references. `parent-only` drops explicit references. `ancestry` is reserved but currently rejected with `CONTEXT_MODE_UNSUPPORTED` so clients cannot accidentally assume full-chain context. Edit web search is explicit too: `searchMode` defaults to `off`; `on` enables the edit research prompt and OAuth web-search tool. Root generation can still use search through the normal generation path.
+Node context is explicit. `contextMode` defaults to `parent-plus-refs`, meaning immediate parent image plus explicit node-local references. `parent-only` drops explicit references. `ancestry` is reserved but currently rejected with `CONTEXT_MODE_UNSUPPORTED` so clients cannot accidentally assume full-chain context. Edit web search is explicit too: `searchMode` defaults to `on`; `off` disables the edit research prompt and OAuth web-search tool. Root generation can still use search through the normal generation path.
 
 `/api/node/generate` also supports an SSE response when the client sends `Accept: text/event-stream`. In that mode validation still happens before headers are opened. After the stream opens, the server may emit `phase`, `partial`, `done`, and `error` events. Root generation opts into OAuth `partial_images: 2`; child/edit generation stays final-only for now. If an upstream stream error happens after headers are committed, the outer HTTP status may remain `200`; clients must read the SSE `error` event and node state. Clients must treat partial events as progressive previews only and use the `done` payload as the canonical saved node.
 

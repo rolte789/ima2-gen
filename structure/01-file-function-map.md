@@ -42,6 +42,7 @@ routes/
   canvasVersions.ts     POST/PUT /api/canvas-versions
   comfy.ts              POST /api/comfy/export-image
   edit.ts               POST /api/edit
+  events.ts             GET /api/events — SSE multiplexing endpoint
   generate.ts           POST /api/generate
   multimode.ts          POST /api/generate/multimode
   nodes.ts              POST /api/node/generate, GET /api/node/:nodeId
@@ -51,6 +52,12 @@ routes/
   health.ts             providers/health/oauth/inflight/billing
   storage.ts            storage status/open generated dir
   metadata.ts           POST /api/metadata/read
+  capabilities.ts       GET /api/capabilities, GET/PATCH /api/config/grok-planner
+  keys.ts               GET/PUT/DELETE /api/keys/:provider, /api/keys/vertex
+  auth.ts               POST /api/auth/switch, GET /api/auth/switch/:sessionId
+  quota.ts              GET /api/quota
+  grok.ts               GET /api/grok/status + progrok helpers
+  agy.ts                GET /api/agy/status + Antigravity CLI bridge
   prompts.ts            prompt CRUD/folders/import/export
   promptImport.ts       curated/discovery/folder/preview/commit import routes
   cardNews.ts           dev-gated /api/cardnews/*
@@ -63,8 +70,8 @@ routes/
 |---|---:|---|
 | `server.ts` | 255 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, route registration, static serving |
 | `config.ts` | 333 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
-| `routes/index.ts` | 44 | Route registration hub: health, capabilities, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, annotations, canvasVersions, comfy, prompts, prompt import, and (when `features.cardNews`) cardNews |
-| `routes/capabilities.ts` | 18 | `GET /api/capabilities` — agent-facing runtime defaults, supported/unsupported models, valid values, and limits (allowlist projection) |
+| `routes/index.ts` | 44 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, and (when `features.cardNews`) cardNews |
+| `routes/capabilities.ts` | 34 | `GET /api/capabilities` — agent-facing runtime defaults; `GET/PATCH /api/config/grok-planner` — Grok planner model query/update |
 | `routes/generate.ts` | 439 | Classic generation API, model validation, reference validation, provider/web-search/reasoning-effort plumbing, cancellation, upstream validation pass-through, sidecar save |
 | `routes/edit.ts` | 281 | Edit API, mask validation, cancellation, OAuth/API edit response save, provider/web-search/reasoning-effort plumbing |
 | `routes/multimode.ts` | 458 | `POST /api/generate/multimode` SSE orchestrator: multimode inflight state, incremental final-image save/send, partial timeout, cancellation, provider/web-search/reasoning-effort plumbing |
@@ -88,7 +95,7 @@ routes/
 | `routes/events.ts` | 68 | `GET /api/events` — SSE multiplexing endpoint; single persistent stream for all async job progress; ring replay + `replay-gap` + heartbeat |
 | `lib/eventBus.ts` | 60 | Global pub/sub event bus with ring buffer (2000), monotonic `seq`, `replaySince`, `hasReplayGap` |
 | `lib/ssePublish.ts` | 16 | `publishJobEvent` — terminal `done` suppression after cancel (cancel↔done race guard) |
-| `ui/src/lib/eventChannel.ts` | 90 | Browser singleton `EventSource` for `/api/events`; exponential backoff reconnect; `subscribe(jobId)` routing |
+| `ui/src/lib/eventChannel.ts` | 124 | Browser singleton `EventSource` for `/api/events`; exponential backoff reconnect; `subscribe(jobId)` routing; connection state callbacks; `armStreamTimeout`; `ensureConnected` |
 | `ui/src/lib/sseStreamError.ts` | 24 | Shared `parseSseErrorPayload` — normalizes flat/nested SSE error shapes |
 | `bin/ima2.ts` | 444 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
 | `bin/commands/gen.ts` | 214 | CLI image-generation client with references, provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, and output-dir options |

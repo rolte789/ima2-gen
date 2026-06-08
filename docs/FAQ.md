@@ -348,6 +348,22 @@ Use the host and port from your proxy client. If `ima2-gen` still fails after th
 
 GPT OAuth may require access to OpenAI and ChatGPT/Codex-related hosts. A corporate firewall, TLS inspection, VPN, or proxy can break the flow. Try a different network if login and `failed to fetch` errors keep repeating.
 
+## SSE Multiplexing
+
+### Why does the web UI use a single SSE connection?
+
+Browsers limit the number of concurrent HTTP connections to the same origin (typically 6). When generating multiple images at once, each generation request used to hold a Server-Sent Events connection open. With multimode, node, and video running simultaneously, the browser would run out of connections and gallery thumbnails would hang.
+
+The web UI now opens a single persistent `GET /api/events` SSE connection and all generation progress is multiplexed through it. Generation requests use `async: true` and receive an immediate `202 { requestId }` response, freeing the connection immediately. The CLI is unaffected — it still uses per-request SSE when `async` is not set.
+
+### What happens if the SSE connection drops?
+
+The event channel client reconnects automatically with exponential backoff. On reconnect, it sends `Last-Event-ID` so the server can replay missed events from its ring buffer (up to 2000 entries). If events have been evicted from the buffer, the server sends a `replay-gap` event so the client knows some updates may have been lost.
+
+### What is the maximum number of concurrent jobs?
+
+The server caps concurrent generation jobs at 12 (`MAX_CONCURRENT_JOBS`). Additional requests receive `429` with `Retry-After: 5`. The SSE endpoint itself caps at 512 simultaneous connections.
+
 ## CLI troubleshooting checklist
 
 Run these in order:

@@ -116,7 +116,21 @@ Visible metadata should carry the selected model too. Current result metadata, h
 
 Node mode uses `@xyflow/react`. Empty canvas creates a root node. Dragging an edge from an existing node can create a child node. Session loading displays a canvas overlay.
 
-Node generation uses SSE first through `postNodeGenerateStream()`. Partial images are stored only in transient `ImageNodeData.partialImageUrl`; they are deleted from the graph save payload. The final `done` payload replaces the preview with the canonical saved file URL. If the server returns JSON instead of SSE, the client falls back to the final-only behavior. SSE `error` payloads preserve `status` so upstream validation failures can route to the same UI surface as JSON failures.
+### SSE Multiplexing (Event Channel)
+
+The web UI uses a singleton `EventSource` connection (`ui/src/lib/eventChannel.ts`) to `GET /api/events` for all generation progress. On `App.tsx` mount, `ensureConnected()` opens the channel. Generation flows (multimode, node, video) subscribe a handler by `requestId` before the POST, then send `{ async: true, requestId }` to receive an immediate `202`. Progress events (`phase`, `partial`, `done`, `error`) arrive on the shared channel and are routed to the matching handler.
+
+Key modules:
+- `ui/src/lib/eventChannel.ts` — singleton EventSource, exponential backoff reconnect, `subscribe()` / `armStreamTimeout()` / `ensureConnected()`, connection state callbacks
+- `ui/src/lib/sseStreamError.ts` — `parseSseErrorPayload()` normalizes SSE error events into structured `{ code, message, status }` objects
+- `ui/src/lib/api-generation.ts` — `postMultimodeGenerateStream()` and `postNodeGenerateStream()` use subscribe-before-fetch pattern
+- `ui/src/store/storeNodeGenImpl.ts` — node generation state using async POST + eventChannel
+- `ui/src/store/storeVideoImpl.ts` — video generation state with cancel-aware cleanup
+- `ui/src/store/storeInflightImpl.ts` — shared inflight tracking with `activeFlightIds` Set
+
+The monolithic `useAppStore` was split into focused `store*Impl.ts` modules to keep each under 500 lines. The main `useAppStore.ts` re-exports composed slices.
+
+Node generation uses `postNodeGenerateStream()` which subscribes to the event channel, sends `{ async: true }`, and receives progress through the shared `GET /api/events` SSE. Partial images are stored only in transient `ImageNodeData.partialImageUrl`; they are deleted from the graph save payload. The final `done` payload replaces the preview with the canonical saved file URL. CLI clients that send `Accept: text/event-stream` instead of `async: true` still receive per-request SSE for backward compatibility. SSE `error` payloads preserve `status` so upstream validation failures can route to the same UI surface as JSON failures.
 
 Node selection batch actions live on the canvas, not in Settings. `NodeCanvas` exposes a compact selection bar inside the React Flow area. Selection mode treats a normal node click as selecting the whole undirected connected component. Cmd/Ctrl modifies that selection: another component is added/removed, while a node inside the selected component can be toggled as an exception. Batch regeneration is sequential and in-place for selected nodes only; it does not use the single-node ready-state sibling branch.
 
@@ -126,7 +140,7 @@ Node-local image references are allowed on child/edit nodes. The child composer 
 
 Node edges are the source of truth for parentage. `ui/src/lib/nodeGraph.ts` derives `parentServerNodeId` from the incoming visual edge and the source node's current `serverNodeId` whenever nodes or edges are loaded, changed, connected, disconnected, or saved. `ImageNode` exposes four-direction source and target handles, and `NodeCanvas` forwards React Flow `sourceHandle`/`targetHandle` values into the store so edges reload on the same directional anchors. The handle ids are persisted in session edge `data`; parent derivation still uses only `edge.source` and `edge.target`. Node edge removal is routed explicitly instead of relying on raw React Flow edge changes. When an edge is removed, `useAppStore.disconnectEdges()` removes the visual edge and clears or recomputes the target node's `parentServerNodeId`. Selection mode disables Delete/Backspace deletion so graph selection cannot accidentally remove edges or nodes.
 
-Node generation sends an explicit context/search policy. The default request is `contextMode: "parent-plus-refs"` and `searchMode: "off"`, so a child edit uses only the immediate parent image plus the node's explicit reference chips. Full ancestry is not silently inferred. If edit search becomes a product option, the UI must turn `searchMode` on intentionally.
+Node generation sends an explicit context/search policy. The default request is `contextMode: "parent-plus-refs"` and `searchMode: "on"`, so a child edit uses the immediate parent image plus the node's explicit reference chips with web search enabled by default. Full ancestry is not silently inferred. If edit search becomes a product option, the UI must turn `searchMode` on intentionally.
 
 Error handling is centralized. API helpers preserve `err.code` where the server sends `{ error: { code, message } }`; node helpers also preserve `err.status` from JSON or SSE error payloads. `handleError()` maps stable codes to either a toast or persistent `ErrorCard`. The card is reserved for actionable failures such as invalid request parameters, OAuth expiry, API-key authentication problems, moderation refusal, upstream 5xx, and network/proxy failure.
 
