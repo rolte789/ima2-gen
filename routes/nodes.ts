@@ -6,7 +6,7 @@ import {
   loadNodeMeta,
   loadAssetB64,
 } from "../lib/nodeStore.js";
-import { startJob, finishJob, registerJobAbortController, isJobCanceled, INFLIGHT_RETRY_AFTER_SECONDS } from "../lib/inflight.js";
+import { startJob, finishJob, registerJobAbortController, isJobCanceled, isStartJobFailure, INFLIGHT_RETRY_AFTER_SECONDS } from "../lib/inflight.js";
 import {
   isGenerationCanceledError,
   makeGenerationCanceledError,
@@ -180,7 +180,7 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           referenceB64Chars: referencePayload.referenceB64Chars,
         },
       });
-      if (started && !started.ok) {
+      if (started && isStartJobFailure(started)) {
         finishStatus = "error";
         finishHttpStatus = started.code === "TOO_MANY_JOBS" ? 429 : 409;
         finishErrorCode = started.code;

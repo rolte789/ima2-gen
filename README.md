@@ -69,7 +69,7 @@ Each script checks for nvm/fnm/brew/winget, installs Node LTS through the best a
 1. **GPT OAuth** — login with ChatGPT account (free, images only)
 2. **Grok OAuth** — login with xAI/Grok account (images + video)
 3. **Both** — GPT OAuth + Grok OAuth (full feature access)
-4. **API Key** — paste your OpenAI API key (paid)
+4. **Web setup** — configure everything in the web UI
 
 Video generation requires Grok OAuth (option 2 or 3). Run `ima2 grok login` separately if you already have GPT OAuth configured and want to add video support; it defaults to the manual-paste flow.
 

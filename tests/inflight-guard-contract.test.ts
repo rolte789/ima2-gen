@@ -27,7 +27,7 @@ test("nodes, multimode, and video routes map startJob failures to 409 and 429", 
   for (const relPath of ["routes/nodes.ts", "routes/multimode.ts", "routes/video.ts"]) {
     const src = readSource(relPath);
     assert.match(src, /const started = startJob\(/);
-    assert.match(src, /if \(started && !started\.ok\)/);
+    assert.match(src, /if \(started && isStartJobFailure\(started\)\)/);
     assert.match(src, /started\.code === "TOO_MANY_JOBS" \? 429 : 409/);
     assert.match(src, /REQUEST_ID_IN_USE|TOO_MANY_JOBS/);
     assert.match(src, /Retry-After/);

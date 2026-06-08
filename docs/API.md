@@ -94,8 +94,80 @@ Storage `state` values:
 | `GET` | `/api/inflight` | Active jobs only by default |
 | `GET` | `/api/inflight?includeTerminal=1` | Includes recent terminal jobs for debugging |
 | `DELETE` | `/api/inflight/:requestId` | Cancel or forget an active job |
+| `GET` | `/api/events` | Persistent SSE multiplex channel for all async generation progress (see below) |
 
 In-flight logs and responses use `requestId` for correlation. Logs should not include raw prompts, reference data URLs, generated base64, tokens, cookies, auth headers, or raw upstream bodies.
+
+## Events (SSE Multiplexing)
+
+### `GET /api/events` (SSE Multiplexing)
+
+Single persistent Server-Sent Events channel that carries progress for all async generation jobs. The browser UI opens one `EventSource` here instead of holding a per-request SSE connection for each job, avoiding browser per-origin connection limits.
+
+| Query | Notes |
+|---|---|
+| `lastEventId` | Optional. Reconnect cursor; also accepted via the `Last-Event-ID` request header |
+
+**Response**: `text/event-stream` (persistent). Each frame uses standard SSE fields `id`, `event`, and `data` (JSON).
+
+**Connection limits**: When active listeners reach 512, the server returns `503` with `SSE_CAPACITY` before opening the stream.
+
+**Heartbeat**: Every 15 seconds the server writes a comment frame:
+
+```text
+: ping
+```
+
+**Replay**: On reconnect, the server replays events from an in-memory ring buffer (size 2000) for IDs newer than `lastEventId`. Large image payloads (>1000 characters) are omitted from replay with `_imageOmitted: true` in the `data` payload. If the requested ID is older than the oldest buffered event, the server emits a `replay-gap` event before live fan-out:
+
+| Event | Data | Description |
+|---|---|---|
+| `replay-gap` | `{ lastEventId, oldestAvailableId }` | Client should reconcile inflight state (for example via `GET /api/inflight`) |
+
+**Job routing**: Every `data` payload includes `jobId` (same value as the job's `requestId`). Event bodies also carry `requestId` where applicable. Clients filter events by matching `data.jobId` or `data.requestId` to the job they started.
+
+**Event types** (fan-out to all connected clients):
+
+| Event | Emitted by | Description |
+|---|---|---|
+| `phase` | node, multimode, video | Lifecycle phase change |
+| `partial` | node, multimode | Progressive preview image (base64 data URL) |
+| `image` | multimode | Final saved `GenerateItem` for one sequence image |
+| `done` | node, multimode, video | Terminal success payload (route-specific shape) |
+| `error` | all generation routes | Terminal failure |
+| `submitted` | video | Job submitted to xAI |
+| `progress` | video | Progress fraction 0.0–1.0 |
+| `planning` | video | Video planner running |
+
+Example SSE frame:
+
+```text
+id: 42
+event: phase
+data: {"requestId":"req_abc","jobId":"req_abc","phase":"streaming"}
+```
+
+### Async generation mode
+
+`POST /api/node/generate`, `POST /api/generate/multimode`, and `POST /api/video/generate` support an async POST mode for clients that already hold `GET /api/events`:
+
+```json
+{
+  "async": true,
+  "requestId": "req_xxx",
+  "...": "other route fields"
+}
+```
+
+| Outcome | HTTP | Body |
+|---|---|---|
+| Accepted | `202` | `{ "requestId": "req_xxx" }` |
+| Duplicate active `requestId` | `409` | `REQUEST_ID_IN_USE` |
+| More than 12 concurrent active jobs | `429` | `TOO_MANY_JOBS` with `Retry-After: 5` |
+
+Progress events are published on `GET /api/events`. The POST response returns immediately; clients must not expect SSE on the POST connection when `async: true`.
+
+CLI and legacy clients omit `async` and keep the original behavior: per-request SSE on the same POST response (`Accept: text/event-stream` where applicable). The server dual-emits in that mode — it writes SSE to the POST response and also publishes the same events on `GET /api/events`.
 
 ## Generation
 
@@ -209,9 +281,41 @@ When `parentNodeId` is present, the server loads the stored parent node image an
 
 With `provider: "grok"`, Node Mode uses the same xAI search + `grok-4.3` planner + Images API pipeline as classic generation. A parent node image, `externalSrc`, or extra references are passed to the planner and then to xAI `/v1/images/edits`; otherwise the final call uses `/v1/images/generations`. Grok Node requests are capped at three total input images, counting the parent/current image plus references, and return `GROK_REF_TOO_MANY` before upstream when that limit is exceeded. `quality: "high"` promotes the final image model to `grok-imagine-image-quality`.
 
-The route can stream Server-Sent Events when the client sends `Accept: text/event-stream`. Possible events include `phase`, `partial`, `done`, and `error`.
+The route can stream Server-Sent Events when the client sends `Accept: text/event-stream`. Possible events include `phase`, `partial`, `done`, and `error`. Alternatively, send `{ "async": true, "requestId": "req_xxx" }` in the body to receive `202 { requestId }` immediately and follow progress on `GET /api/events` (see Events section).
 
 Grok Node SSE responses do not include Responses API `partial` image events because the xAI Images API call is synchronous JSON. They still emit `phase` and `done`/`error` events so the Node UI can use the same in-flight lifecycle.
+
+### `POST /api/generate/multimode` (SSE)
+
+Multi-image sequence generation. SSE-only on the POST response unless async mode is used.
+
+```json
+{
+  "prompt": "a story in four panels",
+  "maxImages": 4,
+  "quality": "medium",
+  "size": "1024x1024",
+  "format": "png",
+  "moderation": "low",
+  "model": "gpt-5.4",
+  "provider": "oauth",
+  "references": [],
+  "requestId": "optional-client-id",
+  "async": false
+}
+```
+
+Send `Accept: text/event-stream` for per-request SSE on the POST connection. Or set `"async": true` with a client `requestId` to get `202 { requestId }` and receive events on `GET /api/events`.
+
+**SSE events**:
+
+| Event | Data | Description |
+|---|---|---|
+| `phase` | `{ requestId, phase, sequenceId?, maxImages? }` | Lifecycle phase |
+| `partial` | `{ requestId, image, index }` | Progressive preview |
+| `image` | full `GenerateItem` | One saved sequence image |
+| `done` | route-specific summary; may include `status: "partial"` after timeout if at least one image was saved | Sequence complete |
+| `error` | `{ requestId, error, code?, status? }` | Generation failed |
 
 ### `GET /api/node/:nodeId`
 
@@ -238,7 +342,7 @@ Server-side validation may return these reference codes:
 
 ### `POST /api/video/generate` (SSE)
 
-Generate a video via the Grok video provider. Returns Server-Sent Events.
+Generate a video via the Grok video provider. Returns Server-Sent Events on the POST connection, or accepts async mode (`{ "async": true, "requestId": "req_xxx" }`) for `202 { requestId }` with progress on `GET /api/events` (see Events section).
 
 ```json
 {
@@ -498,6 +602,9 @@ Style-sheet extraction can require an API key/openai client. Image generation al
 | `GEMINI_API_SAFETY_BLOCKED` | Gemini API generation blocked by safety filter |
 | `GEMINI_API_NO_IMAGE` | Gemini API returned no image in response |
 | `VIDEO_PROVIDER_UNSUPPORTED` | Video generation requires provider `"grok"` or `"grok-api"` |
+| `SSE_CAPACITY` | More than 512 concurrent `GET /api/events` listeners |
+| `REQUEST_ID_IN_USE` | Async POST used a `requestId` that already has an active job |
+| `TOO_MANY_JOBS` | More than 12 concurrent active generation jobs (`Retry-After: 5`) |
 
 ## Key Management
 
@@ -554,6 +661,7 @@ Most server routes under `/api/*` have a CLI wrapper. The exception is **Agent M
 | `…/api/cardnews/…` (gated on `features.cardNews`) | `ima2 cardnews …` |
 | `POST /api/comfy/export-image` | `ima2 comfy export` |
 | `GET /api/inflight` / `DELETE /api/inflight/:id` | `ima2 inflight ls` (alias `ps`) / `ima2 inflight rm` (alias `cancel`) |
+| `GET /api/events` (SSE multiplex) | Web UI only (persistent `EventSource`; no CLI wrapper) |
 | `GET /api/storage/status` / `POST /api/storage/open-generated-dir` | `ima2 storage status` / `ima2 storage open` |
 | `GET /api/billing` / `GET /api/providers` / `GET /api/oauth/status` / `GET /api/grok/status` | `ima2 billing` / `ima2 providers` / `ima2 oauth status` / `ima2 grok status` |
 | `GET /api/quota` | `ima2 billing` (includes Grok `usedUsd`/`limitUsd`) |
@@ -568,7 +676,7 @@ Most server routes under `/api/*` have a CLI wrapper. The exception is **Agent M
 Notes:
 - `ima2 history favorite` and `ima2 annotate …` send `X-Ima2-Browser-Id: cli-<sha1prefix>` derived from the config dir, so CLI activity does not collide with browser sessions.
 - `ima2 session graph save` performs a GET-then-PUT with `If-Match: "<version>"` to guard against `GRAPH_VERSION_CONFLICT`.
-- `ima2 history import` and `ima2 canvas-versions save/update` send raw bytes with `Content-Type: image/<png|jpeg|webp>`; the SSE endpoints (`multimode`, `node generate`) use `Accept: text/event-stream`.
+- `ima2 history import` and `ima2 canvas-versions save/update` send raw bytes with `Content-Type: image/<png|jpeg|webp>`; the SSE endpoints (`multimode`, `node generate`, `video`) use `Accept: text/event-stream`. The web UI instead uses `GET /api/events` plus `async: true` on POST routes.
 - `ima2 cardnews …` checks `runtimeConfig.features.cardNews` before calling the gated endpoints; when disabled the CLI exits 2 with a clear message instead of producing a 404.
 
 ## CLI Discovery

@@ -58,6 +58,10 @@ export const INFLIGHT_RETRY_AFTER_SECONDS = 5;
 export type StartJobFailureCode = "REQUEST_ID_IN_USE" | "TOO_MANY_JOBS";
 export type StartJobResult = { ok: true } | { ok: false; code: StartJobFailureCode };
 
+export function isStartJobFailure(r: StartJobResult): r is { ok: false; code: StartJobFailureCode } {
+  return !r.ok;
+}
+
 // Phases: "queued" → "streaming" (upstream connection open, waiting for image)
 //                 → "decoding" (b64 received, writing to disk)
 export function startJob({ requestId, kind, prompt, meta = {} }: {

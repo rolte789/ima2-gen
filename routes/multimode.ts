@@ -12,7 +12,7 @@ import { generateMultimodeViaResponses } from "../lib/responsesImageAdapter.js";
 import { generateMultimodeViaGrok } from "../lib/grokMultimodeAdapter.js";
 import { generateViaAgy } from "../lib/agyImageAdapter.js";
 import { generateViaGeminiApi } from "../lib/geminiApiImageAdapter.js";
-import { startJob, finishJob, registerJobAbortController, isJobCanceled, INFLIGHT_RETRY_AFTER_SECONDS } from "../lib/inflight.js";
+import { startJob, finishJob, registerJobAbortController, isJobCanceled, isStartJobFailure, INFLIGHT_RETRY_AFTER_SECONDS } from "../lib/inflight.js";
 import {
   isGenerationCanceledError,
   makeGenerationCanceledError,
@@ -198,7 +198,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
           composerInsertedPrompts,
         },
       });
-      if (started && !started.ok) {
+      if (started && isStartJobFailure(started)) {
         finishStatus = "error";
         finishHttpStatus = started.code === "TOO_MANY_JOBS" ? 429 : 409;
         finishErrorCode = started.code;

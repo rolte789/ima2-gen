@@ -24,5 +24,8 @@ __pycache__/
 /bin/lib/*.js
 *.tgz
 
+# Test experiment outputs (generated images)
+tests/experiments/
+
 # Runtime thumbnail/project cache
 cache/
