@@ -26,6 +26,7 @@ const historyListPath = join(__dirname, "..", "lib", "historyList.ts");
 const nodeRoutePath = join(__dirname, "..", "routes", "nodes.ts");
 const apiPath = join(__dirname, "..", "ui", "src", "lib", "api.ts");
 const nodeApiPath = join(__dirname, "..", "ui", "src", "lib", "nodeApi.ts");
+const asyncJobSubmitPath = join(__dirname, "..", "ui", "src", "lib", "asyncJobSubmit.ts");
 const responsesAdapterPath = join(__dirname, "..", "lib", "responsesImageAdapter.ts");
 
 const src = await readFile(serverPath, "utf8");
@@ -33,6 +34,7 @@ const historySrc = await readFile(historyListPath, "utf8");
 const nodeSrc = await readFile(nodeRoutePath, "utf8");
 const apiSrc = await readFile(apiPath, "utf8");
 const nodeApiSrc = await readFile(nodeApiPath, "utf8");
+const asyncJobSubmitSrc = await readFile(asyncJobSubmitPath, "utf8");
 const responsesAdapterSrc = await readFile(responsesAdapterPath, "utf8");
 
 // Ensure both suffix constants and the builder exist
@@ -47,7 +49,8 @@ assert.ok(nodeSrc.includes("userPrompt"), "node userPrompt meta field missing");
 assert.ok(nodeSrc.includes("refsCount"), "node refsCount meta field missing");
 assert.ok(nodeSrc.includes("partialImages: emitProgress ? 2 : 0"), "node partial_images opt-in missing");
 assert.ok(apiSrc.includes("postNodeGenerateStream"), "node SSE client missing");
-assert.ok(nodeApiSrc.includes("async: true"), "node async mode missing");
+assert.ok(nodeApiSrc.includes("submitAsyncJobWithCapacityRetry"), "node async submitter missing");
+assert.ok(asyncJobSubmitSrc.includes("async: true"), "async submitter mode missing");
 
 assert.equal(PROMPT_FIDELITY_SUFFIX, AUTO_PROMPT_FIDELITY_SUFFIX);
 assert.ok(AUTO_PROMPT_FIDELITY_SUFFIX.includes("treat the user's prompt as the source of truth"));

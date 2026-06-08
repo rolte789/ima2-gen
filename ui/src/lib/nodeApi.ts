@@ -2,6 +2,7 @@ import type { ImageModel, Provider } from "../types";
 import { subscribe, ensureConnected, armStreamTimeout } from "./eventChannel";
 import { cancelInflight } from "./api-inflight";
 import { parseSseErrorPayload } from "./sseStreamError";
+import { submitAsyncJobWithCapacityRetry } from "./asyncJobSubmit";
 
 export type NodeGenerateRequest = {
   parentNodeId: string | null;
@@ -125,20 +126,20 @@ export async function postNodeGenerateStream(
       }, { once: true });
     }
 
-    void fetch("/api/node/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...payload, async: true, requestId }),
-    }).then(async (res) => {
-      if (settled) return;
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({})) as NodeErrorResponse;
+    void submitAsyncJobWithCapacityRetry({
+      url: "/api/node/generate",
+      payload: payload as unknown as Record<string, unknown>,
+      requestId,
+      signal: options.signal,
+      parseError: (res, data: NodeErrorResponse) => {
         const msg = data?.error?.message ?? `Request failed: ${res.status}`;
         const e = new Error(msg) as Error & { code?: string; status?: number };
         e.code = data?.error?.code;
         e.status = data?.status ?? res.status;
-        finish(() => reject(e));
-      }
+        return e;
+      },
+    }).then(() => {
+      if (settled) return;
     }).catch((err) => {
       finish(() => reject(err instanceof Error ? err : new Error(String(err))));
     });

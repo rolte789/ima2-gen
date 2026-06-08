@@ -6,13 +6,13 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-test("async stream clients subscribe before POST fetch", () => {
+test("async stream clients subscribe before async POST submission", () => {
   for (const rel of ["ui/src/lib/api-generation.ts", "ui/src/lib/nodeApi.ts"]) {
     const src = readFileSync(join(root, rel), "utf8");
     const subscribeIdx = src.indexOf("subscribe(requestId");
-    const fetchIdx = src.indexOf('void fetch(');
+    const submitIdx = src.indexOf("void submitAsyncJobWithCapacityRetry");
     assert.ok(subscribeIdx >= 0, `${rel} must call subscribe(requestId)`);
-    assert.ok(fetchIdx >= 0, `${rel} must POST via fetch`);
-    assert.ok(subscribeIdx < fetchIdx, `${rel} must subscribe before fetch to avoid event loss`);
+    assert.ok(submitIdx >= 0, `${rel} must submit async POST work`);
+    assert.ok(subscribeIdx < submitIdx, `${rel} must subscribe before async POST to avoid event loss`);
   }
 });

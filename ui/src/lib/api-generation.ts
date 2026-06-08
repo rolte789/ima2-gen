@@ -9,6 +9,7 @@ import { jsonFetch } from "./api-core";
 import { subscribe, ensureConnected, armStreamTimeout } from "./eventChannel";
 import { cancelInflight } from "./api-inflight";
 import { parseSseErrorPayload } from "./sseStreamError";
+import { submitAsyncJobWithCapacityRetry } from "./asyncJobSubmit";
 
 export function postGenerate(payload: GenerateRequest): Promise<GenerateResponse> {
   return jsonFetch<GenerateResponse>("/api/generate", {
@@ -65,18 +66,18 @@ export async function postGenerateStream(
       }, { once: true });
     }
 
-    void fetch("/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...payload, async: true, requestId }),
-    }).then(async (res) => {
-      if (settled) return;
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({})) as Record<string, unknown>;
+    void submitAsyncJobWithCapacityRetry({
+      url: "/api/generate",
+      payload: payload as unknown as Record<string, unknown>,
+      requestId,
+      signal: options.signal,
+      parseError: (res, data: Record<string, unknown>) => {
         const err = parseSseErrorPayload(data, `Request failed: ${res.status}`);
         err.status = err.status ?? res.status;
-        finish(() => reject(err));
-      }
+        return err;
+      },
+    }).then(() => {
+      if (settled) return;
     }).catch((err) => {
       finish(() => reject(err instanceof Error ? err : new Error(String(err))));
     });
@@ -141,19 +142,19 @@ export async function postMultimodeGenerateStream(
       }, { once: true });
     }
 
-    void fetch("/api/generate/multimode", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...payload, async: true, requestId }),
-    }).then(async (res) => {
-      if (settled) return;
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({})) as { error?: string; code?: string; status?: number };
+    void submitAsyncJobWithCapacityRetry({
+      url: "/api/generate/multimode",
+      payload: payload as unknown as Record<string, unknown>,
+      requestId,
+      signal: options.signal,
+      parseError: (res, data: { error?: string; code?: string; status?: number }) => {
         const e = new Error(data.error ?? `Request failed: ${res.status}`) as Error & { code?: string; status?: number };
         e.code = data.code;
         e.status = data.status ?? res.status;
-        finish(() => reject(e));
-      }
+        return e;
+      },
+    }).then(() => {
+      if (settled) return;
     }).catch((err) => {
       finish(() => reject(err instanceof Error ? err : new Error(String(err))));
     });
@@ -320,19 +321,19 @@ export async function postVideoGenerateStream(
       }, { once: true });
     }
 
-    void fetch("/api/video/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ provider: "grok", ...payload, async: true, requestId }),
-    }).then(async (res) => {
-      if (settled) return;
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({})) as { error?: string; code?: string; status?: number };
+    void submitAsyncJobWithCapacityRetry({
+      url: "/api/video/generate",
+      payload: { provider: "grok", ...payload } as unknown as Record<string, unknown>,
+      requestId,
+      signal: options.signal,
+      parseError: (res, data: { error?: string; code?: string; status?: number }) => {
         const e = new Error(data.error ?? `Request failed: ${res.status}`) as Error & { code?: string; status?: number };
         e.code = data.code;
         e.status = data.status ?? res.status;
-        finish(() => reject(e));
-      }
+        return e;
+      },
+    }).then(() => {
+      if (settled) return;
     }).catch((err) => {
       finish(() => reject(err instanceof Error ? err : new Error(String(err))));
     });
