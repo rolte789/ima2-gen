@@ -27,16 +27,20 @@ export function startInFlightPollingImpl(
   get: StoreGet,
 ): void {
   if (typeof window === "undefined") return;
-  const w = window as unknown as { __ima2InflightTimer?: number };
+  const w = window as unknown as { __ima2InflightTimer?: number; __ima2StopTicks?: number };
   if (w.__ima2InflightTimer) return;
   const tick = async () => {
     const cur = get().inFlight;
     const shouldStop = cur.length === 0 && get().activeGenerations === 0;
     if (shouldStop) {
-      if (w.__ima2InflightTimer) {
+      w.__ima2StopTicks = (w.__ima2StopTicks ?? 0) + 1;
+      if (w.__ima2StopTicks >= 2 && w.__ima2InflightTimer) {
         clearInterval(w.__ima2InflightTimer);
         w.__ima2InflightTimer = undefined;
+        w.__ima2StopTicks = 0;
       }
+    } else {
+      w.__ima2StopTicks = 0;
     }
     let scopedActiveServerIds = new Set<string>();
     if (!shouldStop) try {

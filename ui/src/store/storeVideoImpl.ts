@@ -1,5 +1,6 @@
-import type { VideoContinuityLineage } from "../types";
+import type { GenerateItem, VideoContinuityLineage } from "../types";
 import { postVideoGenerateStream } from "../lib/api";
+import { addHistory } from "./storeGraphSave";
 import {
   deriveVideoModeUI,
   clampVideoDurationUI,
@@ -139,6 +140,24 @@ export async function runVideoGenerateImpl(
       get().scheduleGraphSave();
       void get().flushGraphSave("video-node-complete");
     }
+    if (result) {
+      const videoItem: GenerateItem = {
+        image: result.url,
+        filename: result.filename,
+        url: result.url,
+        mediaType: "video",
+        prompt,
+        elapsed: result.elapsed,
+        video: result.video as Record<string, unknown> ?? {},
+        videoSeries: result.videoSeries ?? null,
+        videoContinuity: result.videoContinuity ?? null,
+        revisedPrompt: result.revisedPrompt ?? null,
+        requestId: result.requestId ?? flightId,
+        createdAt: Date.now(),
+        sessionId: requestSessionId,
+      };
+      await addHistory(videoItem, set, get);
+    }
   } catch (error) {
     if (isCanceledGenerationError(error)) {
       if (node && get().activeSessionId === requestSessionId) {
@@ -202,7 +221,7 @@ export async function animateImageImpl(
   set({ inFlight: nextInFlight, activeGenerations: nextInFlight.length, videoProgress: 0 });
   get().startInFlightPolling();
   try {
-    await postVideoGenerateStream(
+    const result = await postVideoGenerateStream(
       { prompt: p, requestId: flightId, mode: "image-to-video", sourceFilename: filename, duration: 5, resolution: "480p", aspectRatio: "auto" },
       {
         onPlanning: () => set({ inFlight: get().inFlight.map((f) => f.id === flightId ? { ...f, phase: "planning" } : f) }),
@@ -210,6 +229,22 @@ export async function animateImageImpl(
         onProgress: ({ progress }) => set({ videoProgress: progress ?? null }),
       },
     );
+    const videoItem: GenerateItem = {
+      image: result.url,
+      filename: result.filename,
+      url: result.url,
+      mediaType: "video",
+      prompt: p,
+      elapsed: result.elapsed,
+      video: result.video as Record<string, unknown> ?? {},
+      videoSeries: result.videoSeries ?? null,
+      videoContinuity: result.videoContinuity ?? null,
+      revisedPrompt: result.revisedPrompt ?? null,
+      requestId: result.requestId ?? flightId,
+      createdAt: Date.now(),
+      sessionId: get().activeSessionId,
+    };
+    await addHistory(videoItem, set, get);
   } catch (error) {
     if (!isCanceledGenerationError(error)) {
       const message = error instanceof Error ? error.message : "Video generation failed";
