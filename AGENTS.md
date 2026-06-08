@@ -1,33 +1,49 @@
 # ima2-gen — AI Context
 
 ## What This Project Does
-GPT Image 2 (gpt-image-2) 이미지 생성기 CLI + 웹 UI
-- GPT OAuth (ChatGPT 계정) 또는 API Key 인증 지원
-- 텍스트→이미지, 이미지→이미지(편집) 생성
-- 병렬 생성 (최대 8장)
+Local image generation studio (v2.0.1) — CLI + 웹 UI
+- GPT OAuth, API Key, Grok, Gemini API, Antigravity CLI 다중 provider 지원
+- 텍스트→이미지, 이미지→이미지(편집), 비디오 생성
+- SSE 멀티플렉싱: 단일 `GET /api/events` SSE 채널 + async POST (202) 아키텍처
+- 병렬 생성 (최대 12건, 브라우저 연결 포화 없음)
 
 ## Tech Stack
 - Runtime: Node.js >=20 (ES Module)
 - Server: Express 5
 - API Client: OpenAI SDK v5
 - OAuth: openai-oauth (ChatGPT 세션 프록시)
+- Grok: bundled progrok (xAI Images API)
+- Gemini: Google Generative Language API / Vertex AI
 - Frontend: React + Vite (`ui/src`, built to `ui/dist`)
+- SSE: lib/eventBus.ts (ring buffer pub/sub) + routes/events.ts
 
 ## Project Structure
 ```
-image_gen/
+ima2-gen/
 ├── bin/                  # CLI entry + subcommands
-├── server.js             # Express bootstrap / static UI serving
-├── config.js             # Runtime config
-├── routes/               # API route modules (`*.ts` source)
-├── lib/                  # Server helpers (`*.ts` source + emitted/legacy `*.js`)
+├── server.ts             # Express bootstrap / static UI serving
+├── config.ts             # Runtime config
+├── routes/               # API route modules (*.ts source)
+│   ├── events.ts         # GET /api/events SSE multiplexing
+│   ├── multimode.ts      # Multimode batch (async POST + dual-emit)
+│   ├── nodes.ts          # Node mode (async POST + dual-emit)
+│   ├── video.ts          # Video generation (async POST + dual-emit)
+│   └── ...               # generate, edit, sessions, history, etc.
+├── lib/                  # Server helpers (*.ts source)
+│   ├── eventBus.ts       # Global pub/sub ring buffer (2000 events)
+│   ├── ssePublish.ts     # Cancel-done race guard
+│   ├── inflight.ts       # Job lifecycle tracking
+│   └── ...               # OAuth, storage, sessions, etc.
 ├── ui/src/               # React/Vite app source
+│   ├── lib/eventChannel.ts  # Singleton EventSource for /api/events
+│   ├── lib/sseStreamError.ts # SSE error parser
+│   └── store/store*Impl.ts  # Modular Zustand slices
 ├── ui/dist/              # Built frontend served by server.js
-├── site/                 # Astro marketing/docs site
+├── site/                 # Astro marketing/docs site (GitHub Pages)
 ├── integrations/comfyui/ # ComfyUI bridge/custom node
-├── structure/            # Current architecture reference docs
-├── devlog/               # `_plan`, `_fin`, `_spikes`
-├── tests/                # node:test contracts/regressions
+├── structure/            # Current architecture reference docs (00-07)
+├── devlog/               # _plan (active), _fin (archived)
+├── tests/                # node:test contracts/regressions (968 cases)
 └── package.json
 ```
 
@@ -46,9 +62,11 @@ image_gen/
 
 ## Test Command
 ```bash
-npm test
-cd ui && npx tsc -b --noEmit
-cd ui && npm run build
+npm run typecheck          # tsc --noEmit (server + lib)
+npm run typecheck:tests    # tsc --noEmit (test files)
+npm test                   # node:test (968 cases)
+npm run test:inventory     # verify test file registry
+cd ui && npm run build     # Vite production build
 ```
 
 ## Heartbeat
