@@ -97,6 +97,10 @@ Ctrl+C now performs a clean shutdown — closing the database, stopping child pr
 - **Mobile shell**: use the app bar, compose sheet, and compact settings toggle on smaller screens.
 - **Observable jobs**: active and recent jobs are tracked with safe logs and request IDs.
 
+### SSE Multiplexing
+
+The web UI uses a single `GET /api/events` Server-Sent Events connection for all generation progress. Multimode, node, and video requests are submitted as async POST (`202 { requestId }`) and progress events are multiplexed through a shared event bus. This eliminates the browser 6-connection limit that previously caused gallery hangs during concurrent generation. CLI clients that do not send `async: true` still receive per-request SSE streams for backward compatibility.
+
 ## Provider Paths
 
 Image generation can run through the local Codex/ChatGPT OAuth path, a configured OpenAI API key, the bundled Grok provider, or the Gemini provider via Antigravity CLI.

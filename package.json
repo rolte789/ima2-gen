@@ -39,6 +39,7 @@
     "cli"
   ],
   "license": "MIT",
+  "homepage": "https://lidge-jun.github.io/ima2-gen/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/lidge-jun/ima2-gen.git"
