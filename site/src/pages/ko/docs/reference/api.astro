@@ -45,10 +45,11 @@ const genBody = `{
     <tbody>
       <tr><td><code>POST /api/generate</code></td><td>텍스트-이미지 및 레퍼런스 기반 루트 생성.</td></tr>
       <tr><td><code>POST /api/edit</code></td><td>이미지 편집 / image-to-image 생성.</td></tr>
-      <tr><td><code>POST /api/generate/multimode</code> (SSE)</td><td>Multimode 배치.</td></tr>
-      <tr><td><code>POST /api/node/generate</code> (SSE)</td><td>Node 모드 생성 및 자식 편집.</td></tr>
+      <tr><td><code>POST /api/generate/multimode</code></td><td>Multimode 배치. 비동기 POST (202) + SSE 멀티플렉싱 지원.</td></tr>
+      <tr><td><code>POST /api/node/generate</code></td><td>Node 모드 생성 및 자식 편집. 비동기 POST (202) + SSE 멀티플렉싱 지원.</td></tr>
       <tr><td><code>GET /api/node/:nodeId</code></td><td>저장된 노드 메타데이터와 에셋 URL 조회.</td></tr>
-      <tr><td><code>POST /api/video/generate</code> (SSE)</td><td>Grok을 통한 비디오 생성 (T2V/I2V/Ref2V).</td></tr>
+      <tr><td><code>GET /api/events</code></td><td>비동기 생성 진행 이벤트를 위한 SSE 멀티플렉스 채널.</td></tr>
+      <tr><td><code>POST /api/video/generate</code></td><td>Grok 비디오 생성 (T2V/I2V/Ref2V). 비동기 POST (202) + SSE 멀티플렉싱 지원.</td></tr>
       <tr><td><code>POST /api/video/edit</code></td><td>Grok 비디오-투-비디오 편집. 결과 MP4를 generated artifact로 저장.</td></tr>
       <tr><td><code>POST /api/video/extend</code></td><td>기존 MP4의 마지막 프레임에서 이어붙이기.</td></tr>
       <tr><td><code>GET /api/video/frame</code></td><td>generated MP4에서 PNG 프레임 추출.</td></tr>
@@ -62,9 +63,11 @@ const genBody = `{
     권장 OpenAI 모델은 <code>gpt-5.4</code>; 앱 기본값은 <code>gpt-5.4-mini</code>입니다.
     Grok 모델은 <code>grok-imagine-image</code>와 <code>grok-imagine-image-quality</code>입니다.
     Gemini 모델은 <code>nano-banana-2</code>(Flash)와 <code>nano-banana-pro</code>(Pro)입니다.
-    SSE 라우트는 클라이언트가
-    <code>Accept: text/event-stream</code>을 보내면 <code>phase</code>, <code>partial</code>,
-    <code>done</code>, <code>error</code> 이벤트를 보냅니다.
+    웹 UI는 <code>GET /api/events</code> (SSE 멀티플렉싱)로 모든 생성 진행 이벤트를 받습니다:
+    POST 라우트에 <code>{"{ async: true, requestId }"}</code>를 보내면 <code>202</code> 응답 후
+    이벤트 버스를 통해 <code>phase</code>, <code>partial</code>, <code>done</code>,
+    <code>error</code> 이벤트가 멀티플렉싱됩니다. CLI에서
+    <code>Accept: text/event-stream</code>을 보내면 기존 per-request SSE를 그대로 사용합니다.
   </p>
   <div class="docs-callout docs-callout-info">
     <strong>비디오 생성.</strong> <code>POST /api/video/generate</code> (SSE)는 Grok을 통해 비디오를

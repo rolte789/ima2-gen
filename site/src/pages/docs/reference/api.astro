@@ -47,10 +47,11 @@ const genBody = `{
     <tbody>
       <tr><td><code>POST /api/generate</code></td><td>Text-to-image and reference-guided root generation.</td></tr>
       <tr><td><code>POST /api/edit</code></td><td>Image edit / image-to-image generation.</td></tr>
-      <tr><td><code>POST /api/generate/multimode</code> (SSE)</td><td>Multimode batch.</td></tr>
-      <tr><td><code>POST /api/node/generate</code> (SSE)</td><td>Node-mode generation and child edits.</td></tr>
+      <tr><td><code>POST /api/generate/multimode</code></td><td>Multimode batch. Supports async POST (202) + SSE multiplexing.</td></tr>
+      <tr><td><code>POST /api/node/generate</code></td><td>Node-mode generation and child edits. Supports async POST (202) + SSE multiplexing.</td></tr>
       <tr><td><code>GET /api/node/:nodeId</code></td><td>Fetch stored node metadata and asset URL.</td></tr>
-      <tr><td><code>POST /api/video/generate</code> (SSE)</td><td>Video generation via Grok (T2V/I2V/Ref2V).</td></tr>
+      <tr><td><code>GET /api/events</code></td><td>Persistent SSE multiplex channel for all async generation progress.</td></tr>
+      <tr><td><code>POST /api/video/generate</code></td><td>Video generation via Grok (T2V/I2V/Ref2V). Supports async POST (202) + SSE multiplexing.</td></tr>
       <tr><td><code>POST /api/video/edit</code></td><td>Video-to-video edit via Grok; saves a generated MP4 artifact.</td></tr>
       <tr><td><code>POST /api/video/extend</code></td><td>Extend a generated or remote MP4 from its last frame.</td></tr>
       <tr><td><code>GET /api/video/frame</code></td><td>Extract a PNG frame from a generated MP4.</td></tr>
@@ -64,9 +65,12 @@ const genBody = `{
     agy, gemini-api. Recommended OpenAI model <code>gpt-5.4</code>; app default
     <code>gpt-5.4-mini</code>. Grok image models: <code>grok-imagine-image</code> and
     <code>grok-imagine-image-quality</code>. Gemini API models: <code>nano-banana-2</code>
-    (default) and <code>nano-banana-pro</code>. SSE routes emit <code>phase</code>,
-    <code>partial</code>, <code>done</code>, and <code>error</code> when the client sends
-    <code>Accept: text/event-stream</code>.
+    (default) and <code>nano-banana-pro</code>. The web UI uses <code>GET /api/events</code>
+    (SSE multiplexing) for all generation progress: POST routes accept
+    <code>{"{ async: true, requestId }"}</code> and respond <code>202</code>;
+    events (<code>phase</code>, <code>partial</code>, <code>done</code>, <code>error</code>)
+    are multiplexed through the shared event bus. CLI clients that send
+    <code>Accept: text/event-stream</code> still receive per-request SSE.
   </p>
   <div class="docs-callout docs-callout-info">
     <strong>Video generation.</strong> <code>POST /api/video/generate</code> (SSE) generates videos
