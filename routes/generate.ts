@@ -295,7 +295,13 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
 
       const results = await Promise.allSettled(Array.from({ length: count }, generateOne));
       throwIfJobCanceled(requestId);
-      const images: Array<{ image: string; filename: string; revisedPrompt: any }> = [];
+      const images: Array<{
+        image: string;
+        filename: string;
+        revisedPrompt: any;
+        providerUrl?: string;
+        createdAt: number;
+      }> = [];
       let totalUsage: Record<string, number> | null = null;
       let totalWebSearchCalls = 0;
       let firstRetryMeta: Record<string, unknown> | null = null;
@@ -327,6 +333,11 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
           }
           const rand = randomBytes(ctx.config.ids.generatedHexBytes).toString("hex");
           const filename = `${Date.now()}_${rand}_${images.length}.${resultFormat}`;
+          const createdAt = Date.now();
+          const valueWithProviderUrl = r.value as typeof r.value & { providerUrl?: unknown };
+          const providerUrl = typeof valueWithProviderUrl.providerUrl === "string"
+            ? valueWithProviderUrl.providerUrl
+            : undefined;
           const meta = {
             kind: "classic",
             requestId,
@@ -345,7 +356,8 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
             model: activeProvider === "grok" ? (quality === "high" ? "grok-imagine-image-quality" : imageModel) : imageModel,
             reasoningEffort,
             provider: activeProvider,
-            createdAt: Date.now(),
+            createdAt,
+            ...(providerUrl ? { providerUrl } : {}),
             usage: r.value.usage || null,
             webSearchCalls: r.value.webSearchCalls || 0,
             webSearchEnabled,
@@ -372,6 +384,8 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
             image: `data:${resultMime};base64,${r.value.b64}`,
             filename,
             revisedPrompt: r.value.revisedPrompt || null,
+            ...(providerUrl ? { providerUrl } : {}),
+            createdAt,
           });
           if (r.value.usage) {
             const usageValue = r.value.usage;
@@ -457,7 +471,15 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
           elapsedMs: Date.now() - startTime,
           filename: images[0].filename,
         });
-        succeed({ image: images[0].image, elapsed, filename: images[0].filename, requestId, ...extra });
+        succeed({
+          image: images[0].image,
+          elapsed,
+          filename: images[0].filename,
+          requestId,
+          providerUrl: images[0].providerUrl ?? null,
+          createdAt: images[0].createdAt,
+          ...extra,
+        });
       } else {
         finishHttpStatus = 200;
         finishMeta = { filenames: images.map((image) => image.filename), imageCount: images.length };

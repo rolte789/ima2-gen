@@ -173,10 +173,12 @@ export type GenerateSingleResponse = {
   model?: string | null;
   revisedPrompt?: string | null;
   promptMode?: "auto" | "direct";
+  providerUrl?: string | null;
+  createdAt?: number;
 };
 
 export type GenerateMultiResponse = {
-  images: Array<{ image: string; filename: string }>;
+  images: Array<{ image: string; filename: string; providerUrl?: string | null; createdAt?: number }>;
   elapsed: number;
   reasoningEffort?: "none" | "low" | "medium" | "high" | "xhigh";
   count: number;

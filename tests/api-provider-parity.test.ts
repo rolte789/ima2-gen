@@ -189,9 +189,68 @@ describe("API provider parity", () => {
       assert.equal(body.provider, "grok");
       assert.equal(body.count, 2);
       assert.equal(body.webSearchCalls, 1);
+      assert.equal(body.images[0].providerUrl, "https://cdn.x.ai/test-parity-gen.png");
+      assert.equal(typeof body.images[0].createdAt, "number");
+      assert.equal(body.images[1].providerUrl, "https://cdn.x.ai/test-parity-gen.png");
+      assert.equal(typeof body.images[1].createdAt, "number");
       assert.equal(calls.filter((call) => call.url.endsWith("/v1/responses")).length, 1);
       assert.equal(calls.filter((call) => call.url.endsWith("/v1/chat/completions")).length, 1);
       assert.equal(calls.filter((call) => call.url.endsWith("/v1/images/generations")).length, 2);
+    });
+  });
+
+  it("generate provider=grok returns provider URL metadata for immediate continue-as-url actions", async () => {
+    globalThis.fetch = async (url, init) => {
+      if (String(url).startsWith("http://127.0.0.1:") && !String(url).includes("/v1/")) {
+        return originalFetch(url, init);
+      }
+      if (String(url).endsWith("/v1/responses")) {
+        return Response.json({
+          output: [{
+            type: "message",
+            content: [{ type: "output_text", text: "Visual search brief." }],
+          }],
+        });
+      }
+      if (String(url).endsWith("/v1/chat/completions")) {
+        return Response.json({
+          choices: [{
+            message: {
+              tool_calls: [{
+                type: "function",
+                function: {
+                  name: "generate_image",
+                  arguments: JSON.stringify({ prompt: "planned grok prompt", model: "grok-imagine-image-quality" }),
+                },
+              }],
+            },
+          }],
+        });
+      }
+      if (String(url).startsWith("https://cdn.x.ai/")) {
+        return new Response(Buffer.from(FINAL_B64, "base64"), { headers: { "Content-Type": "image/png" } });
+      }
+      return Response.json({
+        data: [{ url: "https://cdn.x.ai/test-single-gen.png" }],
+        usage: { cost_in_usd_ticks: 1 },
+      });
+    };
+
+    await withApp(async ({ baseUrl }) => {
+      const res = await fetch(`${baseUrl}/api/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: "grok provider single",
+          provider: "grok",
+          model: "grok-imagine-image-quality",
+        }),
+      });
+      const body = await res.json();
+      assert.equal(res.status, 200);
+      assert.equal(body.provider, "grok");
+      assert.equal(body.providerUrl, "https://cdn.x.ai/test-single-gen.png");
+      assert.equal(typeof body.createdAt, "number");
     });
   });
 

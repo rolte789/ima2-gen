@@ -265,6 +265,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
         const resultFormat = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api" ? imageFormatFromMime(resultMime) : mmFormat;
         const rand = randomBytes(ctx.config.ids.generatedHexBytes).toString("hex");
         const filename = `${Date.now()}_${rand}_multimode_${index}.${resultFormat}`;
+        const createdAt = Date.now();
         const meta = {
           kind: "multimode-image",
           generationStrategy: "one-call-text-sequence",
@@ -287,7 +288,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
           moderation,
           model: activeProvider === "grok" ? (quality === "high" ? "grok-imagine-image-quality" : imageModel) : imageModel,
           provider: activeProvider,
-          createdAt: Date.now(),
+          createdAt,
           usage: latestUsage,
           webSearchCalls: latestWebSearchCalls,
           webSearchEnabled,
@@ -306,6 +307,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
         const item = {
           image: `data:${resultMime};base64,${image.b64}`,
           filename,
+          createdAt,
           ...(image.providerUrl ? { providerUrl: image.providerUrl } : {}),
           revisedPrompt: image.revisedPrompt || null,
           sequenceId,

@@ -310,11 +310,13 @@ export async function runGenerateImpl(
           composerInsertedPrompts,
           elapsed: res.elapsed,
           provider: res.provider,
+          providerUrl: img.providerUrl ?? null,
           usage: res.usage,
           requestId: res.requestId ?? flightId,
           quality: res.quality,
           size: res.size,
           model: res.model ?? null,
+          createdAt: img.createdAt ?? Date.now(),
         };
         await addHistory(item, set, get, { autoSelectStartedAt });
       }
@@ -332,11 +334,13 @@ export async function runGenerateImpl(
           composerInsertedPrompts,
           elapsed: res.elapsed,
           provider: res.provider,
+          providerUrl: first.providerUrl ?? null,
           usage: res.usage,
           requestId: res.requestId ?? flightId,
           quality: res.quality,
           size: res.size,
           model: res.model ?? null,
+          createdAt: first.createdAt ?? Date.now(),
         };
       } else {
         item = {
@@ -348,11 +352,13 @@ export async function runGenerateImpl(
           composerInsertedPrompts,
           elapsed: res.elapsed,
           provider: res.provider,
+          providerUrl: res.providerUrl ?? null,
           usage: res.usage,
           requestId: res.requestId ?? flightId,
           quality: res.quality,
           size: res.size,
           model: res.model ?? null,
+          createdAt: res.createdAt ?? Date.now(),
         };
       }
       await addHistory(item, set, get, { autoSelectStartedAt });
