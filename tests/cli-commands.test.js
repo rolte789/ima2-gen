@@ -118,6 +118,10 @@ describe("ima2 CLI commands (live server)", () => {
     assert.match(stdout, /--mode/);
     assert.match(stdout, /--moderation/);
     assert.match(stdout, /--session/);
+    assert.match(stdout, /Batch\/async note:/);
+    assert.match(stdout, /Use -n <N>/);
+    assert.match(stdout, /ima2 ps --json/);
+    assert.match(stdout, /ima2 cancel <requestId>/);
   });
 
   it("ima2 edit --help prints current payload options", async () => {

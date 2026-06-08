@@ -143,13 +143,22 @@ Do not use positional edit prompts. `ima2 edit` requires `--prompt`.
 
 ## Parallel Generation
 
-There is no `--parallel` flag. For CLI-controlled parallel work, start several normal jobs:
+There is no `--parallel` flag. For multiple candidates from the same prompt,
+prefer one server-side batch request:
 
 ```bash
-ima2 gen "variation 1" --quality high
-ima2 gen "variation 2" --quality high
-ima2 gen "variation 3" --quality high
-ima2 gen "variation 4" --quality high
+ima2 gen "four poster candidates" -n 4 -d ./out --quality high
+ima2 multimode "four different poster directions" --max-images 4
+```
+
+For truly different prompts, independent CLI jobs can run concurrently against
+the same server. Capture request IDs with JSON output, then monitor or cancel:
+
+```bash
+ima2 gen "variation 1" --quality high --json
+ima2 gen "variation 2" --quality high --json
+ima2 ps --json
+ima2 cancel <requestId>
 ```
 
 Treat `capabilities.limits.maxParallel` as advisory client-side queue guidance only.

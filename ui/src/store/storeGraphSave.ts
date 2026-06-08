@@ -397,10 +397,16 @@ export async function addHistory(
     [merged, ...historyWithoutDuplicate],
     state.loadedHistoryRetainLimit + 1,
   );
+  const userSelectedDuringGeneration =
+    options.autoSelectStartedAt != null &&
+    state.lastHistorySelectedAt > options.autoSelectStartedAt;
   const shouldAutoSelect =
-    !state.currentImage ||
-    options.autoSelectStartedAt == null ||
-    state.lastHistorySelectedAt <= options.autoSelectStartedAt;
+    !userSelectedDuringGeneration &&
+    (
+      !state.currentImage ||
+      options.autoSelectStartedAt == null ||
+      state.lastHistorySelectedAt <= options.autoSelectStartedAt
+    );
   if (shouldAutoSelect) {
     saveSelectedFilename(merged.filename ?? null);
   }

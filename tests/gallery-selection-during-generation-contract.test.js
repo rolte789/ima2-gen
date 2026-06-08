@@ -22,10 +22,12 @@ test("manual gallery selection is tracked separately from generated history inse
   assert.match(history, /lastHistorySelectedAt: selectedAt,/);
 });
 
-test("addHistory does not overwrite preview after a user selected another gallery item", () => {
+test("addHistory does not overwrite preview after a user selected another gallery item or sequence", () => {
   const graphSave = readSource("ui/src/store/storeGraphSave.ts");
 
   assert.match(graphSave, /type AddHistoryOptions = \{[\s\S]*?autoSelectStartedAt\?: number;/);
+  assert.match(graphSave, /const userSelectedDuringGeneration =[\s\S]*?state\.lastHistorySelectedAt > options\.autoSelectStartedAt;/);
+  assert.match(graphSave, /const shouldAutoSelect =[\s\S]*?!userSelectedDuringGeneration/);
   assert.match(graphSave, /state\.lastHistorySelectedAt <= options\.autoSelectStartedAt/);
   assert.match(graphSave, /if \(shouldAutoSelect\) \{[\s\S]*?saveSelectedFilename\(merged\.filename \?\? null\);[\s\S]*?\}/);
   assert.match(graphSave, /\.\.\.\(shouldAutoSelect \? \{ currentImage: merged \} : \{\}\)/);
