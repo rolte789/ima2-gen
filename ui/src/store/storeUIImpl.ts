@@ -40,6 +40,7 @@ import type { ClientNodeId } from "../lib/graph";
 import type { ImaErrorCode } from "../lib/errorCodes";
 import type { CanvasExportBackground, HexColor } from "../types/canvas";
 import type { ThemePreference, ThemeFamily, HistoryStripLayout, UIMode } from "../types";
+import { abortFlight } from "./flightAbortRegistry";
 
 export async function cancelInFlightJobImpl(
   requestId: string,
@@ -47,6 +48,7 @@ export async function cancelInFlightJobImpl(
   get: StoreGet,
 ): Promise<void> {
   if (!requestId) return;
+  abortFlight(requestId);
   set((s) => {
     const next = s.inFlight.map((job) =>
       job.id === requestId ? { ...job, phase: "canceling" } : job,

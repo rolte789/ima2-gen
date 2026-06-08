@@ -18,6 +18,7 @@ import {
 } from "./storeHelpers";
 import type { AppState, ImageNodeData } from "./storeTypes";
 import type { ClientNodeId } from "../lib/graph";
+import { clearFlightAbort, registerFlightAbort } from "./flightAbortRegistry";
 
 type StoreSet = (p: Partial<AppState>) => void;
 type StoreGet = () => AppState;
@@ -67,6 +68,8 @@ export async function runVideoGenerateImpl(
   const startedAt = Date.now();
   const autoSelectStartedAt = startedAt;
   const flightId = `vid_${startedAt}_${Math.random().toString(36).slice(2, 6)}`;
+  const controller = new AbortController();
+  registerFlightAbort(flightId, controller);
   const requestSessionId = get().activeSessionId;
   const nextInFlight: PersistedInFlight[] = [
     ...get().inFlight,
@@ -112,6 +115,7 @@ export async function runVideoGenerateImpl(
         onSubmitted: () => set({ inFlight: get().inFlight.map((f) => f.id === flightId ? { ...f, phase: "streaming" } : f) }),
         onProgress: ({ progress }) => set({ videoProgress: progress ?? null }),
       },
+      { signal: controller.signal },
     );
 
     if (node && result && get().activeSessionId === requestSessionId) {
@@ -198,6 +202,7 @@ export async function runVideoGenerateImpl(
   } finally {
     const remaining = get().inFlight.filter((f) => f.id !== flightId);
     saveInFlight(remaining);
+    clearFlightAbort(flightId);
     set({ inFlight: remaining, activeGenerations: remaining.length, videoProgress: null, providerUrlReference: null });
     get().startInFlightPolling();
   }
@@ -217,6 +222,8 @@ export async function animateImageImpl(
   const startedAt = Date.now();
   const autoSelectStartedAt = startedAt;
   const flightId = `vid_${startedAt}_${Math.random().toString(36).slice(2, 6)}`;
+  const controller = new AbortController();
+  registerFlightAbort(flightId, controller);
   const nextInFlight: PersistedInFlight[] = [
     ...get().inFlight,
     { id: flightId, prompt: p, startedAt, kind: "video" as const, sessionId: get().activeSessionId, clientNodeId: null },
@@ -232,6 +239,7 @@ export async function animateImageImpl(
         onSubmitted: () => set({ inFlight: get().inFlight.map((f) => f.id === flightId ? { ...f, phase: "streaming" } : f) }),
         onProgress: ({ progress }) => set({ videoProgress: progress ?? null }),
       },
+      { signal: controller.signal },
     );
     const videoItem: GenerateItem = {
       image: result.url,
@@ -257,6 +265,7 @@ export async function animateImageImpl(
   } finally {
     const remaining = get().inFlight.filter((f) => f.id !== flightId);
     saveInFlight(remaining);
+    clearFlightAbort(flightId);
     set({ inFlight: remaining, activeGenerations: remaining.length, videoProgress: null });
     get().startInFlightPolling();
   }

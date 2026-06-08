@@ -24,6 +24,23 @@ function abortError(): DOMException {
   return new DOMException("Aborted", "AbortError");
 }
 
+export function mergeAbortSignals(...signals: Array<AbortSignal | undefined>): AbortSignal | undefined {
+  const active = signals.filter((signal): signal is AbortSignal => Boolean(signal));
+  if (active.length === 0) return undefined;
+  if (active.length === 1) return active[0];
+  if (typeof AbortSignal.any === "function") {
+    return AbortSignal.any(active);
+  }
+  const controller = new AbortController();
+  const abort = () => {
+    for (const signal of active) signal.removeEventListener("abort", abort);
+    controller.abort();
+  };
+  if (active.some((signal) => signal.aborted)) abort();
+  else active.forEach((signal) => signal.addEventListener("abort", abort, { once: true }));
+  return controller.signal;
+}
+
 export async function submitAsyncJobWithCapacityRetry<TErrorBody>({
   url,
   payload,
@@ -44,17 +61,19 @@ export async function submitAsyncJobWithCapacityRetry<TErrorBody>({
       reject(abortError());
       return;
     }
-    retryTimer = setTimeout(() => {
-      retryTimer = null;
-      resolve();
-    }, ms);
-    signal?.addEventListener("abort", () => {
+    const onAbort = () => {
       if (retryTimer) {
         clearTimeout(retryTimer);
         retryTimer = null;
       }
       reject(abortError());
-    }, { once: true });
+    };
+    retryTimer = setTimeout(() => {
+      retryTimer = null;
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal?.addEventListener("abort", onAbort, { once: true });
   });
 
   while (true) {
@@ -63,6 +82,7 @@ export async function submitAsyncJobWithCapacityRetry<TErrorBody>({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...payload, async: true, requestId }),
+      signal,
     });
     if (res.ok) return;
 

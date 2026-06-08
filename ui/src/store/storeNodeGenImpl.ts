@@ -20,6 +20,7 @@ import {
   isCanceledGenerationError,
 } from "./storeHelpers";
 import type { AppState } from "./storeTypes";
+import { clearFlightAbort, registerFlightAbort } from "./flightAbortRegistry";
 
 type StoreSet = (p: Partial<AppState>) => void;
 type StoreGet = () => AppState;
@@ -73,6 +74,8 @@ export async function runGenerateNodeInPlaceImpl(
   const startedAt = Date.now();
   const randSuffix = Math.random().toString(36).slice(2, 6);
   const flightId = `fn_${clientId}_${startedAt}_${randSuffix}`;
+  const controller = new AbortController();
+  registerFlightAbort(flightId, controller);
   const nextInFlight: PersistedInFlight[] = [
     ...s.inFlight,
     {
@@ -133,42 +136,44 @@ export async function runGenerateNodeInPlaceImpl(
         ? { references: nodeRefs.map(stripDataUrlPrefix) }
         : {}),
     }, {
-      onPartial: (partial) => {
-        if (get().activeSessionId !== requestSessionId) return;
-        set({
-          graphNodes: get().graphNodes.map((n) =>
-            n.id === clientId
-              ? {
-                  ...n,
-                  data: {
-                    ...n.data,
-                    status: "pending",
-                    partialImageUrl: partial.image,
-                    pendingPhase: "partial",
-                  },
-                }
-              : n,
-          ),
-        });
+        onPartial: (partial) => {
+          if (get().activeSessionId !== requestSessionId) return;
+          set({
+            graphNodes: get().graphNodes.map((n) =>
+              n.id === clientId
+                ? {
+                    ...n,
+                    data: {
+                      ...n.data,
+                      status: "pending",
+                      partialImageUrl: partial.image,
+                      pendingPhase: "partial",
+                    },
+                  }
+                : n,
+            ),
+          });
+        },
+        onPhase: (phase) => {
+          if (get().activeSessionId !== requestSessionId) return;
+          if (!phase.phase) return;
+          set({
+            graphNodes: get().graphNodes.map((n) =>
+              n.id === clientId
+                ? {
+                    ...n,
+                    data: {
+                      ...n.data,
+                      pendingPhase: phase.phase ?? n.data.pendingPhase,
+                    },
+                  }
+                : n,
+            ),
+          });
+        },
       },
-      onPhase: (phase) => {
-        if (get().activeSessionId !== requestSessionId) return;
-        if (!phase.phase) return;
-        set({
-          graphNodes: get().graphNodes.map((n) =>
-            n.id === clientId
-              ? {
-                  ...n,
-                  data: {
-                    ...n.data,
-                    pendingPhase: phase.phase ?? n.data.pendingPhase,
-                  },
-                }
-              : n,
-          ),
-        });
-      },
-    });
+      { signal: controller.signal },
+    );
     if (get().activeSessionId === requestSessionId) {
       set({
         graphNodes: get().graphNodes.map((n) => {
@@ -258,6 +263,7 @@ export async function runGenerateNodeInPlaceImpl(
     nodeGenerationLocks.delete(clientId);
     const remaining = get().inFlight.filter((f) => f.id !== flightId);
     saveInflightFn(remaining);
+    clearFlightAbort(flightId);
     set({
       activeGenerations: Math.max(0, get().activeGenerations - 1),
       inFlight: remaining,

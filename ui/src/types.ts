@@ -148,6 +148,7 @@ export type EmbeddedGenerationMetadata = {
   moderation?: string | null;
   model?: string | null;
   provider?: string | null;
+  providerUrl?: string | null;
   sessionId?: string | null;
   nodeId?: string | null;
   parentNodeId?: string | null;
@@ -217,6 +218,7 @@ export type GenerateRequest = {
   webSearchEnabled?: boolean;
   composerPrompt?: string;
   composerInsertedPrompts?: ComposerInsertedPromptSnapshot[];
+  providerUrl?: string;
 };
 
 export type MultimodeGenerateRequest = Omit<GenerateRequest, "n"> & {

@@ -52,7 +52,10 @@ describe("current image actions and readiness popup contract", () => {
 
     assert.match(actions, /providerUrlAlive/);
     assert.match(actions, /actionImage\.providerUrl/);
-    assert.match(actions, /Date\.now\(\) - actionImage\.createdAt < 3_600_000/);
+    assert.match(actions, /PROVIDER_URL_TTL_MS = 3_600_000/);
+    assert.match(actions, /!isVideo/);
+    assert.match(actions, /Date\.now\(\) - actionImage\.createdAt < PROVIDER_URL_TTL_MS/);
+    assert.match(actions, /Date\.now\(\) - actionImage\.createdAt >= PROVIDER_URL_TTL_MS/);
     assert.match(actions, /continueFromItemAsUrl/);
     assert.match(route, /providerUrl: images\[0\]\.providerUrl \?\? null/);
     assert.match(route, /\.\.\.\(providerUrl \? \{ providerUrl \} : \{\}\)/);

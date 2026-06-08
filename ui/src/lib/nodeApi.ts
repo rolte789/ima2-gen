@@ -2,7 +2,7 @@ import type { ImageModel, Provider } from "../types";
 import { subscribe, ensureConnected, armStreamTimeout } from "./eventChannel";
 import { cancelInflight } from "./api-inflight";
 import { parseSseErrorPayload } from "./sseStreamError";
-import { submitAsyncJobWithCapacityRetry } from "./asyncJobSubmit";
+import { mergeAbortSignals, submitAsyncJobWithCapacityRetry } from "./asyncJobSubmit";
 
 export type NodeGenerateRequest = {
   parentNodeId: string | null;
@@ -84,6 +84,8 @@ export async function postNodeGenerateStream(
 
   return new Promise<NodeGenerateResponse>((resolve, reject) => {
     let settled = false;
+    const submitController = new AbortController();
+    const submitSignal = mergeAbortSignals(options.signal, submitController.signal);
     const finish = (fn: () => void) => {
       if (settled) return;
       settled = true;
@@ -105,6 +107,7 @@ export async function postNodeGenerateStream(
     });
     const clearTimer = armStreamTimeout(() => {
       finish(() => {
+        submitController.abort();
         void cancelInflight(requestId);
         reject(new Error("Node generation stream timed out"));
       });
@@ -113,6 +116,7 @@ export async function postNodeGenerateStream(
     if (options.signal) {
       if (options.signal.aborted) {
         finish(() => {
+          submitController.abort();
           void cancelInflight(requestId);
           reject(new DOMException("Aborted", "AbortError"));
         });
@@ -120,6 +124,7 @@ export async function postNodeGenerateStream(
       }
       options.signal.addEventListener("abort", () => {
         finish(() => {
+          submitController.abort();
           void cancelInflight(requestId);
           reject(new DOMException("Aborted", "AbortError"));
         });
@@ -130,7 +135,7 @@ export async function postNodeGenerateStream(
       url: "/api/node/generate",
       payload: payload as unknown as Record<string, unknown>,
       requestId,
-      signal: options.signal,
+      signal: submitSignal,
       parseError: (res, data: NodeErrorResponse) => {
         const msg = data?.error?.message ?? `Request failed: ${res.status}`;
         const e = new Error(msg) as Error & { code?: string; status?: number };

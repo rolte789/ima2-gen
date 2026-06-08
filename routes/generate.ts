@@ -122,7 +122,16 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
         return fail(400, { error: refCheckResult.error, code: refCheckResult.code });
       }
       const refCheck = refCheckResult as Extract<typeof refCheckResult, { refs: string[] }>;
-      if ((activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api") && refCheck.refs.length > 3) {
+      const incomingProviderUrl = typeof req.body?.providerUrl === "string" && req.body.providerUrl.startsWith("http")
+        ? req.body.providerUrl
+        : null;
+      const grokRefs = incomingProviderUrl
+        ? [{ b64: "", url: incomingProviderUrl, declaredMime: "image/png", detectedMime: "image/png" }, ...refCheck.refDetails]
+        : refCheck.refDetails;
+      const providerRefCount = activeProvider === "grok" || activeProvider === "grok-api"
+        ? grokRefs.length
+        : refCheck.refs.length;
+      if ((activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api") && providerRefCount > 3) {
         return fail(400, {
           error: `${activeProvider === "agy" ? "Agy" : "Grok"} image editing supports up to 3 reference images`,
           code: activeProvider === "agy" ? "AGY_REF_TOO_MANY" : "GROK_REF_TOO_MANY",
@@ -143,7 +152,7 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
           model: imageModel,
           size: effectiveSize,
           n: count,
-          refsCount: referencePayload.refsCount,
+          refsCount: providerRefCount,
           referenceBytes: referencePayload.referenceBytes,
           referenceB64Chars: referencePayload.referenceB64Chars,
           composerPrompt,
@@ -182,7 +191,7 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
         size: effectiveSize,
         moderation,
         n: count,
-        refs: refCheck.refs.length,
+        refs: providerRefCount,
         referenceBytes: referencePayload.referenceBytes,
         referenceMismatchCount,
         refDetectedMimes: [...new Set(referenceDiagnostics.map((ref) => ref.detectedMime).filter(Boolean))].join(","),
@@ -207,8 +216,8 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
           size: effectiveSize,
           signal: cancelController.signal,
           requestId,
-          referenceCount: refCheck.refs.length,
-          references: refCheck.refDetails,
+          referenceCount: grokRefs.length,
+          references: grokRefs,
           directApiKey: grokDirectApiKey,
         })
         : null;
@@ -245,7 +254,7 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
             requestId,
             plannedPrompt: sharedGrokPlan?.prompt,
             webSearchCalls: sharedGrokPlan?.webSearchCalls,
-            references: refCheck.refDetails,
+            references: grokRefs,
             directApiKey: grokDirectApiKey,
           });
           throwIfJobCanceled(requestId);
@@ -361,7 +370,7 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
             usage: r.value.usage || null,
             webSearchCalls: r.value.webSearchCalls || 0,
             webSearchEnabled,
-            refsCount: refCheck.refs.length,
+            refsCount: providerRefCount,
           };
           const rawBuffer = Buffer.from(r.value.b64, "base64");
           const embedded: any = await embedImageMetadataBestEffort(rawBuffer, resultFormat, meta, {

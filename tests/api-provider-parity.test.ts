@@ -254,6 +254,98 @@ describe("API provider parity", () => {
     });
   });
 
+  it("generate provider=grok uses providerUrl as an edit reference for classic continue-as-url", async () => {
+    const calls = [];
+    globalThis.fetch = async (url, init) => {
+      if (String(url).startsWith("http://127.0.0.1:") && !String(url).includes("/v1/")) {
+        return originalFetch(url, init);
+      }
+      const body = init?.body ? JSON.parse(String(init.body)) : null;
+      calls.push({ url: String(url), body });
+      if (String(url).endsWith("/v1/responses")) {
+        return Response.json({
+          output: [{
+            type: "message",
+            content: [{ type: "output_text", text: "Visual search brief." }],
+          }],
+        });
+      }
+      if (String(url).endsWith("/v1/chat/completions")) {
+        return Response.json({
+          choices: [{
+            message: {
+              tool_calls: [{
+                type: "function",
+                function: {
+                  name: "generate_image",
+                  arguments: JSON.stringify({ prompt: "planned grok i2i prompt", model: "grok-imagine-image-quality" }),
+                },
+              }],
+            },
+          }],
+        });
+      }
+      if (String(url).startsWith("https://cdn.x.ai/")) {
+        return new Response(Buffer.from(FINAL_B64, "base64"), { headers: { "Content-Type": "image/png" } });
+      }
+      return Response.json({
+        data: [{ url: "https://cdn.x.ai/classic-i2i-output.png" }],
+        usage: { cost_in_usd_ticks: 1 },
+      });
+    };
+
+    await withApp(async ({ baseUrl }) => {
+      const res = await fetch(`${baseUrl}/api/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: "classic url continue",
+          provider: "grok",
+          model: "grok-imagine-image-quality",
+          providerUrl: "https://cdn.x.ai/source-image.png",
+        }),
+      });
+      const body = await res.json();
+      const editCall = calls.find((call) => call.url.endsWith("/v1/images/edits"));
+      assert.equal(res.status, 200);
+      assert.equal(body.provider, "grok");
+      assert.equal(body.providerUrl, "https://cdn.x.ai/classic-i2i-output.png");
+      assert.ok(editCall);
+      assert.equal(editCall.body.image.url, "https://cdn.x.ai/source-image.png");
+      assert.equal(calls.filter((call) => call.url.endsWith("/v1/images/generations")).length, 0);
+    });
+  });
+
+  it("generate provider=grok counts providerUrl toward the three-reference cap", async () => {
+    const calls = [];
+    globalThis.fetch = async (url, init) => {
+      if (String(url).startsWith("http://127.0.0.1:") && !String(url).includes("/v1/")) {
+        return originalFetch(url, init);
+      }
+      calls.push({ url: String(url), body: init?.body });
+      return Response.json({ error: "unexpected upstream" }, { status: 500 });
+    };
+
+    const ref = await pngB64();
+    await withApp(async ({ baseUrl }) => {
+      const res = await fetch(`${baseUrl}/api/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: "grok provider url too many refs",
+          provider: "grok",
+          model: "grok-imagine-image-quality",
+          providerUrl: "https://cdn.x.ai/source-image.png",
+          references: [ref, ref, ref],
+        }),
+      });
+      const body = await res.json();
+      assert.equal(res.status, 400);
+      assert.equal(body.code, "GROK_REF_TOO_MANY");
+      assert.equal(calls.length, 0);
+    });
+  });
+
   it("generate provider=grok rejects more than three classic references before upstream", async () => {
     const calls = [];
     globalThis.fetch = async (url, init) => {

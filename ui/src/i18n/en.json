@@ -64,6 +64,7 @@
     "forkStarted": "Prompt imported. Edit and generate again.",
     "forkStartedNoPrompt": "Image attached as reference. Type a prompt and generate.",
     "continueAsUrlStarted": "Provider URL set as reference. Generate to use the original image.",
+    "continueAsUrlExpired": "The provider URL has expired. Use Continue here instead.",
     "comfyExported": "Sent to ComfyUI as {filename}.",
     "comfyExportInvalidUrl": "ComfyUI URL must be a local HTTP address.",
     "comfyExportInvalidImage": "This saved image cannot be sent to ComfyUI.",

@@ -25,15 +25,10 @@ import {
 } from "./storeHelpers";
 import { addHistory } from "./storeGraphSave";
 import type { AppState } from "./storeTypes";
+import { clearFlightAbort, registerFlightAbort } from "./flightAbortRegistry";
 
 type StoreSet = (p: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => void;
 type StoreGet = () => AppState;
-
-const flightControllers = new Map<string, AbortController>();
-export function abortFlight(id: string) {
-  flightControllers.get(id)?.abort();
-  flightControllers.delete(id);
-}
 
 export async function generateMultimodeImpl(
   sizeOverride: string | undefined,
@@ -49,7 +44,7 @@ export async function generateMultimodeImpl(
   const size = sizeOverride ?? s.getResolvedSize();
   const flightId = `mm_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   const controller = new AbortController();
-  flightControllers.set(flightId, controller);
+  registerFlightAbort(flightId, controller);
   const startedAt = Date.now();
   const autoSelectStartedAt = startedAt;
   const requested = normalizeCount(s.multimodeMaxImages);
@@ -217,7 +212,7 @@ export async function generateMultimodeImpl(
   } finally {
     const remaining = get().inFlight.filter((f) => f.id !== flightId);
     saveInFlight(remaining);
-    flightControllers.delete(flightId);
+    clearFlightAbort(flightId);
     set((state) => {
       const nextFlights = new Set(state.activeFlightIds);
       nextFlights.delete(flightId);
@@ -260,6 +255,8 @@ export async function runGenerateImpl(
   const size = sizeOverride ?? s.getResolvedSize();
 
   const flightId = `f_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const controller = new AbortController();
+  registerFlightAbort(flightId, controller);
   const startedAt = Date.now();
   const autoSelectStartedAt = startedAt;
   const nextInFlight: PersistedInFlight[] = [
@@ -297,7 +294,7 @@ export async function runGenerateImpl(
           : {}),
     };
 
-    const res: GenerateResponse = await postGenerateStream(payload);
+    const res: GenerateResponse = await postGenerateStream(payload, { signal: controller.signal });
 
     if (isMultiResponse(res) && res.images.length > 1) {
       for (const img of res.images) {
@@ -369,6 +366,7 @@ export async function runGenerateImpl(
   } finally {
     const remaining = get().inFlight.filter((f) => f.id !== flightId);
     saveInFlight(remaining);
+    clearFlightAbort(flightId);
     set({
       activeGenerations: Math.max(0, get().activeGenerations - 1),
       inFlight: remaining,

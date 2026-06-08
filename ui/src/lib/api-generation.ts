@@ -9,7 +9,7 @@ import { jsonFetch } from "./api-core";
 import { subscribe, ensureConnected, armStreamTimeout } from "./eventChannel";
 import { cancelInflight } from "./api-inflight";
 import { parseSseErrorPayload } from "./sseStreamError";
-import { submitAsyncJobWithCapacityRetry } from "./asyncJobSubmit";
+import { mergeAbortSignals, submitAsyncJobWithCapacityRetry } from "./asyncJobSubmit";
 
 export function postGenerate(payload: GenerateRequest): Promise<GenerateResponse> {
   return jsonFetch<GenerateResponse>("/api/generate", {
@@ -28,6 +28,8 @@ export async function postGenerateStream(
 
   return new Promise<GenerateResponse>((resolve, reject) => {
     let settled = false;
+    const submitController = new AbortController();
+    const submitSignal = mergeAbortSignals(options.signal, submitController.signal);
     const finish = (fn: () => void) => {
       if (settled) return;
       settled = true;
@@ -45,6 +47,7 @@ export async function postGenerateStream(
     });
     const clearTimer = armStreamTimeout(() => {
       finish(() => {
+        submitController.abort();
         void cancelInflight(requestId);
         reject(new Error("Generation stream timed out"));
       });
@@ -53,6 +56,7 @@ export async function postGenerateStream(
     if (options.signal) {
       if (options.signal.aborted) {
         finish(() => {
+          submitController.abort();
           void cancelInflight(requestId);
           reject(new DOMException("Aborted", "AbortError"));
         });
@@ -60,6 +64,7 @@ export async function postGenerateStream(
       }
       options.signal.addEventListener("abort", () => {
         finish(() => {
+          submitController.abort();
           void cancelInflight(requestId);
           reject(new DOMException("Aborted", "AbortError"));
         });
@@ -70,7 +75,7 @@ export async function postGenerateStream(
       url: "/api/generate",
       payload: payload as unknown as Record<string, unknown>,
       requestId,
-      signal: options.signal,
+      signal: submitSignal,
       parseError: (res, data: Record<string, unknown>) => {
         const err = parseSseErrorPayload(data, `Request failed: ${res.status}`);
         err.status = err.status ?? res.status;
@@ -98,6 +103,8 @@ export async function postMultimodeGenerateStream(
 
   return new Promise<MultimodeGenerateResponse>((resolve, reject) => {
     let settled = false;
+    const submitController = new AbortController();
+    const submitSignal = mergeAbortSignals(options.signal, submitController.signal);
     const finish = (fn: () => void) => {
       if (settled) return;
       settled = true;
@@ -121,6 +128,7 @@ export async function postMultimodeGenerateStream(
     });
     const clearTimer = armStreamTimeout(() => {
       finish(() => {
+        submitController.abort();
         void cancelInflight(requestId);
         reject(new Error("Multimode generation stream timed out"));
       });
@@ -129,6 +137,7 @@ export async function postMultimodeGenerateStream(
     if (options.signal) {
       if (options.signal.aborted) {
         finish(() => {
+          submitController.abort();
           void cancelInflight(requestId);
           reject(new DOMException("Aborted", "AbortError"));
         });
@@ -136,6 +145,7 @@ export async function postMultimodeGenerateStream(
       }
       options.signal.addEventListener("abort", () => {
         finish(() => {
+          submitController.abort();
           void cancelInflight(requestId);
           reject(new DOMException("Aborted", "AbortError"));
         });
@@ -146,7 +156,7 @@ export async function postMultimodeGenerateStream(
       url: "/api/generate/multimode",
       payload: payload as unknown as Record<string, unknown>,
       requestId,
-      signal: options.signal,
+      signal: submitSignal,
       parseError: (res, data: { error?: string; code?: string; status?: number }) => {
         const e = new Error(data.error ?? `Request failed: ${res.status}`) as Error & { code?: string; status?: number };
         e.code = data.code;
@@ -238,6 +248,7 @@ export type VideoGenerateRequest = {
   model?: string;
   mode?: "text-to-video" | "image-to-video" | "reference-to-video";
   sourceImage?: string;
+  providerUrl?: string;
   sourceFilename?: string;
   referenceImages?: string[];
   referenceFilenames?: string[];
@@ -262,6 +273,7 @@ export type VideoGenerateDone = {
   revisedPrompt?: string | null;
   elapsed?: number;
   video?: Record<string, unknown>;
+  providerUrl?: string | null;
   videoSeries?: { topic?: string; chainIndex?: number } | null;
   videoContinuity?: import("../types").VideoContinuityLineage | null;
 };
@@ -280,6 +292,8 @@ export async function postVideoGenerateStream(
 
   return new Promise<VideoGenerateDone>((resolve, reject) => {
     let settled = false;
+    const submitController = new AbortController();
+    const submitSignal = mergeAbortSignals(options.signal, submitController.signal);
     const finish = (fn: () => void) => {
       if (settled) return;
       settled = true;
@@ -300,6 +314,7 @@ export async function postVideoGenerateStream(
     });
     const clearTimer = armStreamTimeout(() => {
       finish(() => {
+        submitController.abort();
         void cancelInflight(requestId);
         reject(new Error("Video generation stream timed out"));
       });
@@ -308,6 +323,7 @@ export async function postVideoGenerateStream(
     if (options.signal) {
       if (options.signal.aborted) {
         finish(() => {
+          submitController.abort();
           void cancelInflight(requestId);
           reject(new DOMException("Aborted", "AbortError"));
         });
@@ -315,6 +331,7 @@ export async function postVideoGenerateStream(
       }
       options.signal.addEventListener("abort", () => {
         finish(() => {
+          submitController.abort();
           void cancelInflight(requestId);
           reject(new DOMException("Aborted", "AbortError"));
         });
@@ -325,7 +342,7 @@ export async function postVideoGenerateStream(
       url: "/api/video/generate",
       payload: { provider: "grok", ...payload } as unknown as Record<string, unknown>,
       requestId,
-      signal: options.signal,
+      signal: submitSignal,
       parseError: (res, data: { error?: string; code?: string; status?: number }) => {
         const e = new Error(data.error ?? `Request failed: ${res.status}`) as Error & { code?: string; status?: number };
         e.code = data.code;

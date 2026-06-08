@@ -13,6 +13,7 @@ interface ResultActionsProps {
 
 const CANVAS_MODE_PROMPT_ID = "canvas-mode-context";
 const CANVAS_MODE_PROMPT_NAME = "Canvas Mode";
+const PROVIDER_URL_TTL_MS = 3_600_000;
 const CANVAS_MODE_PROMPT_TEXT = [
   "Canvas Mode context:",
   "The user edited or annotated the reference image on a canvas.",
@@ -48,9 +49,10 @@ export function ResultActions({
   const isGrokProvider = actionImage.provider === "grok" || actionImage.provider === "grok-api";
   const providerUrlAlive = Boolean(
     isGrokProvider &&
+    !isVideo &&
     actionImage.providerUrl &&
     actionImage.createdAt &&
-    Date.now() - actionImage.createdAt < 3_600_000,
+    Date.now() - actionImage.createdAt < PROVIDER_URL_TTL_MS,
   );
 
   const animate = async () => {
@@ -160,6 +162,15 @@ export function ResultActions({
   };
 
   const newFromHereAsUrl = async () => {
+    if (
+      isVideo ||
+      !actionImage.providerUrl ||
+      !actionImage.createdAt ||
+      Date.now() - actionImage.createdAt >= PROVIDER_URL_TTL_MS
+    ) {
+      showToast(t("toast.continueAsUrlExpired"), true);
+      return;
+    }
     try {
       await continueFromItemAsUrl(actionImage);
     } catch {
