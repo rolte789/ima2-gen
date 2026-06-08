@@ -30,6 +30,8 @@ export function PromptComposer({ variant = "sidebar" }: PromptComposerProps) {
   const { t } = useI18n();
 
   const refs = useAppStore((s) => s.referenceImages);
+  const providerUrlReference = useAppStore((s) => s.providerUrlReference);
+  const setProviderUrlReference = useAppStore((s) => s.setProviderUrlReference);
   const addReferences = useAppStore((s) => s.addReferences);
   const addReferenceDataUrl = useAppStore((s) => s.addReferenceDataUrl);
   const useImageAsReference = useAppStore((s) => s.useImageAsReference);
@@ -248,6 +250,18 @@ export function PromptComposer({ variant = "sidebar" }: PromptComposerProps) {
             <span className="composer__direct-badge">
               {t("prompt.directModeActive")}
             </span>
+          )}
+          {providerUrlReference && (
+            <button
+              type="button"
+              className="composer__url-ref-badge"
+              onClick={() => setProviderUrlReference(null)}
+              title={t("prompt.urlRefActiveTitle")}
+              aria-label={t("prompt.urlRefClear")}
+            >
+              <span className="composer__url-ref-dot" aria-hidden="true" />
+              {t("prompt.urlRefActive")}
+            </button>
           )}
           {refs.length > 0 && (
             <span className="composer__count">

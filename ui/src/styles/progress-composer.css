@@ -296,6 +296,39 @@
   white-space: normal;
   overflow-wrap: anywhere;
 }
+.composer__url-ref-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, #a855f7 62%, var(--border));
+  border-radius: 7px;
+  background: color-mix(in srgb, #a855f7 16%, var(--surface));
+  color: #c084fc;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.composer__url-ref-badge:hover,
+.composer__url-ref-badge:focus-visible {
+  border-color: #c084fc;
+  background: color-mix(in srgb, #a855f7 24%, var(--surface));
+  color: #e9d5ff;
+}
+.composer__url-ref-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #a855f7;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #a855f7 20%, transparent);
+}
 .composer__count {
   font-family: var(--mono);
   font-size: 11px;

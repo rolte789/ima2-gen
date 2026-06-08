@@ -34,6 +34,11 @@ describe("direct mode visual contract", () => {
     assert.match(composer, /isDirectMode && multimode \? " composer--combined-modes" : ""/);
     assert.match(composer, /className="composer__direct-badge"/);
     assert.match(composer, /t\("prompt\.directModeActive"\)/);
+    assert.match(composer, /providerUrlReference = useAppStore\(\(s\) => s\.providerUrlReference\)/);
+    assert.match(composer, /setProviderUrlReference = useAppStore\(\(s\) => s\.setProviderUrlReference\)/);
+    assert.match(composer, /className="composer__url-ref-badge"/);
+    assert.match(composer, /onClick=\{\(\) => setProviderUrlReference\(null\)\}/);
+    assert.match(composer, /t\("prompt\.urlRefActive"\)/);
     assert.match(composer, /aria-pressed=\{isDirectMode\}/);
   });
 
@@ -42,6 +47,8 @@ describe("direct mode visual contract", () => {
 
     assert.match(css, /\.composer--direct\s*\{/);
     assert.match(css, /\.composer__direct-badge\s*\{/);
+    assert.match(css, /\.composer__url-ref-badge\s*\{/);
+    assert.match(css, /\.composer__url-ref-dot\s*\{/);
     assert.match(css, /\.composer--multimode\s*\{/);
     assert.match(css, /\.composer--combined-modes\s*\{/);
     assert.match(css, /\.composer__mode-badge\s*\{/);
@@ -55,5 +62,9 @@ describe("direct mode visual contract", () => {
 
     assert.match(en, /"directModeActive":\s*"1:1 Direct on"/);
     assert.match(ko, /"directModeActive":\s*"1:1 Direct 켜짐"/);
+    assert.match(en, /"urlRefActive":\s*"URL ref"/);
+    assert.match(ko, /"urlRefActive":\s*"URL 참조"/);
+    assert.match(en, /"urlRefActiveTitle":\s*"Provider URL reference is active/);
+    assert.match(ko, /"urlRefActiveTitle":\s*"URL 참조가 활성화/);
   });
 });
