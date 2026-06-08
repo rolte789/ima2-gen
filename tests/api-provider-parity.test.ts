@@ -2,7 +2,7 @@ import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
 import sharp from "sharp";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { registerGenerateRoutes } from "../routes/generate.ts";
@@ -313,6 +313,51 @@ describe("API provider parity", () => {
       assert.ok(editCall);
       assert.equal(editCall.body.image.url, "https://cdn.x.ai/source-image.png");
       assert.equal(calls.filter((call) => call.url.endsWith("/v1/images/generations")).length, 0);
+    });
+  });
+
+  it("edit provider=grok preserves the returned provider URL for local-image i2i outputs", async () => {
+    const calls = [];
+    globalThis.fetch = async (url, init) => {
+      if (String(url).startsWith("http://127.0.0.1:") && !String(url).includes("/v1/")) {
+        return originalFetch(url, init);
+      }
+      const body = init?.body ? JSON.parse(String(init.body)) : null;
+      calls.push({ url: String(url), body });
+      if (String(url).startsWith("https://cdn.x.ai/")) {
+        return new Response(Buffer.from(FINAL_B64, "base64"), { headers: { "Content-Type": "image/jpeg" } });
+      }
+      return Response.json({
+        data: [{ url: "https://cdn.x.ai/edit-output.jpeg", revised_prompt: "edited local image" }],
+        usage: { cost_in_usd_ticks: 2 },
+      });
+    };
+
+    const image = await pngB64();
+    await withApp(async ({ baseUrl, generatedDir }) => {
+      const res = await fetch(`${baseUrl}/api/edit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: "edit this local image",
+          image,
+          provider: "grok",
+          model: "grok-imagine-image-quality",
+        }),
+      });
+      const body = await res.json();
+      const editCall = calls.find((call) => call.url.endsWith("/v1/images/edits"));
+      assert.equal(res.status, 200);
+      assert.equal(body.provider, "grok");
+      assert.equal(body.providerUrl, "https://cdn.x.ai/edit-output.jpeg");
+      assert.equal(typeof body.createdAt, "number");
+      assert.ok(editCall);
+      assert.match(editCall.body.image.url, /^data:image\/png;base64,/);
+
+      const sidecar = JSON.parse(await readFile(join(generatedDir, `${body.filename}.json`), "utf-8"));
+      assert.equal(sidecar.providerUrl, "https://cdn.x.ai/edit-output.jpeg");
+      assert.equal(sidecar.kind, "edit");
+      assert.equal(sidecar.provider, "grok");
     });
   });
 

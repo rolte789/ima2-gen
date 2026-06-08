@@ -204,6 +204,7 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       let revisedPrompt: string | undefined;
       let webSearchCalls = 0;
       let resultMimeFromProvider: string | undefined;
+      let providerUrl: string | null = null;
 
       if (activeProvider === "gemini-api") {
         const r = await generateViaGeminiApi(`Edit this image: ${prompt}`, requireRuntimeContext(ctx), {
@@ -240,6 +241,7 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           directApiKey,
         });
         resultB64 = r.b64;
+        providerUrl = r.providerUrl ?? null;
         usage = r.usage;
         revisedPrompt = r.revisedPrompt;
         webSearchCalls = r.webSearchCalls;
@@ -282,6 +284,7 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       const editFilePath = join(ctx.config.storage.generatedDir, filename);
       await writeFile(editFilePath, editBuffer);
       generateImageThumbnailFromBuffer(editBuffer, editFilePath).catch(() => {});
+      const createdAt = Date.now();
       const meta = {
         prompt,
         userPrompt: prompt,
@@ -297,10 +300,11 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         provider: activeProvider,
         kind: "edit",
         requestId,
-        createdAt: Date.now(),
+        createdAt,
         usage: usage || null,
         webSearchCalls,
         webSearchEnabled,
+        ...(providerUrl ? { providerUrl } : {}),
       };
       await safeWriteSidecar(join(ctx.config.storage.generatedDir, filename + ".json"), meta);
       invalidateHistoryIndex();
@@ -327,6 +331,8 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         promptMode: normalizedPromptMode,
         webSearchCalls,
         webSearchEnabled,
+        providerUrl,
+        createdAt,
       });
     } catch (e) {
       const err = errInfo(e);
