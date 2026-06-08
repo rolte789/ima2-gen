@@ -2,6 +2,7 @@ export { jsonFetch, parseSseBlock, getBrowserId, jsonFetchWithBrowserId } from "
 export { getInflight, cancelInflight, getOAuthStatus, getBilling } from "./api-inflight";
 export {
   postGenerate,
+  postGenerateStream,
   postMultimodeGenerateStream,
   postEdit,
   importLocalImage,

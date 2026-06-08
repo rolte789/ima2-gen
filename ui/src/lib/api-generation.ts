@@ -17,6 +17,72 @@ export function postGenerate(payload: GenerateRequest): Promise<GenerateResponse
     body: JSON.stringify(payload),
   });
 }
+
+export async function postGenerateStream(
+  payload: GenerateRequest,
+  options: { signal?: AbortSignal } = {},
+): Promise<GenerateResponse> {
+  const requestId = payload.requestId ?? `freq_${crypto.randomUUID()}`;
+  ensureConnected();
+
+  return new Promise<GenerateResponse>((resolve, reject) => {
+    let settled = false;
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimer();
+      unsub();
+      fn();
+    };
+    const unsub = subscribe(requestId, null, (event, data) => {
+      if (settled) return;
+      if (event === "done") {
+        finish(() => resolve(data as unknown as GenerateResponse));
+      } else if (event === "error") {
+        finish(() => reject(parseSseErrorPayload(data, "Generation failed")));
+      }
+    });
+    const clearTimer = armStreamTimeout(() => {
+      finish(() => {
+        void cancelInflight(requestId);
+        reject(new Error("Generation stream timed out"));
+      });
+    });
+
+    if (options.signal) {
+      if (options.signal.aborted) {
+        finish(() => {
+          void cancelInflight(requestId);
+          reject(new DOMException("Aborted", "AbortError"));
+        });
+        return;
+      }
+      options.signal.addEventListener("abort", () => {
+        finish(() => {
+          void cancelInflight(requestId);
+          reject(new DOMException("Aborted", "AbortError"));
+        });
+      }, { once: true });
+    }
+
+    void fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...payload, async: true, requestId }),
+    }).then(async (res) => {
+      if (settled) return;
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as Record<string, unknown>;
+        const err = parseSseErrorPayload(data, `Request failed: ${res.status}`);
+        err.status = err.status ?? res.status;
+        finish(() => reject(err));
+      }
+    }).catch((err) => {
+      finish(() => reject(err instanceof Error ? err : new Error(String(err))));
+    });
+  });
+}
+
 export async function postMultimodeGenerateStream(
   payload: MultimodeGenerateRequest,
   handlers: {

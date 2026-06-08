@@ -5,7 +5,7 @@ import type {
 } from "../types";
 import { isMultiResponse } from "../types";
 import {
-  postGenerate,
+  postGenerateStream,
   postMultimodeGenerateStream,
 } from "../lib/api";
 import { handleError } from "../lib/errorHandler";
@@ -295,7 +295,7 @@ export async function runGenerateImpl(
           : {}),
     };
 
-    const res: GenerateResponse = await postGenerate(payload);
+    const res: GenerateResponse = await postGenerateStream(payload);
 
     if (isMultiResponse(res) && res.images.length > 1) {
       for (const img of res.images) {

@@ -17,26 +17,40 @@ bus.setMaxListeners(MAX_SSE_LISTENERS);
 let seq = 0;
 const ring: BusEvent[] = [];
 
-function toRingEntry(entry: BusEvent): BusEvent | null {
-  const image = entry.data.image;
-  const hasLargeImage = typeof image === "string" && image.length > 1000;
-  if (!hasLargeImage) return entry;
-  // Keep terminal/partial metadata replayable; omit multi-MB base64 from the ring.
-  if (entry.event === "partial" || entry.event === "image" || entry.event === "done") {
-    const { image: _omit, ...rest } = entry.data as Record<string, unknown> & { image?: string };
-    return { ...entry, data: { ...rest, _imageOmitted: true } };
+function omitLargeImageFields(data: Record<string, unknown>): { data: Record<string, unknown>; omitted: boolean } {
+  let omitted = false;
+  const next: Record<string, unknown> = { ...data };
+  if (typeof next.image === "string" && next.image.length > 1000) {
+    delete next.image;
+    omitted = true;
   }
-  return null;
+  if (Array.isArray(next.images)) {
+    const images = next.images.map((item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return item;
+      const imageItem = item as Record<string, unknown>;
+      if (typeof imageItem.image !== "string" || imageItem.image.length <= 1000) return item;
+      const { image: _omit, ...rest } = imageItem;
+      omitted = true;
+      return { ...rest, _imageOmitted: true };
+    });
+    if (omitted) next.images = images;
+  }
+  if (omitted) next._imageOmitted = true;
+  return { data: omitted ? next : data, omitted };
+}
+
+function toRingEntry(entry: BusEvent): BusEvent {
+  // Keep terminal/partial metadata replayable; omit multi-MB base64 from the ring.
+  const stripped = omitLargeImageFields(entry.data);
+  return stripped.omitted ? { ...entry, data: stripped.data } : entry;
 }
 
 export function publish(jobId: string, event: string, data: Record<string, unknown>): void {
   seq++;
   const entry: BusEvent = { id: seq, jobId, event, data };
   const ringEntry = toRingEntry(entry);
-  if (ringEntry) {
-    ring.push(ringEntry);
-    if (ring.length > RING_SIZE) ring.shift();
-  }
+  ring.push(ringEntry);
+  if (ring.length > RING_SIZE) ring.shift();
   bus.emit("event", entry);
 }
 

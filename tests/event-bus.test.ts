@@ -71,6 +71,26 @@ describe("eventBus", () => {
     assert.equal((replayed[1].data as { _imageOmitted?: boolean })._imageOmitted, true);
   });
 
+  it("strips nested classic multi-image payloads from the replay ring", () => {
+    const largeImage = "data:image/png;base64," + "A".repeat(2000);
+    publish("classic1", "done", {
+      requestId: "classic1",
+      images: [
+        { image: largeImage, filename: "a.png" },
+        { image: largeImage, filename: "b.png" },
+      ],
+    });
+
+    const [replayed] = replaySince(0);
+    const data = replayed.data as { images?: Array<{ image?: string; filename?: string; _imageOmitted?: boolean }>; _imageOmitted?: boolean };
+    assert.equal(data._imageOmitted, true);
+    assert.equal(data.images?.[0]?.filename, "a.png");
+    assert.equal(data.images?.[0]?.image, undefined);
+    assert.equal(data.images?.[0]?._imageOmitted, true);
+    assert.equal(data.images?.[1]?.filename, "b.png");
+    assert.equal(data.images?.[1]?.image, undefined);
+  });
+
   it("still delivers large image events to live subscribers", () => {
     const received: any[] = [];
     subscribe((ev) => received.push(ev));

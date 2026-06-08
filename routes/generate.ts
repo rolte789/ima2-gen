@@ -13,7 +13,15 @@ import { generateViaGrok, planGrokImage } from "../lib/grokImageAdapter.js";
 import { generateViaAgy } from "../lib/agyImageAdapter.js";
 import { generateViaGeminiApi } from "../lib/geminiApiImageAdapter.js";
 import { isNonRetryableGenerationError, normalizeGenerationFailure, type UpstreamErr } from "../lib/generationErrors.js";
-import { startJob, finishJob, registerJobAbortController, isJobCanceled } from "../lib/inflight.js";
+import {
+  startJob,
+  finishJob,
+  registerJobAbortController,
+  isJobCanceled,
+  isStartJobFailure,
+  setJobPhase,
+  INFLIGHT_RETRY_AFTER_SECONDS,
+} from "../lib/inflight.js";
 import {
   isGenerationCanceledError,
   makeGenerationCanceledError,
@@ -31,17 +39,37 @@ import { errInfo } from "../lib/errInfo.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { STORYBOARD_PREFIX } from "../lib/storyboardPrefix.js";
 import { validateModeration, imageFormatFromMime, upstreamErrorFields } from "../lib/routeHelpers.js";
+import { publish } from "../lib/eventBus.js";
+import { publishJobEvent } from "../lib/ssePublish.js";
 
 export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   const ctx = requireRuntimeContext(ctxRaw);
   app.post("/api/generate", async (req: Request, res: Response) => {
     const requestId = typeof req.body?.requestId === "string" ? req.body.requestId : req.id;
+    const asyncMode = req.body?.async === true;
     let finishStatus = "completed";
-    let finishHttpStatus;
-    let finishErrorCode;
-    let finishMeta = {};
+    let finishHttpStatus: number | undefined;
+    let finishErrorCode: string | undefined;
+    let finishMeta: Record<string, unknown> = {};
     let finishCanceled = false;
     const cancelController = new AbortController();
+    const fail = (status: number, payload: Record<string, unknown>) => {
+      finishStatus = "error";
+      finishHttpStatus = status;
+      finishErrorCode = typeof payload.code === "string" ? payload.code : finishErrorCode;
+      if (asyncMode && res.headersSent) {
+        publish(requestId, "error", { ...payload, status, requestId });
+        return;
+      }
+      return res.status(status).json(payload);
+    };
+    const succeed = (payload: Record<string, unknown>) => {
+      if (asyncMode) {
+        publishJobEvent(requestId, "done", payload);
+        return;
+      }
+      res.json(payload);
+    };
     try {
       const sessionId = typeof req.body?.sessionId === "string" ? req.body.sessionId : null;
       const clientNodeId = typeof req.body?.clientNodeId === "string" ? req.body.clientNodeId : null;
@@ -74,10 +102,7 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
         rawWebSearchEnabled,
       });
       if (providerOptions.error) {
-        finishStatus = "error";
-        finishHttpStatus = providerOptions.status;
-        finishErrorCode = providerOptions.code;
-        return res.status(providerOptions.status).json({ error: providerOptions.error, code: providerOptions.code });
+        return fail(providerOptions.status, { error: providerOptions.error, code: providerOptions.code });
       }
       const imageModel = providerOptions.model;
       const reasoningEffort = providerOptions.reasoningEffort;
@@ -87,13 +112,25 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
       const normalizedPromptMode = promptMode === "direct" ? "direct" : "auto";
       const generationPrompt = storyboardPrefix + prompt;
 
-      if (!prompt) return res.status(400).json({ error: "Prompt is required" });
+      if (!prompt) return fail(400, { error: "Prompt is required" });
       const moderationCheck = validateModeration(ctx, moderation);
-      if (moderationCheck.error) return res.status(400).json({ error: moderationCheck.error });
+      if (moderationCheck.error) return fail(400, { error: moderationCheck.error });
       const count = Math.min(Math.max(parseInt(n) || 1, 1), 8);
       const referencePayload = summarizeReferencePayload(references);
+      const refCheckResult = validateAndNormalizeRefs(references);
+      if (refCheckResult.error) {
+        return fail(400, { error: refCheckResult.error, code: refCheckResult.code });
+      }
+      const refCheck = refCheckResult as Extract<typeof refCheckResult, { refs: string[] }>;
+      if ((activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api") && refCheck.refs.length > 3) {
+        return fail(400, {
+          error: `${activeProvider === "agy" ? "Agy" : "Grok"} image editing supports up to 3 reference images`,
+          code: activeProvider === "agy" ? "AGY_REF_TOO_MANY" : "GROK_REF_TOO_MANY",
+          requestId,
+        });
+      }
 
-      startJob({
+      const started = startJob({
         requestId,
         kind: "classic",
         prompt,
@@ -113,26 +150,25 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
           composerInsertedPrompts,
         },
       });
-      registerJobAbortController(requestId, cancelController);
-
-      const refCheckResult = validateAndNormalizeRefs(references);
-      if (refCheckResult.error) {
-        finishStatus = "error";
-        finishHttpStatus = 400;
-        finishErrorCode = refCheckResult.code;
-        return res.status(400).json({ error: refCheckResult.error, code: refCheckResult.code });
-      }
-      const refCheck = refCheckResult as Extract<typeof refCheckResult, { refs: string[] }>;
-      if ((activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api") && refCheck.refs.length > 3) {
-        finishStatus = "error";
-        finishHttpStatus = 400;
-        finishErrorCode = activeProvider === "agy" ? "AGY_REF_TOO_MANY" : "GROK_REF_TOO_MANY";
-        return res.status(400).json({
-          error: `${activeProvider === "agy" ? "Agy" : "Grok"} image editing supports up to 3 reference images`,
-          code: activeProvider === "agy" ? "AGY_REF_TOO_MANY" : "GROK_REF_TOO_MANY",
+      if (started && isStartJobFailure(started)) {
+        const status = started.code === "TOO_MANY_JOBS" ? 429 : 409;
+        if (started.code === "TOO_MANY_JOBS") {
+          res.setHeader("Retry-After", String(INFLIGHT_RETRY_AFTER_SECONDS));
+        }
+        return fail(status, {
+          error: started.code === "TOO_MANY_JOBS"
+            ? "Too many concurrent generation jobs"
+            : "Request ID already in use",
+          code: started.code,
           requestId,
         });
       }
+      registerJobAbortController(requestId, cancelController);
+      if (asyncMode) {
+        res.status(202).json({ requestId, async: true });
+      }
+      setJobPhase(requestId, "streaming");
+      if (asyncMode) publish(requestId, "phase", { requestId, phase: "streaming" });
 
       const client = req.get("x-ima2-client") || "ui";
       const referenceDiagnostics = refCheck.referenceDiagnostics || [];
@@ -363,28 +399,20 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
           const status = firstErr.status || 500;
           if (isGenerationCanceledError(firstErr)) {
             finishCanceled = true;
-            finishHttpStatus = firstErr.status;
-            finishErrorCode = firstErr.code;
-            return res.status(firstErr.status).json({
+            return fail(firstErr.status, {
               error: firstErr.message,
               code: firstErr.code,
               requestId,
             });
           }
-          finishStatus = "error";
-          finishHttpStatus = status;
-          finishErrorCode = firstErr.code;
-          return res.status(status).json({
+          return fail(status, {
             error: firstErr.message,
             code: firstErr.code,
             ...upstreamErrorFields(firstErr),
             requestId,
           });
         }
-        finishStatus = "error";
-        finishHttpStatus = 500;
-        finishErrorCode = "GENERATE_ALL_FAILED";
-        return res.status(500).json({ error: "All generation attempts failed" });
+        return fail(500, { error: "All generation attempts failed", code: "GENERATE_ALL_FAILED", requestId });
       }
 
       const elapsed = +((Date.now() - startTime) / 1000).toFixed(1);
@@ -429,7 +457,7 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
           elapsedMs: Date.now() - startTime,
           filename: images[0].filename,
         });
-        res.json({ image: images[0].image, elapsed, filename: images[0].filename, requestId, ...extra });
+        succeed({ image: images[0].image, elapsed, filename: images[0].filename, requestId, ...extra });
       } else {
         finishHttpStatus = 200;
         finishMeta = { filenames: images.map((image) => image.filename), imageCount: images.length };
@@ -438,7 +466,7 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
           imageCount: images.length,
           elapsedMs: Date.now() - startTime,
         });
-        res.json({ images, elapsed, count: images.length, requestId, ...extra });
+        succeed({ images, elapsed, count: images.length, requestId, ...extra });
       }
     } catch (e) {
       const err = errInfo(e);
@@ -447,21 +475,17 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
       if (isGenerationCanceledError(err.raw) || isJobCanceled(requestId)) {
         const canceled = makeGenerationCanceledError();
         finishCanceled = true;
-        finishHttpStatus = canceled.status;
-        finishErrorCode = canceled.code;
-        return res.status(canceled.status).json({
+        return fail(canceled.status, {
           error: canceled.message,
           code: canceled.code,
           requestId,
         });
       }
-      finishStatus = "error";
-      finishHttpStatus = err.status || 500;
       finishErrorCode = fallbackCode || "GENERATE_FAILED";
       logError("generate", "error", err.raw, { requestId, code: finishErrorCode });
-      res.status(err.status || 500).json({
+      fail(err.status || 500, {
         error: err.message,
-        code: fallbackCode,
+        code: finishErrorCode,
         ...upstreamErrorFields(ext),
         requestId,
       });
