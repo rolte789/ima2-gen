@@ -5,13 +5,14 @@ import {
   planGrokImage,
   postGrokImages,
   grokError,
+  downloadGrokImageUrl,
   type GrokReferenceImage,
 } from "./grokImageAdapter.js";
 import { logEvent } from "./logger.js";
 import type { RouteRuntimeContext } from "./runtimeContext.js";
 
 export interface GrokMultimodeResult {
-  images: Array<{ b64: string; revisedPrompt?: string; mime?: string }>;
+  images: Array<{ b64: string; revisedPrompt?: string; mime?: string; providerUrl?: string }>;
   usage: Record<string, number> | null;
   webSearchCalls: number;
   extraIgnored: number;
@@ -34,7 +35,7 @@ export async function generateMultimodeViaGrok(
   const model = options.model || (ctx.config as any).grokProvider?.defaultImageModel || "grok-imagine-image";
   const maxImages = Math.min(8, Math.max(1, options.maxImages || 4));
   const references = options.references || [];
-  const images: Array<{ b64: string; revisedPrompt?: string; mime?: string }> = [];
+  const images: Array<{ b64: string; revisedPrompt?: string; mime?: string; providerUrl?: string }> = [];
   let totalCost = 0;
   let totalWebSearchCalls = 0;
 
@@ -67,8 +68,10 @@ export async function generateMultimodeViaGrok(
         promptChars: plan.prompt.length,
       });
       const result = await postGrokImages(ctx, payload, options.signal, endpoint, options.directApiKey);
-      if (result.data?.[0]?.b64_json) {
-        const img = { b64: result.data[0].b64_json, mime: result.data[0].mime_type, revisedPrompt: plan.prompt };
+      const imgUrl = result.data?.[0]?.url;
+      if (imgUrl) {
+        const dl = await downloadGrokImageUrl(imgUrl, options.signal);
+        const img = { b64: dl.b64, mime: dl.mime, revisedPrompt: plan.prompt, providerUrl: imgUrl };
         images.push(img);
         if (result.usage?.cost_in_usd_ticks) totalCost += result.usage.cost_in_usd_ticks;
         await options.onFinalImage?.(img, i);

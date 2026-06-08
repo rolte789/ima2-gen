@@ -166,6 +166,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   prompt: storedGenerationDefaults.prompt ?? "",
   insertedPrompts: storedGenerationDefaults.insertedPrompts ?? [],
   referenceImages: [],
+  providerUrlReference: null,
   canvasReferenceImage: null,
 
   // Workspace Profile
@@ -200,6 +201,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   cancelMetadataRestore: () => set({ metadataRestore: null }),
   addMetadataRestoreAsReference: () => addMetadataRestoreAsReferenceImpl(set, get),
   removeReference: (index) => removeReferenceImpl(index, set, get),
+  setProviderUrlReference: (url) => set({ providerUrlReference: url }),
   clearReferences: () => clearReferencesImpl(set, get),
   attachCanvasVersionReference: (item) => attachCanvasVersionReferenceImpl(item, set, get),
   useCurrentAsReference: () => useCurrentAsReferenceImpl(set, get),

@@ -127,8 +127,11 @@ describe("Grok planner adapter", () => {
           }],
         });
       }
+      if (String(url).startsWith("https://cdn.x.ai/")) {
+        return new Response(Buffer.from("jpeg"), { headers: { "Content-Type": "image/jpeg" } });
+      }
       return Response.json({
-        data: [{ b64_json: Buffer.from("jpeg").toString("base64"), mime_type: "image/jpeg" }],
+        data: [{ url: "https://cdn.x.ai/test-gen.png" }],
         usage: { cost_in_usd_ticks: 400000000 },
       });
     }) as typeof fetch;
@@ -142,8 +145,8 @@ describe("Grok planner adapter", () => {
       requestId: "req_test",
     });
 
-    assert.equal(calls.length, 3);
-    assert.equal(calls.every((call) => call.url.startsWith("http://127.0.0.1:18647/")), true);
+    assert.equal(calls.length, 4);
+    assert.equal(calls.slice(0, 3).every((call) => call.url.startsWith("http://127.0.0.1:18647/")), true);
     assert.equal(calls[0].url.endsWith("/v1/responses"), true);
     assert.equal(calls[0].body.tool_choice, "required");
     assert.equal(calls[1].body.model, "grok-4.3");
@@ -185,8 +188,11 @@ describe("Grok planner adapter", () => {
           }],
         });
       }
+      if (String(url).startsWith("https://cdn.x.ai/")) {
+        return new Response(Buffer.from("png"), { headers: { "Content-Type": "image/png" } });
+      }
       return Response.json({
-        data: [{ b64_json: Buffer.from("png").toString("base64"), mime_type: "image/png" }],
+        data: [{ url: "https://cdn.x.ai/test-edit.png" }],
       });
     }) as typeof fetch;
 
@@ -200,7 +206,7 @@ describe("Grok planner adapter", () => {
       ],
     });
 
-    assert.equal(calls.length, 3);
+    assert.equal(calls.length, 4);
     assert.equal(calls[2].url.endsWith("/v1/images/edits"), true);
     assert.equal(calls[2].body.prompt, "planned edit prompt");
     assert.equal(Array.isArray(calls[2].body.images), true);
@@ -245,8 +251,11 @@ describe("Grok planner adapter", () => {
           }],
         });
       }
+      if (String(url).startsWith("https://cdn.x.ai/")) {
+        return new Response(Buffer.from("multi-ref"), { headers: { "Content-Type": "image/jpeg" } });
+      }
       return Response.json({
-        data: [{ b64_json: Buffer.from("multi-ref").toString("base64"), mime_type: "image/jpeg" }],
+        data: [{ url: "https://cdn.x.ai/test-multi.png" }],
       });
     }) as typeof fetch;
 
@@ -260,7 +269,7 @@ describe("Grok planner adapter", () => {
       ],
     });
 
-    assert.equal(calls.length, 3);
+    assert.equal(calls.length, 4);
     assert.equal(calls[0].url.endsWith("/v1/responses"), true);
     assert.equal(calls[1].url.endsWith("/v1/chat/completions"), true);
     assert.equal(calls[2].url.endsWith("/v1/images/edits"), true);

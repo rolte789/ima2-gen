@@ -14,11 +14,13 @@ export interface MultimodeImage {
   b64: string;
   revisedPrompt?: string | null;
   mime?: string | null;
+  providerUrl?: string;
 }
 
 export type MultimodeRouteItem = {
   image: string;
   filename: string;
+  providerUrl?: string;
   revisedPrompt: string | null;
   sequenceId: string;
   sequenceIndex: number;

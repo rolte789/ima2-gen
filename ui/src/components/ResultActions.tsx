@@ -3,7 +3,7 @@ import { useAppStore } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import { exportImageToComfy } from "../lib/api";
 import { isVideoItem, extractFirstFrame, extractMidFrame, extractLastFrame } from "../lib/videoMedia";
-import { continueFromItem } from "../lib/continueFromItem";
+import { continueFromItem, continueFromItemAsUrl } from "../lib/continueFromItem";
 import type { GenerateItem } from "../types";
 
 interface ResultActionsProps {
@@ -45,6 +45,13 @@ export function ResultActions({
   const videoSrc = isVideo ? (actionImage.url || actionImage.image) : "";
   const canExportToComfy = Boolean(actionImage.filename);
   const canAnimate = Boolean(actionImage.filename) && !isVideo;
+  const isGrokProvider = actionImage.provider === "grok" || actionImage.provider === "grok-api";
+  const providerUrlAlive = Boolean(
+    isGrokProvider &&
+    actionImage.providerUrl &&
+    actionImage.createdAt &&
+    Date.now() - actionImage.createdAt < 3_600_000,
+  );
 
   const animate = async () => {
     if (!actionImage.filename || animating) return;
@@ -152,6 +159,22 @@ export function ResultActions({
     showToast(t(result.hasPrompt ? "toast.forkStarted" : "toast.forkStartedNoPrompt"));
   };
 
+  const newFromHereAsUrl = async () => {
+    try {
+      await continueFromItemAsUrl(actionImage);
+    } catch {
+      // non-fatal
+    }
+    const promptEl = document.querySelector<HTMLTextAreaElement>(
+      'textarea[name="prompt"], textarea#prompt, .sidebar textarea',
+    );
+    if (promptEl) {
+      promptEl.focus();
+      promptEl.setSelectionRange(promptEl.value.length, promptEl.value.length);
+    }
+    showToast(t("toast.continueAsUrlStarted"));
+  };
+
   const sendToComfyUI = async () => {
     if (!actionImage.filename || comfyExporting) return;
     setComfyExporting(true);
@@ -224,6 +247,16 @@ export function ResultActions({
       >
         {t("result.continueHere")}
       </button>
+      {providerUrlAlive && (
+        <button
+          type="button"
+          className="action-btn"
+          onClick={() => void newFromHereAsUrl()}
+          title={t("result.continueAsUrlTitle")}
+        >
+          {t("result.continueAsUrl")}
+        </button>
+      )}
       {canAnimate && (
         <button
           type="button"

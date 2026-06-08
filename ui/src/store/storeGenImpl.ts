@@ -99,9 +99,11 @@ export async function generateMultimodeImpl(
         mode: s.promptMode,
         composerPrompt,
         composerInsertedPrompts,
-        ...(s.referenceImages.length
-          ? { references: s.referenceImages.map(stripDataUrlPrefix) }
-          : {}),
+        ...(s.providerUrlReference
+          ? { providerUrl: s.providerUrlReference }
+          : s.referenceImages.length
+            ? { references: s.referenceImages.map(stripDataUrlPrefix) }
+            : {}),
       },
       {
         onPartial: (partial) => {
@@ -237,6 +239,7 @@ export async function generateMultimodeImpl(
         activeFlightIds: nextFlights,
         multimodePreviewFlightId: nextPreview,
         multimodeSequences: nextSequences,
+        providerUrlReference: null,
       };
     });
   }
@@ -285,9 +288,11 @@ export async function runGenerateImpl(
       mode: s.promptMode,
       composerPrompt,
       composerInsertedPrompts,
-      ...(s.referenceImages.length
-        ? { references: s.referenceImages.map(stripDataUrlPrefix) }
-        : {}),
+      ...(s.providerUrlReference
+        ? { providerUrl: s.providerUrlReference }
+        : s.referenceImages.length
+          ? { references: s.referenceImages.map(stripDataUrlPrefix) }
+          : {}),
     };
 
     const res: GenerateResponse = await postGenerate(payload);
@@ -359,6 +364,7 @@ export async function runGenerateImpl(
     set({
       activeGenerations: Math.max(0, get().activeGenerations - 1),
       inFlight: remaining,
+      providerUrlReference: null,
     });
   }
 }

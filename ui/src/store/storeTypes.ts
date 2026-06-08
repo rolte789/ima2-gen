@@ -212,11 +212,13 @@ export type AppState = {
   promptMode: "auto" | "direct";
   prompt: string;
   referenceImages: string[];
+  providerUrlReference: string | null;
   canvasReferenceImage: string | null;
   addReferences: (files: File[]) => Promise<void>;
   addReferenceDataUrl: (dataUrl: string) => void;
   removeReference: (index: number) => void;
   clearReferences: () => void;
+  setProviderUrlReference: (url: string | null) => void;
   useCurrentAsReference: () => Promise<void>;
   useImageAsReference: (item: GenerateItem) => Promise<void>;
   attachCanvasVersionReference: (item: GenerateItem) => Promise<void>;

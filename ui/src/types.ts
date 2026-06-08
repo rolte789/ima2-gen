@@ -70,6 +70,7 @@ export type SizePreset =
 export type GenerateItem = {
   image: string;
   url?: string;
+  providerUrl?: string | null;
   mediaType?: "image" | "video" | string;
   video?: Record<string, unknown> | null;
   videoSeries?: { topic?: string; chainIndex?: number } | null;

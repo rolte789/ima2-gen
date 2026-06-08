@@ -86,6 +86,7 @@ export async function runVideoGenerateImpl(
   set({ inFlight: nextInFlight, activeGenerations: nextInFlight.length, videoProgress: 0 });
   get().startInFlightPolling();
   try {
+    const providerUrl = get().providerUrlReference;
     const result = await postVideoGenerateStream(
       {
         prompt,
@@ -103,6 +104,7 @@ export async function runVideoGenerateImpl(
         storyboard: get().storyboardActive || undefined,
         sessionId: requestSessionId,
         clientNodeId: nodeId ?? null,
+        ...(providerUrl ? { providerUrl } : {}),
       },
       {
         onPlanning: () => set({ inFlight: get().inFlight.map((f) => f.id === flightId ? { ...f, phase: "planning" } : f) }),
@@ -195,7 +197,7 @@ export async function runVideoGenerateImpl(
   } finally {
     const remaining = get().inFlight.filter((f) => f.id !== flightId);
     saveInFlight(remaining);
-    set({ inFlight: remaining, activeGenerations: remaining.length, videoProgress: null });
+    set({ inFlight: remaining, activeGenerations: remaining.length, videoProgress: null, providerUrlReference: null });
     get().startInFlightPolling();
   }
 }

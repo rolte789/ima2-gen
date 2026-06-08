@@ -195,8 +195,11 @@ describe("Agent Mode runtime contract", () => {
           }],
         });
       }
+      if (String(url).startsWith("https://cdn.x.ai/")) {
+        return new Response(Buffer.from(finalImage, "base64"), { headers: { "Content-Type": "image/jpeg" } });
+      }
       return Response.json({
-        data: [{ b64_json: finalImage, mime_type: "image/jpeg" }],
+        data: [{ url: "https://cdn.x.ai/test-agent.png" }],
         usage: { cost_in_usd_ticks: 5 },
       });
     };

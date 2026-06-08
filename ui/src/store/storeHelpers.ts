@@ -166,6 +166,7 @@ export function mapHistoryItem(it: Awaited<ReturnType<typeof getHistory>>["items
   return {
     image: it.url,
     url: it.url,
+    providerUrl: it.providerUrl ?? null,
     mediaType: it.mediaType,
     video: it.video ?? null,
     videoSeries: it.videoSeries ?? null,

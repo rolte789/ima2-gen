@@ -249,10 +249,11 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         return fail(e?.status || 400, e?.code || "GROK_VIDEO_INVALID_MODE", e?.message || "invalid reference image");
       }
       if (resolved.length > MAX_REF2V_REFERENCES) return fail(400, "GROK_VIDEO_REF_TOO_MANY", `at most ${MAX_REF2V_REFERENCES} reference images`);
-      const mode: VideoMode = deriveVideoMode(resolved.length);
+      const incomingProviderUrl = typeof req.body?.providerUrl === "string" && req.body.providerUrl.startsWith("http") ? req.body.providerUrl : null;
+      const mode: VideoMode = incomingProviderUrl ? "image-to-video" : deriveVideoMode(resolved.length);
       const duration = clampVideoDuration(durationCheck.duration, mode);
       const referenceImages = mode === "reference-to-video" ? resolved.map((r) => r.b64) : undefined;
-      const sourceB64 = mode === "image-to-video" ? resolved[0]?.b64 : undefined;
+      const sourceB64 = incomingProviderUrl || (mode === "image-to-video" ? resolved[0]?.b64 : undefined);
       const sourceFilename = resolved[0]?.filename ?? null;
 
       const started = startJob({
@@ -337,6 +338,7 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       const meta = {
         kind: "video",
         mediaType: "video",
+        providerUrl: result.url,
         requestId,
         sessionId,
         clientNodeId,
@@ -384,6 +386,7 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         requestId,
         filename,
         url: `/generated/${encodeURIComponent(filename)}`,
+        providerUrl: result.url,
         mediaType: "video",
         revisedPrompt: result.revisedPrompt,
         elapsed,

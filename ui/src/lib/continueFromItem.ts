@@ -51,3 +51,13 @@ export async function continueFromItem(item: ContinueableItem): Promise<Continue
 
   return { ok: true, isVideo, hasPrompt };
 }
+
+export async function continueFromItemAsUrl(
+  item: ContinueableItem & { providerUrl?: string | null },
+): Promise<ContinueResult> {
+  const result = await continueFromItem(item);
+  if (item.providerUrl) {
+    useAppStore.getState().setProviderUrlReference(item.providerUrl);
+  }
+  return result;
+}

@@ -3,6 +3,7 @@ import { jsonFetch, jsonFetchWithBrowserId } from "./api-core";
 export type HistoryItem = {
   filename: string;
   url: string;
+  providerUrl?: string | null;
   thumb?: string | null;
   mediaType?: "image" | "video" | string;
   video?: Record<string, unknown> | null;

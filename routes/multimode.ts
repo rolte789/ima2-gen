@@ -179,6 +179,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
         });
       }
       const refCheck = refCheckResult as Extract<typeof refCheckResult, { refs: string[] }>;
+      const incomingProviderUrl = typeof req.body?.providerUrl === "string" && req.body.providerUrl.startsWith("http") ? req.body.providerUrl : null;
       const referencePayload = summarizeReferencePayload(references);
 
       const started = startJob({
@@ -291,6 +292,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
           webSearchCalls: latestWebSearchCalls,
           webSearchEnabled,
           refsCount: refCheck.refs.length,
+          ...(image.providerUrl ? { providerUrl: image.providerUrl } : {}),
         };
         const rawBuffer = Buffer.from(image.b64, "base64");
         const embedded = await embedImageMetadataBestEffort(rawBuffer, resultFormat, meta, {
@@ -304,6 +306,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
         const item = {
           image: `data:${resultMime};base64,${image.b64}`,
           filename,
+          ...(image.providerUrl ? { providerUrl: image.providerUrl } : {}),
           revisedPrompt: image.revisedPrompt || null,
           sequenceId,
           sequenceIndex: index + 1,
@@ -347,13 +350,16 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
       } else if (activeProvider === "grok" || activeProvider === "grok-api") {
         const directApiKey = activeProvider === "grok-api" ? ctx.xaiApiKey : undefined;
         const grokModel = quality === "high" ? "grok-imagine-image-quality" : imageModel;
+        const grokRefs = incomingProviderUrl
+          ? [{ b64: "", url: incomingProviderUrl }, ...refCheck.refDetails]
+          : refCheck.refDetails;
         generated = await generateMultimodeViaGrok(prompt, ctx, {
           model: grokModel,
           maxImages,
           size: effectiveSize,
           signal: cancelController.signal,
           requestId,
-          references: refCheck.refDetails,
+          references: grokRefs,
           directApiKey,
           onFinalImage: async (image, index) => {
             const totalReturned = Math.max(index + 1, images.length + 1);

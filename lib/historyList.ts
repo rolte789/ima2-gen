@@ -65,6 +65,7 @@ export async function listHistoryRows(baseDir = config.storage.generatedDir) {
       reasoningEffort: meta?.reasoningEffort ?? null,
       elapsed: meta?.elapsed ?? null,
       provider: meta?.provider || "oauth",
+      providerUrl: meta?.providerUrl || null,
       usage: meta?.usage || null,
       webSearchCalls: meta?.webSearchCalls || 0,
       sessionId: meta?.sessionId || null,

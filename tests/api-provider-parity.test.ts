@@ -163,8 +163,11 @@ describe("API provider parity", () => {
           }],
         });
       }
+      if (String(url).startsWith("https://cdn.x.ai/")) {
+        return new Response(Buffer.from(FINAL_B64, "base64"), { headers: { "Content-Type": "image/png" } });
+      }
       return Response.json({
-        data: [{ b64_json: FINAL_B64, mime_type: "image/png" }],
+        data: [{ url: "https://cdn.x.ai/test-parity-gen.png" }],
         usage: { cost_in_usd_ticks: 1 },
       });
     };
@@ -431,8 +434,11 @@ describe("API provider parity", () => {
           }],
         });
       }
+      if (String(url).startsWith("https://cdn.x.ai/")) {
+        return new Response(Buffer.from(FINAL_B64, "base64"), { headers: { "Content-Type": "image/jpeg" } });
+      }
       return Response.json({
-        data: [{ b64_json: FINAL_B64, mime_type: "image/jpeg" }],
+        data: [{ url: "https://cdn.x.ai/test-parity-node.png" }],
         usage: { cost_in_usd_ticks: 3 },
       });
     };
