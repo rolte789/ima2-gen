@@ -269,6 +269,12 @@ function showHelp() {
 
   Usage: ima2 <command> [options]
 
+  Generation workflow:
+    Image/video jobs run on the server. For multiple candidates, prefer
+    'ima2 gen -n <N>' or 'ima2 multimode <prompt>' instead of repeating
+    one-image prompts. Start independent CLI jobs concurrently when needed;
+    use 'ima2 ps --json' to monitor requestIds and 'ima2 cancel <id>' to stop.
+
   Server commands:
     serve [--dev]  Start the image generation server
     setup, login   Configure API key or GPT OAuth (interactive)
@@ -325,6 +331,9 @@ function showHelp() {
     ima2 serve                       Start server
     ima2 serve --dev                 Start with verbose server diagnostics
     ima2 gen "a shiba in space"      Generate from CLI
+    ima2 gen "a shiba in space" -n 4 -d ./out
+                                      Generate 4 candidates in one request
+    ima2 ps --json                    Watch active async generation jobs
     ima2 gen "merge" --ref a.png --ref b.png -q high -o out.png
     ima2 video "a cat playing piano" --duration 10
     ima2 ls -n 10                    Last 10 generations

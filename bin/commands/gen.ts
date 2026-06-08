@@ -42,6 +42,11 @@ const HELP = `
 
   Generate image(s) via the running ima2 server.
 
+  Batch/async note:
+    Use -n <N> for multiple candidates in one request. Independent CLI
+    commands can run concurrently against the server; monitor active requestIds
+    with 'ima2 ps --json' and stop one with 'ima2 cancel <requestId>'.
+
   Options:
     -q, --quality <low|medium|high>         Default: low
     -s, --size <WxH | auto>                 Default: 1024x1024
@@ -66,6 +71,7 @@ const HELP = `
 
   Examples:
     ima2 gen "a shiba in space"
+    ima2 gen "a shiba in space" -n 4 -d ./out
     ima2 gen "poster" --model gpt-5.4 --mode direct --moderation low
     ima2 gen "merge" --ref a.png --ref b.png -q high -o out.png
     cat prompt.txt | ima2 gen --stdin -n 2 -d ./out

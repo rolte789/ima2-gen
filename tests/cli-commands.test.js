@@ -223,6 +223,10 @@ describe("ima2 CLI commands (live server)", () => {
     assert.match(stdout, /grok <sub>/);
     assert.match(stdout, /ping/);
     assert.match(stdout, /cancel <id>/);
+    assert.match(stdout, /Generation workflow:/);
+    assert.match(stdout, /ima2 gen -n <N>/);
+    assert.match(stdout, /ima2 ps --json/);
+    assert.match(stdout, /ima2 cancel <id>/);
   });
 
   it("ima2 grok --help documents bundled progrok", async () => {

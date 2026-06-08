@@ -56,6 +56,8 @@ describe("ima2 CLI", () => {
     assert.ok(stdout.includes("commands:"), "help should list commands");
     assert.ok(stdout.includes("serve [--dev]"), "help should mention serve --dev");
     assert.ok(stdout.includes("version"), "help should mention version");
+    assert.ok(stdout.includes("Generation workflow:"), "help should explain async generation workflow");
+    assert.ok(stdout.includes("ima2 ps --json"), "help should point agents to active job monitoring");
   });
 
   it("should show version with --version", async () => {
