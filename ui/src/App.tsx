@@ -16,7 +16,7 @@ import { MobileSettingsToggle } from "./components/MobileSettingsToggle";
 import { MobileAppBar } from "./components/MobileAppBar";
 import { MobileComposeSheet } from "./components/MobileComposeSheet";
 import { useAppStore, flushGraphSaveBeacon } from "./store/useAppStore";
-import { onResync, ensureConnected } from "./lib/eventChannel";
+import { onResync, ensureConnected, onConnectionStateChange } from "./lib/eventChannel";
 import { ENABLE_AGENT_MODE, ENABLE_CARD_NEWS_MODE, ENABLE_NODE_MODE } from "./lib/devMode";
 import { useGalleryViewerNavigation } from "./hooks/useGalleryViewerNavigation";
 import { useBrowserAttentionBadge } from "./hooks/useBrowserAttentionBadge";
@@ -87,6 +87,9 @@ export default function App() {
     startInFlightPolling();
     ensureConnected();
     onResync(() => reconcileInflight());
+    onConnectionStateChange((state) => {
+      if (state === "failed") console.warn("[SSE] connection failed after multiple retries");
+    });
   }, [hydrateHistory, loadSessions, reconcileInflight, startInFlightPolling]);
 
   useEffect(() => {

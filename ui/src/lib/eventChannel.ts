@@ -20,6 +20,10 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let wasEverConnected = false;
 let reconnectAttempt = 0;
 
+export type ConnectionState = "connected" | "reconnecting" | "failed";
+const FAILED_THRESHOLD = 3;
+let connectionStateCallback: ((state: ConnectionState) => void) | null = null;
+
 const EVENT_TYPES = ["phase", "partial", "image", "done", "error", "submitted", "progress", "planning"];
 
 function buildEventsUrl(): string {
@@ -36,6 +40,7 @@ function connect() {
     reconnectAttempt = 0;
     if (wasEverConnected) resyncCallback?.();
     wasEverConnected = true;
+    connectionStateCallback?.("connected");
   };
 
   for (const type of EVENT_TYPES) {
@@ -50,6 +55,7 @@ function connect() {
       RECONNECT_MAX_MS,
     );
     reconnectAttempt += 1;
+    connectionStateCallback?.(reconnectAttempt >= FAILED_THRESHOLD ? "failed" : "reconnecting");
     reconnectTimer = setTimeout(connect, delay);
   };
 }
@@ -99,6 +105,10 @@ export function onResync(cb: () => void) {
   resyncCallback = cb;
 }
 
+export function onConnectionStateChange(cb: (state: ConnectionState) => void) {
+  connectionStateCallback = cb;
+}
+
 export function disconnect() {
   source?.close();
   source = null;
@@ -107,6 +117,7 @@ export function disconnect() {
   lastEventId = "";
   wasEverConnected = false;
   reconnectAttempt = 0;
+  connectionStateCallback = null;
 }
 
 export function ensureConnected() {

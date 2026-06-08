@@ -12,7 +12,7 @@ import { generateMultimodeViaResponses } from "../lib/responsesImageAdapter.js";
 import { generateMultimodeViaGrok } from "../lib/grokMultimodeAdapter.js";
 import { generateViaAgy } from "../lib/agyImageAdapter.js";
 import { generateViaGeminiApi } from "../lib/geminiApiImageAdapter.js";
-import { startJob, finishJob, registerJobAbortController, isJobCanceled } from "../lib/inflight.js";
+import { startJob, finishJob, registerJobAbortController, isJobCanceled, INFLIGHT_RETRY_AFTER_SECONDS } from "../lib/inflight.js";
 import {
   isGenerationCanceledError,
   makeGenerationCanceledError,
@@ -181,7 +181,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
       const refCheck = refCheckResult as Extract<typeof refCheckResult, { refs: string[] }>;
       const referencePayload = summarizeReferencePayload(references);
 
-      startJob({
+      const started = startJob({
         requestId,
         kind: "multimode",
         prompt,
@@ -198,6 +198,22 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
           composerInsertedPrompts,
         },
       });
+      if (started && !started.ok) {
+        finishStatus = "error";
+        finishHttpStatus = started.code === "TOO_MANY_JOBS" ? 429 : 409;
+        finishErrorCode = started.code;
+        if (started.code === "TOO_MANY_JOBS") {
+          res.setHeader("Retry-After", String(INFLIGHT_RETRY_AFTER_SECONDS));
+        }
+        return respondMultimodeValidationError(res, requestId, asyncMode, finishHttpStatus, {
+          error: started.code === "TOO_MANY_JOBS"
+            ? "Too many concurrent generation jobs"
+            : "Request ID already in use",
+          code: started.code,
+          status: finishHttpStatus,
+          requestId,
+        });
+      }
       registerJobAbortController(requestId, cancelController);
       if (asyncMode) res.status(202).json({ requestId });
 
@@ -363,7 +379,7 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
             onPartialImage: (partial) => {
                 if (isJobCanceled(requestId)) return;
                 const pd = { image: `data:${mime};base64,${partial.b64}`, requestId, sequenceId, index: partial.index };
-                writeSse(res, "partial", pd);
+                if (!res.writableEnded && !res.destroyed) writeSse(res, "partial", pd);
                 publish(requestId, "partial", pd);
               },
             onFinalImage: async (image, index) => {

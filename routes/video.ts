@@ -8,7 +8,7 @@ import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
 import type { Express, Request, Response } from "express";
-import { startJob, finishJob, registerJobAbortController, isJobCanceled, setJobPhase } from "../lib/inflight.js";
+import { startJob, finishJob, registerJobAbortController, isJobCanceled, setJobPhase, INFLIGHT_RETRY_AFTER_SECONDS } from "../lib/inflight.js";
 import { isGenerationCanceledError, makeGenerationCanceledError } from "../lib/generationCancel.js";
 import { logEvent, logError } from "../lib/logger.js";
 import { invalidateHistoryIndex } from "../lib/historyIndex.js";
@@ -255,12 +255,24 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       const sourceB64 = mode === "image-to-video" ? resolved[0]?.b64 : undefined;
       const sourceFilename = resolved[0]?.filename ?? null;
 
-      startJob({
+      const started = startJob({
         requestId,
         kind: "video",
         prompt: activePrompt,
         meta: { kind: "video", sessionId, clientNodeId, model: modelCheck.model, mode, duration, resolution: resolutionCheck.resolution },
       });
+      if (started && !started.ok) {
+        if (started.code === "TOO_MANY_JOBS") {
+          res.setHeader("Retry-After", String(INFLIGHT_RETRY_AFTER_SECONDS));
+        }
+        return fail(
+          started.code === "TOO_MANY_JOBS" ? 429 : 409,
+          started.code,
+          started.code === "TOO_MANY_JOBS"
+            ? "Too many concurrent generation jobs"
+            : "Request ID already in use",
+        );
+      }
       registerJobAbortController(requestId, cancelController);
       if (asyncMode) res.status(202).json({ requestId });
       await mkdir(ctx.config.storage.generatedDir, { recursive: true });

@@ -52,6 +52,12 @@ interface TerminalJob {
 const terminalJobs = new Map<string, TerminalJob>(); // requestId -> terminal snapshot, active-only API stays default
 const abortControllers = new Map<string, AbortController>();
 
+export const MAX_CONCURRENT_JOBS = 12;
+export const INFLIGHT_RETRY_AFTER_SECONDS = 5;
+
+export type StartJobFailureCode = "REQUEST_ID_IN_USE" | "TOO_MANY_JOBS";
+export type StartJobResult = { ok: true } | { ok: false; code: StartJobFailureCode };
+
 // Phases: "queued" → "streaming" (upstream connection open, waiting for image)
 //                 → "decoding" (b64 received, writing to disk)
 export function startJob({ requestId, kind, prompt, meta = {} }: {
@@ -59,39 +65,54 @@ export function startJob({ requestId, kind, prompt, meta = {} }: {
   kind: string;
   prompt?: string | null;
   meta?: Record<string, unknown>;
-}) {
+}): StartJobResult | undefined {
   if (!requestId) return;
+  purgeStaleJobs();
+  if (getJob(requestId)) {
+    return { ok: false, code: "REQUEST_ID_IN_USE" };
+  }
+  if (countActiveJobs() >= MAX_CONCURRENT_JOBS) {
+    return { ok: false, code: "TOO_MANY_JOBS" };
+  }
   const startedAt = Date.now();
   const normalizedPrompt = typeof prompt === "string" ? prompt.slice(0, 500) : "";
   const normalizedMeta = normalizeMeta(meta);
-  getDb()
-    .prepare(`
-      INSERT OR REPLACE INTO inflight (
-        request_id,
+  try {
+    getDb()
+      .prepare(`
+        INSERT INTO inflight (
+          request_id,
+          kind,
+          prompt,
+          meta,
+          session_id,
+          parent_node_id,
+          client_node_id,
+          started_at,
+          phase,
+          phase_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `)
+      .run(
+        requestId,
         kind,
-        prompt,
-        meta,
-        session_id,
-        parent_node_id,
-        client_node_id,
-        started_at,
-        phase,
-        phase_at
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
-    .run(
-      requestId,
-      kind,
-      normalizedPrompt,
-      JSON.stringify(normalizedMeta),
-      stringOrNull(normalizedMeta.sessionId),
-      stringOrNull(normalizedMeta.parentNodeId),
-      stringOrNull(normalizedMeta.clientNodeId),
-      startedAt,
-      "queued",
-      startedAt,
-    );
+        normalizedPrompt,
+        JSON.stringify(normalizedMeta),
+        stringOrNull(normalizedMeta.sessionId),
+        stringOrNull(normalizedMeta.parentNodeId),
+        stringOrNull(normalizedMeta.clientNodeId),
+        startedAt,
+        "queued",
+        startedAt,
+      );
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code;
+    if (code === "SQLITE_CONSTRAINT_PRIMARYKEY" || code === "SQLITE_CONSTRAINT") {
+      return { ok: false, code: "REQUEST_ID_IN_USE" };
+    }
+    throw err;
+  }
   terminalJobs.delete(requestId);
   abortControllers.delete(requestId);
   logEvent("inflight", "start", {
@@ -102,6 +123,7 @@ export function startJob({ requestId, kind, prompt, meta = {} }: {
     clientNodeId: normalizedMeta.clientNodeId || null,
     promptChars: typeof prompt === "string" ? prompt.length : 0,
   });
+  return { ok: true };
 }
 
 export function registerJobAbortController(
@@ -237,6 +259,13 @@ export function purgeStaleJobs(now = Date.now()) {
   getDb()
     .prepare("DELETE FROM inflight WHERE started_at < ?")
     .run(now - config.inflight.ttlMs);
+}
+
+function countActiveJobs(): number {
+  const row = getDb()
+    .prepare("SELECT COUNT(*) AS count FROM inflight")
+    .get() as { count: number };
+  return Number(row.count);
 }
 
 function getJob(requestId: string): InflightJob | null {

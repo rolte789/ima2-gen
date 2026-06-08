@@ -106,7 +106,9 @@ export function startInFlightPollingImpl(
       for (const err of terminalErrors) {
         handleError(err, get());
       }
-    } catch {}
+    } catch (e) {
+      if (import.meta.env.DEV) console.warn("[inflight] polling failed (fetchInflightScopes)", e);
+    }
     try {
       const lastKnown = get().history.reduce(
         (max, it) => (it.createdAt && it.createdAt > max ? it.createdAt : max),
@@ -149,7 +151,9 @@ export function startInFlightPollingImpl(
         saveInFlight(remaining);
         set({ inFlight: remaining, activeGenerations: remaining.length });
       }
-    } catch {}
+    } catch (e) {
+      if (import.meta.env.DEV) console.warn("[inflight] polling failed (getHistory)", e);
+    }
   };
   w.__ima2InflightTimer = window.setInterval(tick, 1500) as unknown as number;
 }
@@ -199,7 +203,7 @@ export async function reconcileInflightImpl(
       handleError(err, get());
     }
     if (merged.length > 0) get().startInFlightPolling();
-  } catch {
-    // Silent — endpoint may not exist on older servers.
+  } catch (e) {
+    if (import.meta.env.DEV) console.warn("[inflight] reconcile failed", e);
   }
 }

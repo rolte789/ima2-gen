@@ -403,6 +403,7 @@ Node retry diagnostics include safe context such as `operation`, `clientNodeId`,
 - 2026-05-29: Persisted per-image `elapsed` (numeric seconds) and `reasoningEffort` in sidecar + embedded XMP and exposed both through `/api/history` for Classic, Canvas edit, and Node modes (#79, forward-fix; older items stay blank). Classic/edit `elapsed` responses are now numeric.
 - 2026-05-30: Documented the Agent Mode API (`/api/agent/*` — sessions, turns, durable queue, compact, manifest, tools; backed by `lib/agentStore.ts`, `lib/agentQueueStore.ts`, `lib/agentQueueWorker.ts`, `lib/agentRuntime.ts`) and the Prompt Builder endpoint (`POST /api/prompt-builder/chat`). Re-grounded the API map against current code at ima2-gen 1.1.14.
 - 2026-06-01: Updated the API map for Grok video runtime: generation/edit/extension/frame/analyze, active prompt guidance, `continueFromVideo`, and `videoContinuity` sidecar/SSE contracts.
+- 2026-06-08: Verified `GET /api/events` Events Multiplexing section (lines 157–201) against `routes/events.ts` — replay-gap, `X-Accel-Buffering: no`, 512 cap, `res.end()` cleanup, async 202 dual-emit. Cross-ref `devlog/00_sse-multiplexing-architecture.md`.
 
 Previous document: `[[02-command-reference]]`
 
