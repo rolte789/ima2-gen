@@ -65,6 +65,7 @@ export async function runVideoGenerateImpl(
   }
 
   const startedAt = Date.now();
+  const autoSelectStartedAt = startedAt;
   const flightId = `vid_${startedAt}_${Math.random().toString(36).slice(2, 6)}`;
   const requestSessionId = get().activeSessionId;
   const nextInFlight: PersistedInFlight[] = [
@@ -158,7 +159,7 @@ export async function runVideoGenerateImpl(
         createdAt: Date.now(),
         sessionId: requestSessionId,
       };
-      await addHistory(videoItem, set, get);
+      await addHistory(videoItem, set, get, { autoSelectStartedAt });
     }
   } catch (error) {
     if (isCanceledGenerationError(error)) {
@@ -214,6 +215,7 @@ export async function animateImageImpl(
     throw new Error(ACTIVE_VIDEO_PROMPT_GUIDANCE);
   }
   const startedAt = Date.now();
+  const autoSelectStartedAt = startedAt;
   const flightId = `vid_${startedAt}_${Math.random().toString(36).slice(2, 6)}`;
   const nextInFlight: PersistedInFlight[] = [
     ...get().inFlight,
@@ -246,7 +248,7 @@ export async function animateImageImpl(
       createdAt: Date.now(),
       sessionId: get().activeSessionId,
     };
-    await addHistory(videoItem, set, get);
+    await addHistory(videoItem, set, get, { autoSelectStartedAt });
   } catch (error) {
     if (!isCanceledGenerationError(error)) {
       const message = error instanceof Error ? error.message : "Video generation failed";

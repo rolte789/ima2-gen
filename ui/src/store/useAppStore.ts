@@ -218,6 +218,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   syncFromStorage: () => syncFromStorageImpl(set, get),
   currentImage: null,
+  lastHistorySelectedAt: 0,
   applyMergedCanvasImage: (item) => applyMergedCanvasImageImpl(item, set),
   addGeneratedHistoryItem: async (item) => {
     await addHistory(item, set, get);
@@ -498,4 +499,3 @@ importLocalImageToHistory: async (file) => importLocalImageToHistoryImpl(file, s
   setCanvasExportBackground: (mode) => setCanvasExportBackgroundImpl(mode, set, get),
   setCanvasExportMatteColor: (color) => setCanvasExportMatteColorImpl(color, set, get),
 }));
-

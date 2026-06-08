@@ -17,7 +17,7 @@ test("#93 contract: runVideoGenerateImpl calls addHistory after video completes"
     "storeVideoImpl must import addHistory from storeGraphSave",
   );
   assert.ok(
-    src.includes("await addHistory(videoItem, set, get)"),
+    /await addHistory\(videoItem, set, get(?:, \{ autoSelectStartedAt \})?\)/.test(src),
     "video generation must call addHistory to update gallery directly",
   );
 });

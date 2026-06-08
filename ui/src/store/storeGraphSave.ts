@@ -369,10 +369,15 @@ export function flushGraphSaveBeacon(get: () => AppState): void {
   } catch {}
 }
 
+type AddHistoryOptions = {
+  autoSelectStartedAt?: number;
+};
+
 export async function addHistory(
   item: GenerateItem,
   set: (p: Partial<AppState>) => void,
   get: () => AppState,
+  options: AddHistoryOptions = {},
 ): Promise<void> {
   const thumb = isVideoItem(item)
     ? undefined
@@ -392,15 +397,21 @@ export async function addHistory(
     [merged, ...historyWithoutDuplicate],
     state.loadedHistoryRetainLimit + 1,
   );
-  saveSelectedFilename(merged.filename ?? null);
+  const shouldAutoSelect =
+    !state.currentImage ||
+    options.autoSelectStartedAt == null ||
+    state.lastHistorySelectedAt <= options.autoSelectStartedAt;
+  if (shouldAutoSelect) {
+    saveSelectedFilename(merged.filename ?? null);
+  }
   set({
     history,
-    currentImage: merged,
+    ...(shouldAutoSelect ? { currentImage: merged } : {}),
     loadedHistoryRetainLimit: Math.max(
       state.loadedHistoryRetainLimit,
       Math.min(state.history.length + 1, state.loadedHistoryRetainLimit + 1),
     ),
-    unseenGeneratedCount: get().unseenGeneratedCount + 1,
+    unseenGeneratedCount: state.unseenGeneratedCount + 1,
   });
 }
 

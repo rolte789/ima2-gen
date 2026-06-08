@@ -51,6 +51,7 @@ export async function generateMultimodeImpl(
   const controller = new AbortController();
   flightControllers.set(flightId, controller);
   const startedAt = Date.now();
+  const autoSelectStartedAt = startedAt;
   const requested = normalizeCount(s.multimodeMaxImages);
   const nextInFlight: PersistedInFlight[] = [
     ...s.inFlight,
@@ -162,7 +163,7 @@ export async function generateMultimodeImpl(
       model: res.model ?? null,
     }));
     for (const item of items) {
-      await addHistory(item, set, get);
+      await addHistory(item, set, get, { autoSelectStartedAt });
     }
     set((state) => ({
       multimodeSequences: {
@@ -260,6 +261,7 @@ export async function runGenerateImpl(
 
   const flightId = `f_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   const startedAt = Date.now();
+  const autoSelectStartedAt = startedAt;
   const nextInFlight: PersistedInFlight[] = [
     ...s.inFlight,
     { id: flightId, prompt, startedAt, composerPrompt, composerInsertedPrompts },
@@ -314,7 +316,7 @@ export async function runGenerateImpl(
           size: res.size,
           model: res.model ?? null,
         };
-        await addHistory(item, set, get);
+        await addHistory(item, set, get, { autoSelectStartedAt });
       }
       get().showToast(t("toast.generatedBatch", { count: res.images.length, elapsed: res.elapsed }));
     } else {
@@ -353,7 +355,7 @@ export async function runGenerateImpl(
           model: res.model ?? null,
         };
       }
-      await addHistory(item, set, get);
+      await addHistory(item, set, get, { autoSelectStartedAt });
       get().showToast(t("toast.generatedSingle", { elapsed: res.elapsed }));
     }
   } catch (err) {

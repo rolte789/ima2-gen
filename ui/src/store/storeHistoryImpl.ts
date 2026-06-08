@@ -122,6 +122,7 @@ export async function loadOlderFavoriteHistoryImpl(set: StoreSet, get: StoreGet)
 }
 
 export function selectHistoryImpl(item: GenerateItem, set: StoreSet, get: StoreGet): void {
+  const selectedAt = Date.now();
   const history = get().history;
   const target = item.canvasVersion
     ? resolveVisibleShortcutCurrent(history, item) ?? getVisibleGalleryItems(history)[0] ?? null
@@ -142,6 +143,7 @@ export function selectHistoryImpl(item: GenerateItem, set: StoreSet, get: StoreG
   );
   set((state) => ({
     currentImage: target,
+    lastHistorySelectedAt: selectedAt,
     unseenGeneratedCount: 0,
     multimodePreviewFlightId: isWithinGrid ? previewId : null,
     multimodeSequences: releaseOrphanedPreview(state.multimodeSequences, previewId, Boolean(isWithinGrid)),
@@ -150,6 +152,7 @@ export function selectHistoryImpl(item: GenerateItem, set: StoreSet, get: StoreG
 }
 
 export function showHistorySequenceImpl(sequenceId: string, set: StoreSet, get: StoreGet): void {
+  const selectedAt = Date.now();
   const items = get().history
     .filter((item) => item.sequenceId === sequenceId && !item.canvasVersion)
     .sort(compareSequenceItems);
@@ -169,6 +172,7 @@ export function showHistorySequenceImpl(sequenceId: string, set: StoreSet, get: 
   saveSelectedFilename(null);
   set((state) => ({
     currentImage: null,
+    lastHistorySelectedAt: selectedAt,
     unseenGeneratedCount: 0,
     canvasOpen: false,
     multimodePreviewFlightId: previewId,

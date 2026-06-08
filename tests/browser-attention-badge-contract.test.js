@@ -33,7 +33,7 @@ describe("browser attention badge contract", () => {
     assert.match(badge, /renderBadgeFavicon/);
 
     assert.match(store, /unseenGeneratedCount:\s*0/);
-    assert.match(store, /unseenGeneratedCount:\s*get\(\)\.unseenGeneratedCount \+ 1/);
+    assert.match(store, /unseenGeneratedCount:\s*state\.unseenGeneratedCount \+ 1/);
     assert.match(store, /markGeneratedResultsSeen:\s*\(\) => set\(\{ unseenGeneratedCount:\s*0 \}\)/);
     assert.match(canvas, /markGeneratedResultsSeen\(\)/);
     assert.doesNotMatch(css, /\.app-status-layer/);

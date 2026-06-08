@@ -231,6 +231,7 @@ export type AppState = {
   reconcileGraphPending: () => Promise<void>;
   syncFromStorage: () => void;
   currentImage: GenerateItem | null;
+  lastHistorySelectedAt: number;
   applyMergedCanvasImage: (item: GenerateItem) => void;
   addGeneratedHistoryItem: (item: GenerateItem) => Promise<void>;
   history: GenerateItem[];

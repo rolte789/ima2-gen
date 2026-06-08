@@ -49,7 +49,7 @@ describe("gallery shortcut visible-domain contract", () => {
     assert.match(store, /selectHistory:\s*\(item\) =>/);
     assert.match(store, /item\.canvasVersion\s*\?/);
     assert.match(store, /saveSelectedFilename\(target\?\.filename \?\? null\)/);
-    assert.match(store, /currentImage: target,\s*unseenGeneratedCount: 0,\s*multimodePreviewFlightId: isWithinGrid \? previewId : null/);
+    assert.match(store, /currentImage: target,[\s\S]*?unseenGeneratedCount: 0,[\s\S]*?multimodePreviewFlightId: isWithinGrid \? previewId : null/);
   });
 
   it("normalizes persisted hidden canvas selections during hydration and storage sync", () => {
