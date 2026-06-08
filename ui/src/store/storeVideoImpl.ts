@@ -203,7 +203,7 @@ export async function runVideoGenerateImpl(
     const remaining = get().inFlight.filter((f) => f.id !== flightId);
     saveInFlight(remaining);
     clearFlightAbort(flightId);
-    set({ inFlight: remaining, activeGenerations: remaining.length, videoProgress: null, providerUrlReference: null });
+    set({ inFlight: remaining, activeGenerations: remaining.length, videoProgress: null });
     get().startInFlightPolling();
   }
 }

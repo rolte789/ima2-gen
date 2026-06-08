@@ -66,6 +66,7 @@ export async function addReferencesImpl(
   const valid = results.filter((x): x is string => !!x);
   set((s) => ({
     referenceImages: [...s.referenceImages, ...valid].slice(0, MAX_REFERENCE_IMAGES),
+    providerUrlReference: valid.length > 0 ? null : s.providerUrlReference,
   }));
   if (heicSkipped.length > 0) get().showToast(t("toast.refHeicUnsupported"), true);
   if (usable.length - valid.length > 0) get().showToast(t("toast.refTooLarge"), true);
@@ -148,7 +149,7 @@ export function clearReferencesImpl(set: StoreSet, get: StoreGet): void {
   if (insertedPrompts.length !== get().insertedPrompts.length) {
     saveGenerationDefaultsPatch({ insertedPrompts });
   }
-  set({ referenceImages: [], canvasReferenceImage: null, videoContinuityLineage: null, insertedPrompts });
+  set({ referenceImages: [], canvasReferenceImage: null, videoContinuityLineage: null, insertedPrompts, providerUrlReference: null });
 }
 
 export async function attachCanvasVersionReferenceImpl(
@@ -174,6 +175,7 @@ export async function attachCanvasVersionReferenceImpl(
     return {
       canvasReferenceImage: dataUrl,
       referenceImages: [dataUrl, ...withoutDuplicate].slice(0, MAX_REFERENCE_IMAGES),
+      providerUrlReference: null,
     };
   });
   get().showToast(t("canvas.version.usingAsReference"));
@@ -198,6 +200,7 @@ export async function useCurrentAsReferenceImpl(set: StoreSet, get: StoreGet): P
   }
   set((s) => ({
     referenceImages: [...s.referenceImages, dataUrl].slice(0, MAX_REFERENCE_IMAGES),
+    providerUrlReference: null,
   }));
   get().showToast(t("toast.addedCurrentAsRef"));
 }
@@ -220,6 +223,7 @@ export async function useImageAsReferenceImpl(
   }
   set((s) => ({
     referenceImages: [...s.referenceImages, dataUrl].slice(0, MAX_REFERENCE_IMAGES),
+    providerUrlReference: null,
   }));
   get().showToast(t("toast.addedCurrentAsRef"));
 }

@@ -235,7 +235,6 @@ export async function generateMultimodeImpl(
         activeFlightIds: nextFlights,
         multimodePreviewFlightId: nextPreview,
         multimodeSequences: nextSequences,
-        providerUrlReference: null,
       };
     });
   }
@@ -370,7 +369,6 @@ export async function runGenerateImpl(
     set({
       activeGenerations: Math.max(0, get().activeGenerations - 1),
       inFlight: remaining,
-      providerUrlReference: null,
     });
   }
 }

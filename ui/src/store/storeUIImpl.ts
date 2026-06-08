@@ -115,7 +115,7 @@ export function addReferenceDataUrlImpl(dataUrl: string, set: StoreSet): void {
   set((s) =>
     s.referenceImages.length >= MAX_REFERENCE_IMAGES
       ? s
-      : { referenceImages: [...s.referenceImages, dataUrl] },
+      : { referenceImages: [...s.referenceImages, dataUrl], providerUrlReference: null },
   );
 }
 

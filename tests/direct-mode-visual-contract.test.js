@@ -67,4 +67,25 @@ describe("direct mode visual contract", () => {
     assert.match(en, /"urlRefActiveTitle":\s*"Provider URL reference is active/);
     assert.match(ko, /"urlRefActiveTitle":\s*"URL 참조가 활성화/);
   });
+
+  it("keeps the URL reference active until the composer badge explicitly clears it", () => {
+    const composer = readSource("ui/src/components/PromptComposer.tsx");
+    const genStore = readSource("ui/src/store/storeGenImpl.ts");
+    const videoStore = readSource("ui/src/store/storeVideoImpl.ts");
+
+    assert.match(composer, /onClick=\{\(\) => setProviderUrlReference\(null\)\}/);
+    assert.doesNotMatch(genStore, /providerUrlReference:\s*null/);
+    assert.doesNotMatch(videoStore, /providerUrlReference:\s*null/);
+  });
+
+  it("clears stale URL references when the user picks a local reference path", () => {
+    const refsStore = readSource("ui/src/store/storeReferenceImpl.ts");
+    const uiStore = readSource("ui/src/store/storeUIImpl.ts");
+    const continueHelper = readSource("ui/src/lib/continueFromItem.ts");
+
+    assert.match(continueHelper, /store\.clearReferences\(\)/);
+    assert.match(refsStore, /providerUrlReference:\s*null/);
+    assert.match(uiStore, /providerUrlReference:\s*null/);
+    assert.match(continueHelper, /setProviderUrlReference\(item\.providerUrl\)/);
+  });
 });

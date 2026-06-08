@@ -45,7 +45,7 @@ describe("video continuity UI contracts", () => {
   it("clears pending continuity when its reference or prompt chip is removed", () => {
     const store = readSourceTree("ui/src/store/useAppStore.ts");
     assert.match(store, /!prompt\.id\.startsWith\("video-continuity:"\)/);
-    assert.match(store, /set\(\{ referenceImages: \[\], canvasReferenceImage: null, videoContinuityLineage: null, insertedPrompts \}\)/);
+    assert.match(store, /set\(\{ referenceImages: \[\], canvasReferenceImage: null, videoContinuityLineage: null, insertedPrompts, providerUrlReference: null \}\)/);
     assert.match(store, /id\.startsWith\("video-continuity:"\)/);
     assert.match(store, /set\(\{ insertedPrompts: \[\], videoContinuityLineage: null \}\)/);
   });
