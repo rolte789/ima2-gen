@@ -191,7 +191,7 @@ All events carry: `id` (global monotonic seq), `event` (type name), `data` (JSON
 | `error` | routes + `abortJob` | `{ requestId, error, code?, status? }` |
 | `replay-gap` | events route | `{ lastEventId, oldestAvailableId }` |
 | `submitted` | video | `{ requestId, jobId }` |
-| `progress` | video | `{ requestId, progress (0–100) }` |
+| `progress` | video | `{ requestId, progress (0.0–1.0), stalled? }` |
 | `planning` | video | `{ requestId, status }` |
 
 ### Async generation (UI path)

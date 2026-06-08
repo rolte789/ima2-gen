@@ -58,6 +58,7 @@
     "assets/card-news/templates/",
     ".env.example",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE",
     "server.js",
     "config.js"
