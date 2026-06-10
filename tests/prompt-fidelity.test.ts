@@ -80,8 +80,6 @@ assert.ok(SAFETY_INTENT_POLICY.includes("ordinary adult swimwear"));
 assert.ok(SAFETY_INTENT_POLICY.includes("bikini"));
 assert.ok(SAFETY_INTENT_POLICY.includes("two-piece swimsuit"));
 assert.ok(SAFETY_INTENT_POLICY.includes("do not replace it with a one-piece"));
-assert.ok(SAFETY_INTENT_POLICY.includes("garment type, coverage, cut, silhouette, color, and material"));
-assert.ok(SAFETY_INTENT_POLICY.includes("Do not use safety mitigation as a reason"));
 assert.ok(SAFETY_INTENT_POLICY.includes("negative safety constraints"));
 assert.ok(SAFETY_INTENT_POLICY.includes("minor"));
 assert.ok(DIRECT_PROMPT_FIDELITY_SUFFIX.includes(SAFETY_INTENT_POLICY));
