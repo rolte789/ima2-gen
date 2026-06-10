@@ -114,6 +114,7 @@ export async function runAgentGenerationPlan(
     return runAgentVideoGeneration(ctx, sessionId, plan.prompts[0] ?? prompt, {
       ...options,
       videoParams: plan.videoParams ?? options.videoParams ?? null,
+      assistantText: plan.assistantText,
       requestId: options.requestId ?? `agent_video_${ulid()}`,
       skipUserTurn: true,
     });
@@ -252,12 +253,18 @@ function formatGenerationErrors(errors: readonly AgentGenerationErrorRecord[]): 
 }
 
 function formatAgentAssistantText(plan: AgentGenerationPlan, imageCount: number, responseTexts: readonly string[]): string {
+  // Behave like a normal chat agent: prefer the planner's natural-language
+  // reply, then any text the image model returned. The mechanical summary is
+  // only the fallback when neither produced prose.
+  const plannerText = plan.assistantText?.trim() ?? "";
+  const modelText = responseTexts.join("\n\n").trim();
+  const prose = [plannerText, modelText].filter(Boolean).join("\n\n");
+  if (prose) return prose;
   const countText = imageCount === 1 ? "Generated 1 image artifact." : `Generated ${imageCount} image artifacts.`;
   const modeText = plan.mode === "fanout"
     ? `Fanout used ${plan.plannedParallelism} concurrent tool call${plan.plannedParallelism === 1 ? "" : "s"}.`
     : "Single-image plan completed.";
-  const modelText = responseTexts.length > 0 ? `${responseTexts.join("\n\n")}\n\n` : "";
-  return `${modelText}${countText} ${modeText} ${plan.reason}`.trim();
+  return `${countText} ${modeText} ${plan.reason}`.trim();
 }
 
 async function runGeneratorWithRuntimeRecovery(
@@ -276,8 +283,19 @@ async function runGeneratorWithRuntimeRecovery(
       restartAgentRuntimeSession(sessionId, err.code || err.message);
     }
     appendAgentTurn({ sessionId, role: "assistant", text: err.message, status: "error" });
+    markAgentErrorTurnRecorded(error);
     throw error;
   }
+}
+
+export function markAgentErrorTurnRecorded(error: unknown) {
+  if (error && typeof error === "object") {
+    (error as { agentErrorTurnRecorded?: boolean }).agentErrorTurnRecorded = true;
+  }
+}
+
+export function hasAgentErrorTurnRecorded(error: unknown): boolean {
+  return Boolean(error && typeof error === "object" && (error as { agentErrorTurnRecorded?: boolean }).agentErrorTurnRecorded);
 }
 
 export function isRuntimeRestartableError(error: unknown) {

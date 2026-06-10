@@ -8,7 +8,8 @@ import {
   type AgentQueueLimits,
 } from "./agentQueueStore.js";
 import { requestAgentPlanFromModel } from "./agentPlannerModel.js";
-import { runAgentGenerationPlan } from "./agentRuntime.js";
+import { hasAgentErrorTurnRecorded, runAgentGenerationPlan } from "./agentRuntime.js";
+import { appendAgentTurn } from "./agentStore.js";
 import type { AgentGenerationPlan, AgentQueueItem } from "./agentTypes.js";
 import { errInfo } from "./errInfo.js";
 import { finishJob, setJobPhase, startJob } from "./inflight.js";
@@ -123,6 +124,20 @@ async function runClaimedQueueItem(ctx: RuntimeContext, itemId: string) {
   } catch (error) {
     const err = errInfo(error);
     failAgentQueueItem(item.id, { code: err.code, message: err.message });
+    // The chat pane must never fail silently — surface the failure as an
+    // assistant error turn unless the runtime already recorded one.
+    if (!hasAgentErrorTurnRecorded(error)) {
+      try {
+        appendAgentTurn({
+          sessionId: item.sessionId,
+          role: "assistant",
+          text: err.code ? `${err.message} [${err.code}]` : err.message,
+          status: "error",
+        });
+      } catch (turnError) {
+        logEvent("agent_queue", "error_turn_failed", { itemId: item.id, message: errInfo(turnError).message });
+      }
+    }
     finishJob(item.requestId, {
       status: "failed",
       errorCode: err.code,

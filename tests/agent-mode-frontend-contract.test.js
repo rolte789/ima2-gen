@@ -134,8 +134,11 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(panelCss, /\.agent-message\.is-streaming/);
     assert.match(panelCss, /@keyframes agent-spin/);
     assert.match(panelCss, /agent-status__dot[\s\S]*animation: agent-pulse/);
-    assert.match(en, /"pending": "Generating image\.\.\."/);
-    assert.match(ko, /"pending": "이미지를 생성하는 중\.\.\."/);
+    assert.match(en, /"pending": "Generating response\.\.\."/);
+    assert.match(ko, /"pending": "응답을 생성하는 중\.\.\."/);
+    assert.match(workspace, /isLocalPendingTurn/);
+    assert.match(workspace, /new Set\(\[userTurn\.id\]\)/);
+    assert.match(workspace, /applyWorkspaceWithLocalTurns\(loaded, new Set\(\)\)/);
   });
 
   it("collapses Agent tool turns behind accessible summary controls", () => {

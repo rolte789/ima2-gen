@@ -104,17 +104,20 @@ export function normalizeAgentGenerationPlan(
 ): AgentGenerationPlan {
   const input = value && typeof value === "object" ? value as Record<string, unknown> : {};
   const prompts = cleanPromptArray(input.prompts);
-  // errors mode legitimately carries no generation prompts — it must be
-  // resolved before the empty-prompts fallback re-derives a regex plan.
-  if (input.mode === "errors") {
+  // errors/question modes legitimately carry no generation prompts — they
+  // must be resolved before the empty-prompts fallback re-derives a regex plan.
+  if (input.mode === "errors" || input.mode === "question") {
     return {
-      mode: "errors",
+      mode: input.mode,
       prompts: [],
       requestedVariants: 0,
       plannedVariants: 0,
       plannedParallelism: 0,
       source: cleanPlanSource(input.source),
-      reason: cleanReason(input.reason, "User asked about recent generation failures."),
+      reason: cleanReason(
+        input.reason,
+        input.mode === "errors" ? "User asked about recent generation failures." : "User asked a question answered without generation.",
+      ),
       command: cleanCommandName(input.command),
       assistantText: typeof input.assistantText === "string" ? input.assistantText : null,
       videoParams: null,

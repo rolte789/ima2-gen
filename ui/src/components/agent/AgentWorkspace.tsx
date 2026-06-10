@@ -11,6 +11,7 @@ import {
 } from "../../lib/agentApi";
 import { withAgentGenerationDefaults } from "../../lib/agentGenerationSettings";
 import { useAppStore } from "../../store/useAppStore";
+import type { GenerateItem } from "../../types";
 import { useAgentWorkspaceLayout } from "../../hooks/useAgentWorkspaceLayout";
 import { AgentChatPane } from "./AgentChatPane";
 import { AgentImageSheet } from "./AgentImageSheet";
@@ -63,6 +64,12 @@ function isLocalTurn(turn: AgentTurn): boolean {
   return turn.id.startsWith(LOCAL_TURN_PREFIX);
 }
 
+const PENDING_TURN_PREFIX = `${LOCAL_TURN_PREFIX}pending-`;
+
+function isLocalPendingTurn(turn: AgentTurn): boolean {
+  return turn.id.startsWith(PENDING_TURN_PREFIX);
+}
+
 function localUserTurn(text: string, createdAt: number): AgentTurn {
   return {
     id: nextLocalTurnId("user"),
@@ -96,6 +103,21 @@ function localErrorTurn(text: string): AgentTurn {
     webFindingIds: [],
     status: "error",
     createdAt: Date.now(),
+  };
+}
+
+function historyItemFromAgentImage(handle: AgentImageHandle): GenerateItem {
+  const isVideo = handle.filename.endsWith(".mp4");
+  return {
+    image: handle.url,
+    url: handle.url,
+    filename: handle.filename,
+    thumb: handle.thumbUrl ?? undefined,
+    prompt: handle.prompt ?? undefined,
+    revisedPrompt: handle.revisedPrompt ?? null,
+    createdAt: handle.createdAt,
+    mediaType: isVideo ? "video" : "image",
+    kind: "agent",
   };
 }
 
@@ -149,8 +171,11 @@ export function AgentWorkspace() {
   const { t } = useI18n();
   const layoutMode = useAgentWorkspaceLayout();
   const currentGeneratedImage = useAppStore((s) => s.currentImage);
+  const addHistoryItem = useAppStore((s) => s.addHistoryItem);
+  const selectHistory = useAppStore((s) => s.selectHistory);
   const bootstrapped = useRef(false);
   const pendingTurnsRef = useRef(0);
+  const knownImageIdsRef = useRef<Set<string> | null>(null);
   const [workspace, setWorkspace] = useState<AgentWorkspacePayload>(() => emptyWorkspace());
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AgentContextTab>("image");
@@ -200,9 +225,11 @@ export function AgentWorkspace() {
 
   const refreshWorkspace = useCallback(async (preferredId?: string | null) => {
     const loaded = await getAgentWorkspace(preferredId);
-    applyWorkspace(loaded);
+    // Poll refreshes must keep local optimistic turns (pending spinner) alive;
+    // a full replace would wipe them between enqueue and completion.
+    applyWorkspaceWithLocalTurns(loaded, new Set());
     setRuntimeStatus("ready");
-  }, [applyWorkspace]);
+  }, [applyWorkspaceWithLocalTurns]);
 
   useEffect(() => {
     if (bootstrapped.current) return;
@@ -231,6 +258,51 @@ export function AgentWorkspace() {
   const showRail = layoutMode === "desktop-rail";
   const showSidebar = layoutMode === "desktop-three-pane";
   const showRightSidebar = layoutMode !== "mobile-chat-image-sheet";
+
+  useEffect(() => {
+    // Mirror freshly generated agent results into the main history store so
+    // they also show up on the Canvas. The first loaded payload only seeds the
+    // known-id set — pre-existing session images must not hijack the canvas.
+    const ids = Object.keys(workspace.imagesById);
+    if (!knownImageIdsRef.current) {
+      if (ids.length > 0 || workspace.sessions.length > 0) knownImageIdsRef.current = new Set(ids);
+      return;
+    }
+    const known = knownImageIdsRef.current;
+    const freshHandles = ids
+      .filter((id) => !known.has(id))
+      .map((id) => workspace.imagesById[id])
+      .filter((handle): handle is AgentImageHandle => !!handle);
+    if (freshHandles.length === 0) return;
+    for (const id of ids) known.add(id);
+    const items = freshHandles.map(historyItemFromAgentImage);
+    for (const item of items) addHistoryItem(item);
+    const newest = items.reduce((a, b) => ((b.createdAt ?? 0) > (a.createdAt ?? 0) ? b : a));
+    selectHistory(newest);
+  }, [workspace.imagesById, workspace.sessions.length, addHistoryItem, selectHistory]);
+
+  useEffect(() => {
+    // Drop local pending bubbles once the server has replied (assistant/tool
+    // turn newer than the bubble) or the session run settled (idle/error).
+    setWorkspace((current) => {
+      if (pendingTurnsRef.current > 0) return current;
+      let changed = false;
+      const turnsBySession = { ...current.turnsBySession };
+      for (const [sessionId, turns] of Object.entries(turnsBySession)) {
+        const pendingTurns = turns.filter(isLocalPendingTurn);
+        if (pendingTurns.length === 0) continue;
+        const summary = current.runSummaryBySession[sessionId];
+        const busy = summary?.status === "queued" || summary?.status === "running";
+        const oldestPendingAt = Math.min(...pendingTurns.map((turn) => turn.createdAt ?? 0));
+        const serverReplied = turns.some((turn) =>
+          !isLocalTurn(turn) && turn.role !== "user" && (turn.createdAt ?? 0) >= oldestPendingAt);
+        if (busy && !serverReplied) continue;
+        turnsBySession[sessionId] = turns.filter((turn) => !isLocalPendingTurn(turn));
+        changed = true;
+      }
+      return changed ? { ...current, turnsBySession } : current;
+    });
+  }, [workspace.turnsBySession, workspace.runSummaryBySession]);
 
   useEffect(() => {
     if (!selectedSessionId) return;
@@ -309,7 +381,10 @@ export function AgentWorkspace() {
     const createdAt = Date.now();
     const userTurn = localUserTurn(text, createdAt);
     const pendingTurn = localPendingTurn(t("agent.pending"), createdAt + 1);
-    const settledLocalIds = new Set([userTurn.id, pendingTurn.id]);
+    // Settle only the user turn on the 202 — the pending spinner must stay
+    // visible while the queue item is queued/running. The cleanup effect
+    // below removes it once the server replies or the run settles.
+    const settledLocalIds = new Set([userTurn.id]);
 
     beginGeneration();
     setWorkspace((current) => appendTurns(current, sessionId, [userTurn, pendingTurn]));

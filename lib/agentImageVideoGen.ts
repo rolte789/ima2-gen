@@ -196,7 +196,7 @@ export async function runAgentVideoGeneration(
   ctx: RuntimeContext,
   sessionId: string,
   prompt: string,
-  options: AgentRunOptions & { skipUserTurn?: boolean } = {},
+  options: AgentRunOptions & { skipUserTurn?: boolean; assistantText?: string | null } = {},
 ) {
   const session = getAgentSession(sessionId);
   if (!session) throw notFound(sessionId);
@@ -264,7 +264,7 @@ export async function runAgentVideoGeneration(
   const assistantTurn = appendAgentTurn({
     sessionId,
     role: "assistant",
-    text: `Generated 1 video artifact. ${result.revisedPrompt}`,
+    text: options.assistantText?.trim() || `Generated 1 video artifact. ${result.revisedPrompt}`,
     imageIds: [video.id],
     status: "complete",
   });
