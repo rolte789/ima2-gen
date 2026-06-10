@@ -5,6 +5,8 @@ import { fileToDataUri, dataUriToFile, defaultOutName } from "../lib/files.js";
 import { out, die, color, json, exitCodeForError } from "../lib/output.js";
 import { config } from "../../config.js";
 
+const MAX_GENERATION_COUNT = Math.max(1, Math.trunc(Number(config.limits.maxGeneratedImages) || 24));
+
 const HELP = `
   ima2 node <subcommand> [options]
 
@@ -71,7 +73,7 @@ async function generateSub(argv: string[]) {
     prompt,
     quality: args.quality,
     size: args.size,
-    n: Math.max(1, Math.min(8, parseInt(String(args.count)) || 1)),
+    n: Math.max(1, Math.min(MAX_GENERATION_COUNT, parseInt(String(args.count)) || 1)),
     references,
     moderation: args.moderation,
     sessionId: args.session,

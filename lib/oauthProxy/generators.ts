@@ -242,7 +242,14 @@ export async function generateMultimodeViaOAuth(
   await waitForOAuthReady(ctx);
   const oauthUrl = getOAuthUrl(ctx);
   const model = options.model || ctx.config?.imageModels?.default || "gpt-5.4-mini";
-  const maxImages = Math.min(8, Math.max(1, Math.trunc(Number(options.maxImages) || 1)));
+  const maxGeneratedImages = Math.max(
+    1,
+    Math.trunc(Number(ctx.config?.limits?.maxGeneratedImages) || 24),
+  );
+  const maxImages = Math.min(
+    maxGeneratedImages,
+    Math.max(1, Math.trunc(Number(options.maxImages) || 1)),
+  );
   const webSearchEnabled = resolveWebSearchEnabled(options);
   const tools = buildImageTools(webSearchEnabled, {
     quality,

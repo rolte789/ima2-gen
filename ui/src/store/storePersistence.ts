@@ -26,6 +26,7 @@ import {
 } from "../lib/reasoning";
 import { DEFAULT_WEB_SEARCH_ENABLED } from "../lib/webSearch";
 import { ENABLE_AGENT_MODE, ENABLE_CARD_NEWS_MODE, ENABLE_NODE_MODE } from "../lib/devMode";
+import { normalizeGenerationCount } from "../lib/generationLimits";
 import { parseRequestedCustomSide } from "../lib/size";
 import {
   ACTIVE_SESSION_ID_STORAGE_KEY,
@@ -302,7 +303,7 @@ export function formatSize(w: number, h: number): string {
 }
 
 export function normalizeCount(value: number): Count {
-  return Math.min(8, Math.max(1, Math.trunc(value || 1)));
+  return normalizeGenerationCount(value);
 }
 
 export const SIZE_PRESET_VALUES = new Set<SizePreset>([

@@ -129,6 +129,7 @@ README may still mention a different Node baseline. The operational baseline is 
 | `IMA2_MAX_REF_B64_BYTES` | Max base64 size per reference image |
 | `IMA2_MAX_METADATA_READ_B64_BYTES` | Max base64 size accepted by `/api/metadata/read` |
 | `IMA2_MAX_REF_COUNT` | Max number of reference images per request |
+| `IMA2_MAX_GENERATED_IMAGES` | Max generated images per request (classic `n`, multimode `maxImages`, and UI count controls) |
 | `IMA2_MAX_PARALLEL` | Max concurrent generation jobs |
 | `IMA2_GRAPH_MAX_NODES` / `IMA2_GRAPH_MAX_EDGES` | Session graph save guardrails |
 | `IMA2_GENERATED_HEX_BYTES` / `IMA2_NODE_HEX_BYTES` | Filename randomness for classic and node assets |

@@ -92,7 +92,7 @@ The CLI surface was expanded to near-feature-parity with the server API in #45 (
 |---|---|---|
 | `-q`, `--quality` | `low` | Passes `low`, `medium`, `high`, or `auto` |
 | `-s`, `--size` | `1024x1024` | Passes `WxH` or `auto` |
-| `-n`, `--count` | `1` | Generation count; CLI clamps from 1 to 8 |
+| `-n`, `--count` | `1` | Generation count; CLI clamps from 1 to the configured image-count limit (default 24) |
 | `--ref <file>` | none | Attach a reference image; max 5 |
 | `-o`, `--out <file>` | generated name | Save path for one image |
 | `-d`, `--out-dir <dir>` | current directory | Save directory for multiple images |
@@ -154,7 +154,7 @@ extension endpoint.
 
 | Option | Default | Description |
 |---|---|---|
-| `--max-images <1..8>` | `4` | Maximum separate stage images |
+| `--max-images <1..24>` | `4` | Maximum separate stage images by default; configurable through `IMA2_MAX_GENERATED_IMAGES` |
 | `--provider <auto|oauth|api|grok>` | server default | Per-request provider override |
 | `--mode <auto|direct>` | `auto` | Prompt handling mode |
 | `--ref <file>` | none | Attach a reference image; repeatable, max 5 |
@@ -177,7 +177,7 @@ Issue #62 adds an explicit agent discovery layer so agents no longer have to inf
 | `ima2 defaults set model <model>` | Writes both `imageModels.default` and `apiProvider.defaultImageModel` |
 | `ima2 defaults set reasoning <effort>` | Writes both `imageModels.reasoningEffort` and `apiProvider.defaultReasoningEffort` |
 
-`ima2 capabilities` uses `/api/capabilities` when a running server is available, and otherwise emits local package metadata. `limits.maxParallel` is advisory queue guidance only; it does not imply a server-side semaphore.
+`ima2 capabilities` uses `/api/capabilities` when a running server is available, and otherwise emits local package metadata. `limits.maxGeneratedImages` reports the per-request image-count cap, and `limits.maxParallel` reports the enforced server-side inflight capacity guard.
 
 ## `ps` Options
 

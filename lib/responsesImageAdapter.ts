@@ -360,7 +360,14 @@ export async function generateViaResponses(provider: string | undefined, prompt:
 
 export async function generateMultimodeViaResponses(provider: string | undefined, prompt: string | undefined, quality: string | undefined, size: string | undefined, moderation: string = "low", references: ReferenceRef[] = [], requestId: string | null = null, mode: string = "auto", ctxRaw: RouteRuntimeContext = {}, options: GenerateOptions = {}) {
   const ctx = requireRuntimeContext(ctxRaw);
-  const maxImages = Math.min(8, Math.max(1, Math.trunc(Number(options.maxImages) || 1)));
+  const maxGeneratedImages = Math.max(
+    1,
+    Math.trunc(Number(ctx.config.limits.maxGeneratedImages) || 24),
+  );
+  const maxImages = Math.min(
+    maxGeneratedImages,
+    Math.max(1, Math.trunc(Number(options.maxImages) || 1)),
+  );
   const model = options.model || ctx.config?.imageModels?.default || "gpt-5.4-mini";
   const webSearchEnabled = options.webSearchEnabled !== false && options.searchMode !== "off";
   const requestTools = tools(webSearchEnabled, { quality, size, moderation, ...(options.partialImages ? { partial_images: options.partialImages } : {}) });

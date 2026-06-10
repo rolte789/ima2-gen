@@ -86,7 +86,8 @@ export const config = {
       12 * 1024 * 1024,
     ),
     maxRefCount: pickInt(env.IMA2_MAX_REF_COUNT, fileCfg.limits?.maxRefCount, 5),
-    maxParallel: pickInt(env.IMA2_MAX_PARALLEL, fileCfg.limits?.maxParallel, 8),
+    maxGeneratedImages: pickInt(env.IMA2_MAX_GENERATED_IMAGES, fileCfg.limits?.maxGeneratedImages, 24),
+    maxParallel: pickInt(env.IMA2_MAX_PARALLEL, fileCfg.limits?.maxParallel, 24),
     graphMaxNodes: pickInt(env.IMA2_GRAPH_MAX_NODES, fileCfg.limits?.graphMaxNodes, 500),
     graphMaxEdges: pickInt(env.IMA2_GRAPH_MAX_EDGES, fileCfg.limits?.graphMaxEdges, 1000),
     promptImportMaxFileBytes: pickInt(
@@ -343,6 +344,7 @@ export const GENERATED_DIR = config.storage.generatedDir;
 export const BODY_LIMIT = config.server.bodyLimit;
 export const MAX_REF_B64_BYTES = config.limits.maxRefB64Bytes;
 export const MAX_REFS = config.limits.maxRefCount;
+export const MAX_GENERATED_IMAGES = config.limits.maxGeneratedImages;
 export const MAX_N = config.limits.maxParallel;
 export const INFLIGHT_TTL_MS = config.inflight.ttlMs;
 export const INFLIGHT_REAP_MS = config.inflight.reapMs;

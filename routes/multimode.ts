@@ -117,7 +117,10 @@ export function registerMultimodeRoutes(app: Express, ctxRaw: RouteRuntimeContex
       const composerInsertedPrompts = normalizeComposerInsertedPrompts(
         req.body?.composerInsertedPrompts,
       );
-      const maxImages = normalizeMaxImages(req.body?.maxImages);
+      const maxImages = normalizeMaxImages(
+        req.body?.maxImages,
+        ctx.config.limits.maxGeneratedImages,
+      );
       const normalizedPromptMode = promptMode === "direct" ? "direct" : "auto";
       const { quality, warnings: qualityWarnings } = normalizeOAuthParams({ provider, quality: rawQuality });
       const providerOptions = resolveProviderOptions(ctx, {

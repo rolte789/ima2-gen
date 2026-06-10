@@ -88,14 +88,19 @@ describe("generation controls custom plus UX contract", () => {
     assert.doesNotMatch(sizeLib, /value: "21:9"/);
   });
 
-  it("supports manual count input clamped to 1..8", () => {
+  it("supports manual count input clamped to the shared generation count limit", () => {
     const countPicker = readSource("ui/src/components/CountPicker.tsx");
+    const limits = readSource("ui/src/lib/generationLimits.ts");
     const store = readSource("ui/src/store/useAppStore.ts");
+    const persistence = readSource("ui/src/store/storePersistence.ts");
 
     assert.match(countPicker, /const QUICK_COUNTS = \[1, 2, 4\] as const/);
     assert.match(countPicker, /inputMode="numeric"/);
-    assert.match(countPicker, /Math\.min\(8, Math\.max\(1, Math\.trunc\(value \|\| 1\)\)\)/);
-    assert.match(store, /function normalizeCount\(value: number\): Count/);
+    assert.match(countPicker, /normalizeGenerationCount\(Number\.parseInt\(value, 10\)\)/);
+    assert.match(limits, /export const MAX_GENERATION_COUNT = 24/);
+    assert.match(limits, /Math\.min\(MAX_GENERATION_COUNT, Math\.max\(1, Math\.trunc\(value \|\| 1\)\)\)/);
+    assert.match(persistence, /function normalizeCount\(value: number\): Count/);
+    assert.match(persistence, /return normalizeGenerationCount\(value\);/);
     assert.match(store, /const next = normalizeCount\(count\);/);
     assert.match(store, /saveGenerationDefaultsPatch\(\{ count: next \}\);/);
   });

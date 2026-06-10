@@ -163,7 +163,7 @@ data: {"requestId":"req_abc","jobId":"req_abc","phase":"streaming"}
 |---|---|---|
 | Accepted | `202` | `{ "requestId": "req_xxx" }` |
 | Duplicate active `requestId` | `409` | `REQUEST_ID_IN_USE` |
-| More than 12 concurrent active jobs | `429` | `TOO_MANY_JOBS` with `Retry-After: 5` |
+| More than the configured concurrent active job limit | `429` | `TOO_MANY_JOBS` with `Retry-After: 5`; default limit is `24` via `IMA2_MAX_PARALLEL` |
 
 Progress events are published on `GET /api/events`. The POST response returns immediately; clients must not expect SSE on the POST connection when `async: true`.
 
@@ -604,7 +604,7 @@ Style-sheet extraction can require an API key/openai client. Image generation al
 | `VIDEO_PROVIDER_UNSUPPORTED` | Video generation requires provider `"grok"` or `"grok-api"` |
 | `SSE_CAPACITY` | More than 512 concurrent `GET /api/events` listeners |
 | `REQUEST_ID_IN_USE` | Async POST used a `requestId` that already has an active job |
-| `TOO_MANY_JOBS` | More than 12 concurrent active generation jobs (`Retry-After: 5`) |
+| `TOO_MANY_JOBS` | More than the configured concurrent active generation job limit (`Retry-After: 5`; default `24`) |
 
 ## Key Management
 

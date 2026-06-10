@@ -33,7 +33,14 @@ export async function generateMultimodeViaGrok(
   } = {},
 ): Promise<GrokMultimodeResult> {
   const model = options.model || (ctx.config as any).grokProvider?.defaultImageModel || "grok-imagine-image";
-  const maxImages = Math.min(8, Math.max(1, options.maxImages || 4));
+  const maxGeneratedImages = Math.max(
+    1,
+    Math.trunc(Number((ctx.config as any).limits?.maxGeneratedImages) || 24),
+  );
+  const maxImages = Math.min(
+    maxGeneratedImages,
+    Math.max(1, Math.trunc(Number(options.maxImages) || 4)),
+  );
   const references = options.references || [];
   const images: Array<{ b64: string; revisedPrompt?: string; mime?: string; providerUrl?: string }> = [];
   let totalCost = 0;

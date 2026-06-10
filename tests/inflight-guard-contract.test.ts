@@ -13,7 +13,7 @@ function readSource(relPath) {
 
 test("inflight startJob guards duplicate requestId and concurrent capacity", () => {
   const inflight = readSource("lib/inflight.ts");
-  assert.match(inflight, /export const MAX_CONCURRENT_JOBS = 12/);
+  assert.match(inflight, /config\.limits\.maxParallel/);
   assert.match(inflight, /REQUEST_ID_IN_USE/);
   assert.match(inflight, /TOO_MANY_JOBS/);
   assert.match(inflight, /if \(getJob\(requestId\)\)/);

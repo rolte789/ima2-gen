@@ -52,7 +52,7 @@ interface TerminalJob {
 const terminalJobs = new Map<string, TerminalJob>(); // requestId -> terminal snapshot, active-only API stays default
 const abortControllers = new Map<string, AbortController>();
 
-export const MAX_CONCURRENT_JOBS = 12;
+export const MAX_CONCURRENT_JOBS = Math.max(1, Math.trunc(Number(config.limits.maxParallel) || 24));
 export const INFLIGHT_RETRY_AFTER_SECONDS = 5;
 
 export type StartJobFailureCode = "REQUEST_ID_IN_USE" | "TOO_MANY_JOBS";

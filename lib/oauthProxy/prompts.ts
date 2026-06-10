@@ -92,7 +92,7 @@ export function buildUserTextPrompt(userPrompt: string | undefined, mode: string
 }
 
 export function buildMultimodeSequencePrompt(userPrompt: string, maxImages: number, options: Record<string, unknown> = {}) {
-  const n = Math.min(8, Math.max(1, Math.trunc(Number(maxImages) || 1)));
+  const n = Math.max(1, Math.trunc(Number(maxImages) || 1));
   const researchInstruction = resolveWebSearchEnabled(options)
     ? [`If factual visual accuracy is required and the prompt/context is not already sufficient for a stage, use one concise web_search call for references before generating that stage. If a stage is already visually sufficient, do not search or add clarifiers for that stage.`]
     : [];

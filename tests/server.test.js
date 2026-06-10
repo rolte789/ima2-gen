@@ -62,12 +62,13 @@ describe("Server Utils", () => {
     }
   });
 
-  it("should cap parallel count n to 1-8", () => {
-    const inputs = [0, 1, 5, 8, 10, null, undefined];
-    const expected = [1, 1, 5, 8, 8, 1, 1];
+  it("should cap parallel count n to 1-24", () => {
+    const max = 24;
+    const inputs = [0, 1, 5, 24, 25, null, undefined];
+    const expected = [1, 1, 5, 24, 24, 1, 1];
 
     for (let i = 0; i < inputs.length; i++) {
-      const count = Math.min(Math.max(parseInt(inputs[i]) || 1, 1), 8);
+      const count = Math.min(Math.max(parseInt(inputs[i]) || 1, 1), max);
       assert.strictEqual(count, expected[i], `n=${inputs[i]} => ${expected[i]}`);
     }
   });

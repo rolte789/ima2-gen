@@ -1,12 +1,9 @@
 import { useEffect, useState, type KeyboardEvent } from "react";
 import { useI18n } from "../i18n";
+import { normalizeGenerationCount } from "../lib/generationLimits";
 import { useAppStore } from "../store/useAppStore";
 
 const QUICK_COUNTS = [1, 2, 4] as const;
-
-function normalizeCount(value: number): number {
-  return Math.min(8, Math.max(1, Math.trunc(value || 1)));
-}
 
 export function CountPicker() {
   const count = useAppStore((s) => s.count);
@@ -28,7 +25,7 @@ export function CountPicker() {
   }, [multimode, value]);
 
   function commit(value = draft) {
-    const next = normalizeCount(Number.parseInt(value, 10));
+    const next = normalizeGenerationCount(Number.parseInt(value, 10));
     setValue(next);
     setDraft(String(next));
   }
@@ -40,7 +37,7 @@ export function CountPicker() {
   }
 
   function step(delta: number) {
-    const next = normalizeCount(value + delta);
+    const next = normalizeGenerationCount(value + delta);
     setOpen(true);
     setDraft(String(next));
     setValue(next);

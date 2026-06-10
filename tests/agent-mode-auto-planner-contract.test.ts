@@ -59,8 +59,8 @@ describe("Agent Mode auto generation planner contract", () => {
     });
     assert.equal(noCountPlan.plannedVariants, 3);
 
-    const overLimit = parseAgentSlashCommand("/generate 9 neon product shot");
-    assert.equal(overLimit?.value, 8);
+    const overLimit = parseAgentSlashCommand("/generate 25 neon product shot");
+    assert.equal(overLimit?.value, 24);
   });
 
   it("keeps manual settings as an explicit fixed-count mode", () => {

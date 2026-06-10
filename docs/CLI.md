@@ -41,7 +41,7 @@ Agents should start from the packaged skill and capability commands instead of g
 | `ima2 defaults --json` | Print the running server's effective model/reasoning defaults, falling back to local config when no server is reachable |
 | `ima2 defaults --local --json` | Print local effective defaults without contacting the server |
 
-`ima2 capabilities --json` separates supported and unsupported model ids. Agents should use only `valid.imageModels.supported` for generation/default choices. `limits.maxParallel` is advisory queue guidance; it is not a server-side concurrency semaphore.
+`ima2 capabilities --json` separates supported and unsupported model ids. Agents should use only `valid.imageModels.supported` for generation/default choices. `limits.maxGeneratedImages` reports the configured per-request image count limit, and `limits.maxParallel` reports the enforced server-side inflight capacity guard.
 
 ## Generation
 
@@ -108,7 +108,7 @@ mockup`.
 For dense or critical text, keep the text large and explicit. Exact placement,
 small text, and pixel-perfect typography can still need iteration or post-editing.
 
-Multimode-specific flags include `--max-images <1..8>`, `--ref <file>` (repeatable, max 5), `--mode <auto|direct>`, `--provider <auto|oauth|api|grok|grok-api|agy|gemini-api>`, and `--show-partial`. `ima2 edit --mask` remains intentionally deferred to #31 because current mask plumbing is guided edit rather than guaranteed true masked/inpaint semantics.
+Multimode-specific flags include `--max-images <1..24>` by default (configurable through `IMA2_MAX_GENERATED_IMAGES`), `--ref <file>` (repeatable, max 5), `--mode <auto|direct>`, `--provider <auto|oauth|api|grok|grok-api|agy|gemini-api>`, and `--show-partial`. `ima2 edit --mask` remains intentionally deferred to #31 because current mask plumbing is guided edit rather than guaranteed true masked/inpaint semantics.
 
 ## Video
 
@@ -362,7 +362,7 @@ comfy.{defaultUrl,uploadTimeoutMs,maxUploadBytes}
 storage.{generatedDir,generatedDirName}
 server.{port,host,bodyLimit}
 oauth.{proxyPort,statusTimeoutMs,restartDelayMs}
-limits.{maxRefCount,maxParallel}
+limits.{maxRefCount,maxGeneratedImages,maxParallel}
 history.{defaultPageSize,maxPageCap}
 ```
 

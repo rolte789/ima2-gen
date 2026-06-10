@@ -362,7 +362,7 @@ The event channel client reconnects automatically with exponential backoff. On r
 
 ### What is the maximum number of concurrent jobs?
 
-The server caps concurrent generation jobs at 12 (`MAX_CONCURRENT_JOBS`). Additional requests receive `429` with `Retry-After: 5`. The SSE endpoint itself caps at 512 simultaneous connections.
+The server caps concurrent generation jobs at the configured `limits.maxParallel` value (default `24`, overridable with `IMA2_MAX_PARALLEL`). Additional requests receive `429` with `Retry-After: 5`. The SSE endpoint itself caps at 512 simultaneous connections.
 
 ## CLI troubleshooting checklist
 

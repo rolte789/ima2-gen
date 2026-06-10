@@ -115,7 +115,11 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
       if (!prompt) return fail(400, { error: "Prompt is required" });
       const moderationCheck = validateModeration(ctx, moderation);
       if (moderationCheck.error) return fail(400, { error: moderationCheck.error });
-      const count = Math.min(Math.max(parseInt(n) || 1, 1), 8);
+      const maxGeneratedImages = Math.max(
+        1,
+        Math.trunc(Number(ctx.config.limits.maxGeneratedImages) || 1),
+      );
+      const count = Math.min(Math.max(parseInt(n) || 1, 1), maxGeneratedImages);
       const referencePayload = summarizeReferencePayload(references);
       const refCheckResult = validateAndNormalizeRefs(references);
       if (refCheckResult.error) {

@@ -5,7 +5,6 @@ import type { AppConfig } from "./runtimeContext.js";
 
 type CapabilitySource = "local" | "server";
 
-const MAX_GENERATED_IMAGES = 8;
 const VALID_MODES = ["auto", "direct"] as const;
 const VALID_PROVIDERS = ["auto", "oauth", "api", "grok", "grok-api", "agy", "gemini-api"] as const;
 const AGENT_COMMANDS = [
@@ -93,11 +92,11 @@ export function buildIma2Capabilities({
     },
     limits: {
       maxRefCount: appConfig.limits.maxRefCount,
-      maxGeneratedImages: MAX_GENERATED_IMAGES,
+      maxGeneratedImages: appConfig.limits.maxGeneratedImages,
       maxParallel: {
         value: appConfig.limits.maxParallel,
-        enforced: false,
-        note: "advisory client-side queue guidance only; server-side semaphore is not enforced",
+        enforced: true,
+        note: "server-side inflight capacity guard uses this runtime limit",
       },
     },
     promptBuilder: {

@@ -21,7 +21,7 @@ describe("multimode frontend UX contract", () => {
     assert.match(countPicker, /const multimodeMaxImages = useAppStore\(\(s\) => s\.multimodeMaxImages\)/);
     assert.match(countPicker, /const multimode = uiMode === "classic" && multimodeEnabled/);
     assert.match(countPicker, /const value = multimode \? multimodeMaxImages : count/);
-    assert.match(countPicker, /Math\.min\(8, Math\.max\(1, Math\.trunc\(value \|\| 1\)\)\)/);
+    assert.match(countPicker, /normalizeGenerationCount\(Number\.parseInt\(value, 10\)\)/);
     assert.match(controls, /const showMultimodeControls = uiMode === "classic"/);
     assert.match(controls, /className=\{`multimode-toggle__button/);
     assert.doesNotMatch(controls, /disabled=\{activeGenerations > 0\}/);

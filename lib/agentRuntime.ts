@@ -1,4 +1,5 @@
 import { ulid } from "ulid";
+import { config } from "../config.js";
 import { generateAgentImageWithRetry } from "./agentImageVideoGen.js";
 import { runAgentVideoGeneration } from "./agentImageVideoGen.js";
 import {
@@ -302,7 +303,7 @@ async function mapWithLimit<T, R>(
 function cleanParallelism(value: unknown) {
   const numeric = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(numeric)) return 2;
-  return Math.max(1, Math.min(8, Math.round(numeric)));
+  return Math.max(1, Math.min(config.limits.maxParallel, Math.round(numeric)));
 }
 
 export function notFound(sessionId: string) {

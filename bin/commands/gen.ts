@@ -10,6 +10,7 @@ const VALID_MODES = new Set(["auto", "direct"]);
 const VALID_MODERATION = new Set(["auto", "low"]);
 const VALID_PROVIDERS = new Set(["auto", "oauth", "api", "grok", "grok-api", "agy", "gemini-api"]);
 const KNOWN_IMAGE_MODELS = new Set(["gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5.3-codex-spark", "grok-imagine-image", "grok-imagine-image-quality", "nano-banana-2", "nano-banana-pro"]);
+const MAX_GENERATION_COUNT = Math.max(1, Math.trunc(Number(config.limits.maxGeneratedImages) || 24));
 
 const SPEC = {
   flags: {
@@ -50,7 +51,7 @@ const HELP = `
   Options:
     -q, --quality <low|medium|high>         Default: low
     -s, --size <WxH | auto>                 Default: 1024x1024
-    -n, --count <1..8>                      Default: 1
+    -n, --count <1..${MAX_GENERATION_COUNT}>                     Default: 1
         --ref <file>                        Attach reference image (repeatable, max 5)
     -o, --out <file>                        Single-image output path (implies -n 1)
     -d, --out-dir <dir>                     Output dir for multiple images
@@ -106,7 +107,7 @@ export default async function genCmd(argv: string[]) {
     die(2, "--web-search and --no-web-search are mutually exclusive");
   }
 
-  const n = Math.max(1, Math.min(8, parseInt(String(args.count)) || 1));
+  const n = Math.max(1, Math.min(MAX_GENERATION_COUNT, parseInt(String(args.count)) || 1));
   const timeoutMs = (parseInt(String(args.timeout)) || 180) * 1000;
 
   let server;

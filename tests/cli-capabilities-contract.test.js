@@ -17,7 +17,7 @@ describe("CLI capabilities contract", () => {
     assert.match(index, /registerCapabilitiesRoutes/);
   });
 
-  it("capability payload separates supported values and advisory limits", () => {
+  it("capability payload separates supported values and enforced limits", () => {
     const src = readSource("lib/capabilities.ts");
 
     assert.match(src, /supported:\s*toArray\(appConfig\.imageModels\.valid\)/);
@@ -31,8 +31,9 @@ describe("CLI capabilities contract", () => {
     assert.match(src, /"grok status"/);
     assert.match(src, /"prompt build"/);
     assert.match(src, /configKeys:/);
-    assert.match(src, /enforced:\s*false/);
-    assert.match(src, /advisory client-side queue guidance only/);
+    assert.match(src, /maxGeneratedImages:\s*appConfig\.limits\.maxGeneratedImages/);
+    assert.match(src, /enforced:\s*true/);
+    assert.match(src, /server-side inflight capacity guard/);
   });
 
   it("capabilities marks Agent Mode as web-UI only while exposing Grok defaults", () => {

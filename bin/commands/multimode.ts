@@ -6,6 +6,8 @@ import { out, die, color, json, exitCodeForError } from "../lib/output.js";
 import { config } from "../../config.js";
 import { createCliRequestId, recoverGeneratedOutputs, formatRecoveryHint } from "../lib/recover-output.js";
 
+const MAX_GENERATION_COUNT = Math.max(1, Math.trunc(Number(config.limits.maxGeneratedImages) || 24));
+
 const SPEC = {
   flags: {
     quality: { short: "q", type: "string", default: "low" },
@@ -38,7 +40,7 @@ const HELP = `
   Options:
     -q, --quality <low|medium|high>     Default: low
     -s, --size <WxH>                    Default: 1024x1024
-        --max-images <1..8>             Default: 4
+        --max-images <1..${MAX_GENERATION_COUNT}>            Default: 4
     -o, --out <file>                    First image (implies --max-images 1)
     -d, --out-dir <dir>                 Output dir for multiple images
         --json
@@ -79,7 +81,7 @@ export default async function multimodeCmd(argv: string[]) {
   try { server = await resolveServer({ serverFlag: args.server }); }
   catch (e: any) { die(exitCodeForError(e), e.message); throw e; }
 
-  const maxImages = Math.max(1, Math.min(8, parseInt(String(args["max-images"])) || 4));
+  const maxImages = Math.max(1, Math.min(MAX_GENERATION_COUNT, parseInt(String(args["max-images"])) || 4));
   const refs = (Array.isArray(args.ref) ? args.ref : []) as string[];
   if (refs.length > 5) die(2, "max 5 --ref attachments");
   const references = await Promise.all(refs.map((p: string) => fileToDataUri(p)));

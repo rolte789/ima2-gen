@@ -149,7 +149,7 @@ export async function readMultimodeImageStream(
   let usage: unknown = null;
   let webSearchCalls = 0;
   let eventCount = 0;
-  const limit = Math.min(8, Math.max(1, Math.trunc(Number(maxImages) || 1)));
+  const limit = Math.max(1, Math.trunc(Number(maxImages) || 1));
   let extraIgnored = 0;
 
   while (true) {

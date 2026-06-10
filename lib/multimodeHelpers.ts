@@ -1,7 +1,8 @@
 import type { normalizeComposerInsertedPrompts } from "./composerSnapshot.js";
 
-export function normalizeMaxImages(value: unknown): number {
-  return Math.min(8, Math.max(1, Math.trunc(Number(value) || 1)));
+export function normalizeMaxImages(value: unknown, maxGeneratedImages = 24): number {
+  const max = Math.max(1, Math.trunc(Number(maxGeneratedImages) || 24));
+  return Math.min(max, Math.max(1, Math.trunc(Number(value) || 1)));
 }
 
 export function sequenceStatus(returned: number, requested: number): "empty" | "partial" | "complete" {

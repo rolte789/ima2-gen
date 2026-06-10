@@ -4,8 +4,9 @@ import type {
   AgentGenerationSettings,
   AgentSlashCommand,
 } from "./agentTypes.js";
+import { config } from "../config.js";
 
-const HARD_MAX_VARIANTS = 8;
+const HARD_MAX_VARIANTS = Math.max(1, Math.trunc(Number(config.limits.maxGeneratedImages) || 24));
 const AMBIGUOUS_MULTI_VARIANTS = 3;
 const KOREAN_COUNT_WORDS: Array<[RegExp, number]> = [
   [/(?:한|하나|1)\s*(?:장|개|가지|컷|시안|버전)/u, 1],
