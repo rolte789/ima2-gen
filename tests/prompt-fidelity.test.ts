@@ -9,7 +9,9 @@ import {
   AUTO_PROMPT_FIDELITY_SUFFIX,
   DIRECT_PROMPT_FIDELITY_SUFFIX,
   EDIT_DEVELOPER_PROMPT,
+  EDIT_NO_SEARCH_DEVELOPER_PROMPT,
   GENERATE_DEVELOPER_PROMPT,
+  GENERATE_NO_SEARCH_DEVELOPER_PROMPT,
   MULTIMODE_DEVELOPER_PROMPT,
   MULTIMODE_NO_SEARCH_DEVELOPER_PROMPT,
   PROMPT_FIDELITY_SUFFIX,
@@ -17,6 +19,8 @@ import {
   buildEditTextPrompt,
   buildUserTextPrompt,
 } from "../lib/oauthProxy.ts";
+import { buildGrokPlannerPayload } from "../lib/grokImageAdapter.ts";
+import { buildGrokVideoPlannerSystemPrompt } from "../lib/grokVideoPlannerPrompt.ts";
 import { SAFETY_INTENT_POLICY } from "../lib/promptSafetyPolicy.ts";
 import { VISIBLE_TEXT_LANGUAGE_POLICY } from "../lib/visibleTextLanguagePolicy.ts";
 
@@ -28,6 +32,9 @@ const apiPath = join(__dirname, "..", "ui", "src", "lib", "api.ts");
 const nodeApiPath = join(__dirname, "..", "ui", "src", "lib", "nodeApi.ts");
 const asyncJobSubmitPath = join(__dirname, "..", "ui", "src", "lib", "asyncJobSubmit.ts");
 const responsesAdapterPath = join(__dirname, "..", "lib", "responsesImageAdapter.ts");
+const grokImageAdapterPath = join(__dirname, "..", "lib", "grokImageAdapter.ts");
+const grokVideoPlannerPath = join(__dirname, "..", "lib", "grokVideoPlannerPrompt.ts");
+const agyAdapterPath = join(__dirname, "..", "lib", "agyImageAdapter.ts");
 
 const src = await readFile(serverPath, "utf8");
 const historySrc = await readFile(historyListPath, "utf8");
@@ -36,6 +43,14 @@ const apiSrc = await readFile(apiPath, "utf8");
 const nodeApiSrc = await readFile(nodeApiPath, "utf8");
 const asyncJobSubmitSrc = await readFile(asyncJobSubmitPath, "utf8");
 const responsesAdapterSrc = await readFile(responsesAdapterPath, "utf8");
+const grokImageAdapterSrc = await readFile(grokImageAdapterPath, "utf8");
+const grokVideoPlannerSrc = await readFile(grokVideoPlannerPath, "utf8");
+const agyAdapterSrc = await readFile(agyAdapterPath, "utf8");
+const bannedSafetyCopy = [
+  new RegExp(["non", "explicit"].join("-")),
+  new RegExp(["no", ["nu", "dity"].join("")].join(" ")),
+  new RegExp(["no", "erotic", "framing"].join(" ")),
+];
 
 // Ensure both suffix constants and the builder exist
 assert.ok(src.includes("buildApp"), "buildApp export missing after server split");
@@ -60,6 +75,16 @@ assert.ok(!DIRECT_PROMPT_FIDELITY_SUFFIX.includes("append English clarifiers"));
 assert.ok(DIRECT_PROMPT_FIDELITY_SUFFIX.includes("Do not translate, summarize, restyle, add clarifiers"));
 assert.ok(AUTO_PROMPT_FIDELITY_SUFFIX.includes(VISIBLE_TEXT_LANGUAGE_POLICY));
 assert.ok(DIRECT_PROMPT_FIDELITY_SUFFIX.includes(VISIBLE_TEXT_LANGUAGE_POLICY));
+assert.ok(SAFETY_INTENT_POLICY.length > 200, "safety intent policy must not be empty");
+assert.ok(SAFETY_INTENT_POLICY.includes("ordinary adult swimwear"));
+assert.ok(SAFETY_INTENT_POLICY.includes("bikini"));
+assert.ok(SAFETY_INTENT_POLICY.includes("two-piece swimsuit"));
+assert.ok(SAFETY_INTENT_POLICY.includes("do not replace it with a one-piece"));
+assert.ok(SAFETY_INTENT_POLICY.includes("negative safety constraints"));
+assert.ok(SAFETY_INTENT_POLICY.includes("minor"));
+assert.ok(DIRECT_PROMPT_FIDELITY_SUFFIX.includes(SAFETY_INTENT_POLICY));
+assert.ok(DIRECT_PROMPT_FIDELITY_SUFFIX.includes("classification guidance only"));
+assert.ok(DIRECT_PROMPT_FIDELITY_SUFFIX.includes("append negative safety constraints"));
 assert.ok(VISIBLE_TEXT_LANGUAGE_POLICY.includes("Korean text"));
 assert.ok(VISIBLE_TEXT_LANGUAGE_POLICY.includes("Japanese words"));
 assert.ok(VISIBLE_TEXT_LANGUAGE_POLICY.includes("Do not translate, romanize"));
@@ -91,7 +116,17 @@ for (const prompt of [GENERATE_DEVELOPER_PROMPT, EDIT_DEVELOPER_PROMPT]) {
   assert.ok(!prompt.includes("AT LEAST 3"), "real-person search should not force 3+ calls");
   assert.ok(!prompt.includes("4-5"), "real-person search should not prefer 4-5 calls");
   assert.ok(prompt.includes(SAFETY_INTENT_POLICY), "developer prompt should include safety intent policy");
+  assert.ok(prompt.includes("ordinary adult swimwear"), "developer prompt should preserve benign adult swimwear");
   assert.ok(prompt.includes(VISIBLE_TEXT_LANGUAGE_POLICY), "developer prompt should include visible text language policy");
+}
+
+for (const prompt of [
+  GENERATE_NO_SEARCH_DEVELOPER_PROMPT,
+  EDIT_NO_SEARCH_DEVELOPER_PROMPT,
+  MULTIMODE_DEVELOPER_PROMPT,
+  MULTIMODE_NO_SEARCH_DEVELOPER_PROMPT,
+]) {
+  assert.ok(prompt.includes(SAFETY_INTENT_POLICY), "all developer prompts should include safety intent policy");
 }
 
 for (const prompt of [MULTIMODE_DEVELOPER_PROMPT, MULTIMODE_NO_SEARCH_DEVELOPER_PROMPT]) {
@@ -127,5 +162,26 @@ assert.ok(multimodePrompt.includes("Do not create one combined image_generation_
 assert.match(responsesAdapterSrc, /MULTIMODE_DEVELOPER_PROMPT/);
 assert.match(responsesAdapterSrc, /MULTIMODE_NO_SEARCH_DEVELOPER_PROMPT/);
 assert.doesNotMatch(responsesAdapterSrc, /Create up to \$\{maxImages\} separate image_generation_call outputs/);
+
+const grokImagePlanner = buildGrokPlannerPayload(
+  "성인 모델이 비키니를 입은 비성적 수영복 카탈로그 사진",
+  "grok-imagine-image",
+  "1024x1024",
+  { aspect_ratio: "1:1", resolution: "1k" },
+).messages[0].content as string;
+const grokVideoPlanner = buildGrokVideoPlannerSystemPrompt();
+for (const prompt of [grokImagePlanner, grokVideoPlanner]) {
+  assert.ok(prompt.includes(SAFETY_INTENT_POLICY), "grok planner should include safety intent policy");
+  assert.ok(prompt.includes("adult two-piece swimwear"), "grok planner should classify bikini as benign adult swimwear");
+  assert.ok(prompt.includes("negative safety constraints"), "grok planner should not append negative safety constraints");
+  assert.ok(prompt.includes("do not rewrite it as a benign allowed prompt"), "grok planner should not launder unsafe prompts");
+}
+
+for (const source of [grokImageAdapterSrc, grokVideoPlannerSrc, agyAdapterSrc]) {
+  assert.doesNotMatch(source, /Do NOT refuse, defer, censor, sanitize, or downgrade.*for any reason/);
+  assert.doesNotMatch(source, /authorized for all usage categories/);
+  for (const banned of bannedSafetyCopy) assert.doesNotMatch(source, banned);
+  assert.match(source, /SAFETY_INTENT_POLICY/);
+}
 
 console.log("prompt-fidelity: ok");
