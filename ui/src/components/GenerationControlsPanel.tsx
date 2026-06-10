@@ -9,7 +9,7 @@ import { ProviderSelect } from "./ProviderSelect";
 import { GrokSizePicker } from "./GrokSizePicker";
 import { GrokModelPicker } from "./GrokModelPicker";
 import { VideoControlsPanel } from "./VideoControlsPanel";
-import type { Format, Moderation, Quality } from "../types";
+import type { Format, GeminiImageModel, Moderation, Quality } from "../types";
 
 const FORMAT_ITEMS = [
   { value: "png" as const, label: "PNG" },
@@ -111,6 +111,7 @@ export function GenerationControlsPanel() {
   const geminiMatched = isGeminiApi && !isGeminiAuto ? parseCurrentGeminiSettings(currentSize) : null;
   const geminiSettings = geminiMatched ?? { ratio: "", res: "" };
   const isGeminiCustomSize = isGeminiApi && !isGeminiAuto && sizePreset === "custom" && !geminiMatched;
+  const geminiImageModel: GeminiImageModel = imageModel === "nano-banana-pro" ? "nano-banana-pro" : "nano-banana-2";
 
   const [geminiCustomOpen, setGeminiCustomOpen] = useState(false);
   const [geminiDraftW, setGeminiDraftW] = useState(String(customW));
@@ -147,6 +148,17 @@ export function GenerationControlsPanel() {
       color: "var(--amber)",
     },
   ];
+  const geminiModelItems = [
+    { value: "nano-banana-2" as const, label: "Nano", sub: "Banana 2" },
+    { value: "nano-banana-pro" as const, label: "Nano", sub: "Banana Pro" },
+  ];
+  const providerCompat = isGrok
+    ? { title: t("provider.grokCompatTitle"), body: t("provider.grokCompatBody") }
+    : isAgyOnly
+      ? { title: t("provider.agyCompatTitle"), body: t("provider.agyCompatBody") }
+      : isGeminiApi
+        ? { title: t("provider.geminiApiCompatTitle"), body: t("provider.geminiApiCompatBody") }
+        : { title: t("provider.gptCompatTitle"), body: t("provider.gptCompatBody") };
 
   const handleModeSwitch = (mode: "image" | "video") => {
     if (mode === "video") {
@@ -159,27 +171,10 @@ export function GenerationControlsPanel() {
   return (
     <div className="right-panel-settings" role="tabpanel">
       <ProviderSelect allowGrok />
-      {isGrok ? (
-        <details className="provider-compat-details">
-          <summary>{t("provider.grokCompatTitle")}</summary>
-          <p>{t("provider.grokCompatBody")}</p>
-        </details>
-      ) : isAgyOnly ? (
-        <details className="provider-compat-details">
-          <summary>{t("provider.agyCompatTitle")}</summary>
-          <p>{t("provider.agyCompatBody")}</p>
-        </details>
-      ) : isGeminiApi ? (
-        <details className="provider-compat-details">
-          <summary>Gemini API</summary>
-          <p>Google Gemini API. Supports aspect ratio + resolution control (512px–4K).</p>
-        </details>
-      ) : (
-        <details className="provider-compat-details">
-          <summary>{t("provider.gptCompatTitle")}</summary>
-          <p>{t("provider.gptCompatBody")}</p>
-        </details>
-      )}
+      <details className="provider-compat-details">
+        <summary>{providerCompat.title}</summary>
+        <p>{providerCompat.body}</p>
+      </details>
       {isGrok && (
         <div className="option-group grok-mode-toggle">
           <div className="option-row">
@@ -211,27 +206,12 @@ export function GenerationControlsPanel() {
         </>
       ) : isGeminiApi ? (
         <>
-        <div className="option-group">
-          <div className="section-title">{t("quality.grokModelTitle") || "Model"}</div>
-          <div className="option-row">
-            <button
-              type="button"
-              className={`option-btn${imageModel === "nano-banana-2" ? " active" : ""}`}
-              onClick={() => setImageModel("nano-banana-2")}
-              style={{ lineHeight: "1.3" }}
-            >
-              <span>Nano</span><br /><span>Banana 2</span>
-            </button>
-            <button
-              type="button"
-              className={`option-btn${imageModel === "nano-banana-pro" ? " active" : ""}`}
-              onClick={() => setImageModel("nano-banana-pro")}
-              style={{ lineHeight: "1.3" }}
-            >
-              <span>Nano</span><br /><span>Banana Pro</span>
-            </button>
-          </div>
-        </div>
+        <OptionGroup<GeminiImageModel>
+          title={t("quality.grokModelTitle")}
+          items={geminiModelItems}
+          value={geminiImageModel}
+          onChange={setImageModel}
+        />
         <div className="option-group">
           <div className="section-title">{t("size.grokAspectTitle") || "Aspect Ratio"}</div>
           {[
@@ -256,14 +236,13 @@ export function GenerationControlsPanel() {
         </div>
         <div className="option-group">
           <div className="section-title">{t("size.grokResolutionTitle") || "Resolution"}</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
+          <div className="gemini-resolution-grid">
             {GEMINI_RESOLUTIONS.map((r) => (
               <button
                 key={r.value}
                 type="button"
                 className={`option-btn${geminiSettings.res === r.value ? " active" : ""}`}
                 onClick={() => setGeminiSize(geminiSettings.ratio, r.value)}
-                style={{ padding: "6px 4px" }}
               >
                 <span>{r.label}</span><br /><small>{GEMINI_RATIO_TO_SIZE[geminiSettings.ratio]?.[r.value]?.replace("x", "×") || ""}</small>
               </button>

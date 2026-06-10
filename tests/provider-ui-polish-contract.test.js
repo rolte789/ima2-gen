@@ -54,4 +54,26 @@ describe("provider UI polish contract", () => {
     assert.match(css, /text-overflow:\s*ellipsis/);
     assert.match(css, /:focus-visible/);
   });
+
+  it("moves Gemini API compatibility copy and grid layout out of inline React branches", () => {
+    const controls = readSource("ui/src/components/GenerationControlsPanel.tsx");
+    const settings = readSource("ui/src/components/SettingsWorkspace.tsx");
+    const css = readSource("ui/src/styles/provider-controls.css");
+    const en = readSource("ui/src/i18n/en.json");
+    const ko = readSource("ui/src/i18n/ko.json");
+
+    assert.match(controls, /providerCompat/);
+    assert.match(controls, /t\("provider\.geminiApiCompatTitle"\)/);
+    assert.match(controls, /t\("provider\.geminiApiCompatBody"\)/);
+    assert.match(controls, /OptionGroup<GeminiImageModel>/);
+    assert.match(controls, /className="gemini-resolution-grid"/);
+    assert.doesNotMatch(controls, /Google Gemini API\. Supports aspect ratio/);
+    assert.doesNotMatch(controls, /style=\{\{ lineHeight/);
+    assert.doesNotMatch(controls, /gridTemplateColumns/);
+    assert.match(settings, /t\("provider\.geminiApiCompatBodyLong"\)/);
+    assert.doesNotMatch(settings, /Google Gemini API direct/);
+    assert.match(css, /\.gemini-resolution-grid/);
+    assert.match(en, /"geminiApiCompatBody"/);
+    assert.match(ko, /"geminiApiCompatBody"/);
+  });
 });

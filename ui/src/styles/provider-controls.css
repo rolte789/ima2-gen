@@ -248,6 +248,23 @@
   margin: 0;
 }
 
+.gemini-resolution-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.gemini-resolution-grid .option-btn {
+  min-height: 46px;
+  padding: 6px 4px;
+}
+
+.gemini-resolution-grid small {
+  color: var(--text-faint);
+  font-size: 10px;
+  line-height: 1.2;
+}
+
 @container (max-width: 260px) {
   .provider-grid__col {
     grid-template-columns: 1fr 1fr;

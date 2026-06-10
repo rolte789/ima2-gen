@@ -549,6 +549,9 @@
     "agyCompatTitle": "Gemini (agy)",
     "agyCompatBody": "1024x1024 fixed, JPEG output, max 3 refs. No quality/size control.",
     "agyCompatBodyLong": "1024x1024 fixed output, JPEG format, max 3 reference images. No web search, no quality/size control.",
+    "geminiApiCompatTitle": "Gemini API",
+    "geminiApiCompatBody": "Google Gemini API. Supports aspect ratio and resolution control from 512px to 4K.",
+    "geminiApiCompatBodyLong": "Google Gemini API direct. Supports nano-banana-2 (Flash) and nano-banana-pro (Pro), with aspect ratio and resolution control from 512px to 4K.",
     "gptCompatTitle": "GPT Image",
     "gptCompatBody": "OpenAI image generation via Responses API. Supports quality, size, format, moderation, and web search settings."
   },

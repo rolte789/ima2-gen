@@ -549,6 +549,9 @@
     "agyCompatTitle": "Gemini (agy)",
     "agyCompatBody": "1024x1024 고정, JPEG 출력, 최대 3개 참조. 품질/크기 조절 없음.",
     "agyCompatBodyLong": "1024x1024 고정 출력, JPEG 형식, 최대 3개 참조 이미지. 웹 검색, 품질/크기 조절 없음.",
+    "geminiApiCompatTitle": "Gemini API",
+    "geminiApiCompatBody": "Google Gemini API. 512px부터 4K까지 종횡비와 해상도를 조절할 수 있습니다.",
+    "geminiApiCompatBodyLong": "Google Gemini API 직접 호출. nano-banana-2(Flash), nano-banana-pro(Pro)를 지원하며 512px부터 4K까지 종횡비와 해상도를 조절할 수 있습니다.",
     "gptCompatTitle": "GPT Image",
     "gptCompatBody": "OpenAI Responses API를 통한 이미지 생성. 품질, 크기, 형식, 모더레이션, 웹 검색 설정 지원."
   },

@@ -232,8 +232,8 @@ export function SettingsWorkspace() {
               ) : provider === "agy" || provider === "gemini-api" ? (
                 <article className="settings-row">
                   <div className="settings-row__copy">
-                    <h4>{provider === "gemini-api" ? "Gemini API" : t("provider.agyCompatTitle")}</h4>
-                    <p>{provider === "gemini-api" ? "Google Gemini API direct. Supports nano-banana-2 (Flash) and nano-banana-pro (Pro). 1024x1024 default, JPEG output." : t("provider.agyCompatBodyLong")}</p>
+                    <h4>{provider === "gemini-api" ? t("provider.geminiApiCompatTitle") : t("provider.agyCompatTitle")}</h4>
+                    <p>{provider === "gemini-api" ? t("provider.geminiApiCompatBodyLong") : t("provider.agyCompatBodyLong")}</p>
                   </div>
                 </article>
               ) : (
