@@ -9,6 +9,6 @@ export const ENABLE_CARD_NEWS_MODE =
   import.meta.env.VITE_IMA2_CARD_NEWS === "1" ||
   import.meta.env.VITE_IMA2_DEV === "1";
 
-export const ENABLE_AGENT_MODE =
-  import.meta.env.VITE_IMA2_AGENT_MODE === "1" ||
-  import.meta.env.VITE_IMA2_DEV === "1";
+// Agent mode is a product feature in packaged builds; set
+// VITE_IMA2_AGENT_MODE=0 only when a release must hide it.
+export const ENABLE_AGENT_MODE = import.meta.env.VITE_IMA2_AGENT_MODE !== "0";
