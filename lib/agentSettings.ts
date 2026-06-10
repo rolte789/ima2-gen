@@ -1,3 +1,4 @@
+import { config } from "../config.js";
 import type { AgentGenerationSettings } from "./agentTypes.js";
 
 const PROVIDERS = new Set(["oauth", "api", "grok", "grok-api", "agy", "gemini-api"]);
@@ -6,6 +7,8 @@ const FORMATS = new Set(["png", "jpeg", "webp"]);
 const MODERATIONS = new Set(["auto", "low"]);
 const REASONING_EFFORTS = new Set(["low", "medium", "high", "xhigh"]);
 const GENERATION_STRATEGIES = new Set(["auto", "manual"]);
+const MAX_AGENT_VARIANTS = Math.max(1, Math.trunc(config.limits.maxGeneratedImages));
+const MAX_AGENT_PARALLELISM = Math.max(1, Math.trunc(config.limits.maxParallel));
 
 export const DEFAULT_AGENT_GENERATION_SETTINGS: AgentGenerationSettings = {
   provider: "oauth",
@@ -18,7 +21,7 @@ export const DEFAULT_AGENT_GENERATION_SETTINGS: AgentGenerationSettings = {
   webSearchEnabled: true,
   generationStrategy: "auto",
   variants: 1,
-  maxAutoVariants: 8,
+  maxAutoVariants: MAX_AGENT_VARIANTS,
   parallelism: 2,
 };
 
@@ -37,9 +40,9 @@ export function normalizeAgentGenerationSettings(
     reasoningEffort: cleanEnum(input.reasoningEffort, REASONING_EFFORTS, fallback.reasoningEffort),
     webSearchEnabled: typeof input.webSearchEnabled === "boolean" ? input.webSearchEnabled : fallback.webSearchEnabled,
     generationStrategy: cleanEnum(input.generationStrategy, GENERATION_STRATEGIES, fallback.generationStrategy),
-    variants: cleanPositiveInt(input.variants, fallback.variants, 1, 8),
-    maxAutoVariants: cleanPositiveInt(input.maxAutoVariants, fallback.maxAutoVariants, 1, 8),
-    parallelism: cleanPositiveInt(input.parallelism, fallback.parallelism, 1, 8),
+    variants: cleanPositiveInt(input.variants, fallback.variants, 1, MAX_AGENT_VARIANTS),
+    maxAutoVariants: cleanPositiveInt(input.maxAutoVariants, fallback.maxAutoVariants, 1, MAX_AGENT_VARIANTS),
+    parallelism: cleanPositiveInt(input.parallelism, fallback.parallelism, 1, MAX_AGENT_PARALLELISM),
   };
 }
 

@@ -1,4 +1,5 @@
 import { useI18n } from "../../i18n";
+import { MAX_AGENT_PARALLELISM, MAX_AGENT_VARIANTS } from "../../lib/agentGenerationSettings";
 import type { AgentGenerationSettings } from "./agentTypes";
 
 type Props = {
@@ -53,17 +54,17 @@ export function AgentQualityPanel({ settings, onChange }: Props) {
       {settings.generationStrategy === "manual" ? (
         <label>
           <span>{t("agent.variantsCount")}</span>
-          <input type="number" min={1} max={8} value={settings.variants} onChange={(event) => onChange({ variants: Number(event.target.value) })} />
+          <input type="number" min={1} max={MAX_AGENT_VARIANTS} value={settings.variants} onChange={(event) => onChange({ variants: Number(event.target.value) })} />
         </label>
       ) : (
         <label>
           <span>{t("agent.maxAutoVariants")}</span>
-          <input type="number" min={1} max={8} value={settings.maxAutoVariants} onChange={(event) => onChange({ maxAutoVariants: Number(event.target.value) })} />
+          <input type="number" min={1} max={MAX_AGENT_VARIANTS} value={settings.maxAutoVariants} onChange={(event) => onChange({ maxAutoVariants: Number(event.target.value) })} />
         </label>
       )}
       <label>
         <span>{t("agent.parallelism")}</span>
-        <input type="number" min={1} max={8} value={settings.parallelism} onChange={(event) => onChange({ parallelism: Number(event.target.value) })} />
+        <input type="number" min={1} max={MAX_AGENT_PARALLELISM} value={settings.parallelism} onChange={(event) => onChange({ parallelism: Number(event.target.value) })} />
       </label>
     </section>
   );

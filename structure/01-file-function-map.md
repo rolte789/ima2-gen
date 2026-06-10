@@ -280,7 +280,7 @@ routes/
 | `SettingsButton.tsx` | 24 | Sidebar settings entry |
 | `SizePicker.tsx` | 280 | Preset/custom size picker with custom slot management and keyboard draft |
 | `ImageModelSelect.tsx` | 101 | Shared Settings/sidebar image model selector |
-| `CountPicker.tsx` | 97 | Generation count picker (1–8 plus manual entry) |
+| `CountPicker.tsx` | 97 | Generation count picker (1-24 plus manual entry) |
 | `ThemeToggle.tsx` | 117 | Theme mode and theme family selector |
 | `LanguageToggle.tsx` | 26 | Locale switcher |
 | `UIModeSwitch.tsx` | 47 | Classic/node/card-news mode switcher |

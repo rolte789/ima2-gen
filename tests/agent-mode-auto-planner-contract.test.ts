@@ -1,10 +1,23 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_AGENT_GENERATION_SETTINGS } from "../lib/agentSettings.ts";
+import { DEFAULT_AGENT_GENERATION_SETTINGS, normalizeAgentGenerationSettings } from "../lib/agentSettings.ts";
 import { parseAgentSlashCommand } from "../lib/agentCommandParser.ts";
 import { deriveAgentGenerationPlan } from "../lib/agentGenerationPlanner.ts";
 
 describe("Agent Mode auto generation planner contract", () => {
+  it("normalizes Agent generation settings against the configured 24-count limits", () => {
+    const settings = normalizeAgentGenerationSettings({
+      variants: 24,
+      maxAutoVariants: 24,
+      parallelism: 24,
+    });
+
+    assert.equal(settings.variants, 24);
+    assert.equal(settings.maxAutoVariants, 24);
+    assert.equal(settings.parallelism, 24);
+    assert.equal(DEFAULT_AGENT_GENERATION_SETTINGS.maxAutoVariants, 24);
+  });
+
   it("defaults to one image while allowing the prompt to request bounded fanout", () => {
     const single = deriveAgentGenerationPlan({
       prompt: "make a quiet editorial poster",

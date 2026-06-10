@@ -37,6 +37,7 @@ test("server generation paths no longer keep hard-coded 8 image-count caps", () 
     "lib/agentCommandParser.ts",
     "lib/agentRuntime.ts",
     "lib/agentGenerationPlanner.ts",
+    "lib/agentSettings.ts",
     "bin/commands/gen.ts",
     "bin/commands/multimode.ts",
     "bin/commands/node.ts",
@@ -51,10 +52,17 @@ test("frontend count persistence uses the shared 24 image limit", () => {
   const limits = readSource("ui/src/lib/generationLimits.ts");
   const picker = readSource("ui/src/components/CountPicker.tsx");
   const persistence = readSource("ui/src/store/storePersistence.ts");
+  const agentPanel = readSource("ui/src/components/agent/AgentQualityPanel.tsx");
+  const agentSettings = readSource("ui/src/lib/agentGenerationSettings.ts");
 
   assert.match(limits, /MAX_GENERATION_COUNT = 24/);
   assert.match(picker, /normalizeGenerationCount/);
   assert.match(persistence, /normalizeGenerationCount/);
+  assert.match(agentPanel, /MAX_AGENT_VARIANTS/);
+  assert.match(agentPanel, /MAX_AGENT_PARALLELISM/);
+  assert.match(agentSettings, /MAX_AGENT_VARIANTS = MAX_GENERATION_COUNT/);
   assert.doesNotMatch(picker, /Math\.min\(8/);
   assert.doesNotMatch(persistence, /Math\.min\(8/);
+  assert.doesNotMatch(agentPanel, /max=\{8\}/);
+  assert.doesNotMatch(agentSettings, /maxAutoVariants: 8/);
 });

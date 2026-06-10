@@ -1,4 +1,8 @@
 import type { AgentGenerationSettings } from "../components/agent/agentTypes";
+import { MAX_GENERATION_COUNT } from "./generationLimits";
+
+export const MAX_AGENT_VARIANTS = MAX_GENERATION_COUNT;
+export const MAX_AGENT_PARALLELISM = MAX_GENERATION_COUNT;
 
 export const DEFAULT_AGENT_GENERATION_SETTINGS: AgentGenerationSettings = {
   provider: "oauth",
@@ -11,7 +15,7 @@ export const DEFAULT_AGENT_GENERATION_SETTINGS: AgentGenerationSettings = {
   webSearchEnabled: true,
   generationStrategy: "auto",
   variants: 1,
-  maxAutoVariants: 8,
+  maxAutoVariants: MAX_AGENT_VARIANTS,
   parallelism: 2,
 };
 
