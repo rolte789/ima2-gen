@@ -221,11 +221,11 @@ Node sidecars include `requestId` as recovery metadata. `/api/history` exposes t
 
 ## Agent Mode API
 
-Agent Mode is a conversational image workspace. Each agent session holds a current image, a web-search toggle, generation settings, style/subject locks, a turn history, and a durable per-session job queue. These routes are always registered (not feature-gated). Implementation is split across `lib/agentStore.ts` (sessions, workspace payload, XML manifest, locks, current image, generation settings), `lib/agentQueueStore.ts` + `lib/agentQueueWorker.ts` (durable queue and worker), `lib/agentCommandParser.ts` (`/question` and slash commands), `lib/agentQuestionResponder.ts`, and `lib/agentRuntime.ts` (`runAgentTurn`, allowed-tool payload).
+Agent Mode is a conversational image workspace. Each agent session holds a current image, a web-search toggle, generation settings, style/subject locks, a turn history, and a durable per-session job queue. These routes are always registered (not feature-gated). Implementation is split across `lib/agentStore.ts` (sessions, workspace payload, XML manifest, locks, current image, generation settings), `lib/agentQueueStore.ts` + `lib/agentQueueWorker.ts` (durable queue, worker, and runtime LLM planning), `lib/agentCommandParser.ts` (`/question` and slash commands), `lib/agentQuestionResponder.ts`, `lib/agentRuntime.ts` (`runAgentTurn`, allowed-tool payload, error lookup), `lib/agentToolManifest.ts` (tool surface single source: names, descriptions, parameter schemas), and `lib/agentPlannerModel.ts` (provider-follow LLM planner: oauth/api via Responses, grok via chat completions, regex fallback on failure; gated by `agentPlanner.enabled`/`agentPlanner.timeoutMs`).
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/api/agent/tools` | Allowed tool payload for the agent runtime |
+| `GET` | `/api/agent/tools` | Allowed tool payload + parameter-schema manifest for the agent runtime |
 | `GET` | `/api/agent/sessions` | Workspace payload (session list + selected); `selectedSessionId` query selects |
 | `POST` | `/api/agent/sessions` | Create a session (`title?`, `currentImage?`, `webSearchEnabled?`) |
 | `GET` | `/api/agent/sessions/:sessionId` | Load one session workspace |
@@ -239,6 +239,7 @@ Agent Mode is a conversational image workspace. Each agent session holds a curre
 | `POST` | `/api/agent/sessions/:sessionId/queue` | Enqueue a generation turn |
 | `POST` | `/api/agent/queue/:itemId/cancel` | Cancel a queued item |
 | `POST` | `/api/agent/queue/:itemId/retry` | Retry a queued item |
+| `GET` | `/api/agent/sessions/:sessionId/errors` | Read-only recent generation failures (failed queue jobs + error turns); `limit` query (1-20) |
 
 Agent Mode is a server + web-UI feature (`ui/src/components/agent/*`, `ui/src/lib/agentApi.ts`, `ui/src/styles/agent-workspace*.css`). There is no `ima2 agent` CLI command; drive it from the web UI or `/api/agent/*` directly. Turns run through the durable queue worker so parallel/auto-generation work survives reconnects.
 
