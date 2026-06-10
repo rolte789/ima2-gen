@@ -70,7 +70,27 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
       valid: !!vertexJson,
       maskedKey: ctx.vertexProjectId ? `project: ${ctx.vertexProjectId}` : null,
     };
+    status.geminiAuthMode = (ctx as any).geminiAuthMode
+      || (vertexJson && !ctx.geminiApiKey ? "vertex" : "apikey");
     res.json(status);
+  });
+
+  // Persist the Gemini auth mode chosen in the settings dropdown, so reopening
+  // settings (or restarting the server) keeps the user's selection.
+  app.put("/api/keys/gemini-auth-mode", async (req: Request, res: Response) => {
+    const { mode } = req.body as { mode?: string };
+    if (mode !== "apikey" && mode !== "vertex") {
+      return res.status(400).json({ ok: false, error: "mode must be apikey|vertex", code: "INVALID_MODE" });
+    }
+    const cfgPath = ctx.config.storage.configFile;
+    let existing: Record<string, unknown> = {};
+    try {
+      existing = JSON.parse(await readFile(cfgPath, "utf-8"));
+    } catch { /* new file */ }
+    existing.geminiAuthMode = mode;
+    await writeConfigAtomic(cfgPath, existing);
+    (ctx as any).geminiAuthMode = mode;
+    return res.json({ ok: true, geminiAuthMode: mode });
   });
 
   // Vertex JSON — dedicated route (before generic :provider)
@@ -200,6 +220,7 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
       existing = JSON.parse(await readFile(cfgPath, "utf-8"));
     } catch { /* new file */ }
     existing[CONFIG_KEY_MAP[provider]] = trimmed;
+    if (provider === "gemini") existing.geminiAuthMode = "apikey";
     await writeConfigAtomic(cfgPath, existing);
 
     // Hot-update runtime context
@@ -220,8 +241,6 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
       (ctx as any).geminiApiKeySource = "config";
       (ctx as any).hasGeminiApiKey = true;
       (ctx as any).geminiAuthMode = "apikey";
-      existing[CONFIG_KEY_MAP[provider]] = trimmed;
-      existing.geminiAuthMode = "apikey";
     }
 
     return res.json({ ok: true, provider, source: "config", valid: true });

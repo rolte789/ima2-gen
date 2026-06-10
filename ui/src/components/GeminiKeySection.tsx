@@ -13,16 +13,26 @@ export function GeminiKeySection({ keyStatus, onSaved }: GeminiKeySectionProps) 
   const { t } = useI18n();
   const vertexConfigured = keyStatus.vertex?.configured ?? false;
   const geminiConfigured = keyStatus.gemini?.configured ?? false;
-  const [authMode, setAuthMode] = useState<"apikey" | "vertex">(
-    vertexConfigured && !geminiConfigured ? "vertex" : "apikey",
-  );
+  const serverAuthMode: "apikey" | "vertex" =
+    keyStatus.geminiAuthMode === "vertex" ? "vertex" : "apikey";
+  const [authMode, setAuthMode] = useState<"apikey" | "vertex">(serverAuthMode);
   const [userPicked, setUserPicked] = useState(false);
 
-  // Reconcile dropdown with saved status until the user manually picks a mode.
+  // Reconcile dropdown with the server-persisted mode until the user picks one.
   useEffect(() => {
     if (userPicked) return;
-    setAuthMode(vertexConfigured && !geminiConfigured ? "vertex" : "apikey");
-  }, [vertexConfigured, geminiConfigured, userPicked]);
+    setAuthMode(serverAuthMode);
+  }, [serverAuthMode, userPicked]);
+
+  const handleModeChange = (mode: "apikey" | "vertex") => {
+    setUserPicked(true);
+    setAuthMode(mode);
+    void fetch("/api/keys/gemini-auth-mode", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode }),
+    }).catch(() => { /* keep local state; status poll will reconcile */ });
+  };
 
   return (
     <div className="gemini-key-section">
@@ -30,7 +40,7 @@ export function GeminiKeySection({ keyStatus, onSaved }: GeminiKeySectionProps) 
         <h5>{t("settings.apiKeys.gemini.label")}</h5>
         <select
           value={authMode}
-          onChange={(e) => { setUserPicked(true); setAuthMode(e.target.value as "apikey" | "vertex"); }}
+          onChange={(e) => handleModeChange(e.target.value as "apikey" | "vertex")}
           className="gemini-auth-mode-select"
         >
           <option value="apikey">{t("settings.apiKeys.vertex.authModeApiKey")}</option>
