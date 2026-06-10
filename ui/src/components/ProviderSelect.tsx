@@ -7,8 +7,6 @@ import { useKeyStatus } from "../hooks/useKeyStatus";
 import { ApiDisabledModal } from "./ApiDisabledModal";
 import type { Provider } from "../types";
 import { useI18n } from "../i18n";
-import { PROVIDER_COLUMNS, getProviderIdentity } from "../lib/providerIdentity";
-import { ProviderCard } from "./provider/ProviderCard";
 
 type ProviderAvailability = {
   ok: boolean;
@@ -81,6 +79,36 @@ type ProviderSelectProps = {
   allowGrok?: boolean;
 };
 
+type CellDef = {
+  value: Provider;
+  label: string;
+  disabled?: boolean;
+};
+
+const GRID: { header: string; cells: CellDef[] }[] = [
+  {
+    header: "GPT",
+    cells: [
+      { value: "oauth", label: "OAuth" },
+      { value: "api", label: "API" },
+    ],
+  },
+  {
+    header: "Grok",
+    cells: [
+      { value: "grok", label: "OAuth" },
+      { value: "grok-api", label: "API" },
+    ],
+  },
+  {
+    header: "Gemini",
+    cells: [
+      { value: "agy", label: "agy" },
+      { value: "gemini-api", label: "API" },
+    ],
+  },
+];
+
 export function ProviderSelect({ allowGrok = true }: ProviderSelectProps) {
   const { t } = useI18n();
   const provider = useAppStore((s) => s.provider);
@@ -95,16 +123,17 @@ export function ProviderSelect({ allowGrok = true }: ProviderSelectProps) {
       : { ok: false, reason: t("provider.grokClassicOnly"), hint: t("provider.grokClassicOnlyHint") },
   };
 
-  const handleClick = (nextProvider: Provider) => {
-    if (providerAvailability[nextProvider].ok) {
-      setProvider(nextProvider);
+  const handleClick = (cell: CellDef) => {
+    if (cell.disabled) return;
+    if (providerAvailability[cell.value].ok) {
+      setProvider(cell.value);
     } else {
-      setBlocked(nextProvider);
+      setBlocked(cell.value);
     }
   };
 
   const blockedLabel = blocked
-    ? getProviderIdentity(blocked).compactLabel
+    ? GRID.flatMap((col) => col.cells).find((c) => c.value === blocked)?.label ?? ""
     : "";
   const blockedInfo = blocked
     ? { label: blockedLabel, ...providerAvailability[blocked] }
@@ -114,29 +143,32 @@ export function ProviderSelect({ allowGrok = true }: ProviderSelectProps) {
     <>
       <div className="section-title">{t("provider.authTitle")}</div>
       <div className="provider-grid">
-        {PROVIDER_COLUMNS.map((col) => (
-          <div key={col.family} className="provider-grid__col">
-            <div className="provider-grid__header">
-              <strong>{col.header}</strong>
-              <span>{getProviderIdentity(col.providers[0]).company}</span>
-            </div>
-            {col.providers.map((providerValue) => {
-              const identity = getProviderIdentity(providerValue);
-              const selected = provider === providerValue;
-              const availabilityInfo = providerAvailability[providerValue];
-              const ok = availabilityInfo.ok;
-              const statusLabel = ok ? t("provider.availableSr") : t("provider.unavailableSr");
+        {GRID.map((col) => (
+          <div key={col.header} className="provider-grid__col">
+            <div className="provider-grid__header">{col.header}</div>
+            {col.cells.map((cell, i) => {
+              const selected = !cell.disabled && provider === cell.value;
+              const ok = cell.disabled ? false : providerAvailability[cell.value].ok;
+              const label = `${col.header} ${cell.label}`;
               return (
-                <ProviderCard
-                  key={providerValue}
-                  identity={identity}
-                  selected={selected}
-                  ok={ok}
-                  statusLabel={statusLabel}
-                  title={ok ? identity.longLabel : availabilityInfo.reason}
-                  ariaLabel={ok ? t("provider.availableAria", { name: identity.longLabel }) : t("provider.unavailableAria", { name: identity.longLabel })}
-                  onClick={() => handleClick(providerValue)}
-                />
+                <button
+                  key={`${col.header}-${i}`}
+                  type="button"
+                  className={`provider-pill${selected ? " selected" : ""}${cell.disabled ? " disabled" : ""}`}
+                  onClick={() => handleClick(cell)}
+                  disabled={cell.disabled}
+                  title={cell.disabled ? t("provider.comingSoon") : ok ? label : providerAvailability[cell.value].reason}
+                  aria-label={cell.disabled ? `${label} (coming soon)` : ok ? t("provider.availableAria", { name: label }) : t("provider.unavailableAria", { name: label })}
+                  aria-pressed={selected}
+                >
+                  {!cell.disabled && (
+                    <span
+                      className={`status-dot ${ok ? "status-dot--ok" : "status-dot--bad"}`}
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span>{cell.label}</span>
+                </button>
               );
             })}
           </div>

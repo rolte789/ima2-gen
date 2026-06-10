@@ -79,14 +79,15 @@ describe("Agent Mode right sidebar contract", () => {
     const css = readSource("ui/src/styles/provider-controls.css");
 
     assert.match(types, /provider: "oauth" \| "api" \| "grok"/);
-    assert.match(model, /AGENT_PROVIDER_OPTIONS/);
-    assert.match(model, /\["oauth", "api", "grok", "agy"\]/);
-    assert.match(model, /ProviderCard/);
-    assert.match(model, /getProviderIdentity\(provider\)/);
-    assert.match(model, /className="agent-provider-options"/);
+    assert.match(model, /<select value=\{settings\.provider\}/);
+    assert.match(model, /<option value="oauth">GPT OAuth<\/option>/);
+    assert.match(model, /<option value="grok">Grok<\/option>/);
+    assert.match(model, /<option value="agy">Gemini<\/option>/);
+    assert.doesNotMatch(model, /ProviderCard/);
+    assert.doesNotMatch(model, /getProviderIdentity\(provider\)/);
     assert.match(model, /isGrokImageModel\(settings\.model\)/);
     assert.match(model, /provider === "grok"/);
     assert.match(model, /onChange\(\{ model, provider: "grok" \}\)/);
-    assert.match(css, /\.agent-provider-options/);
+    assert.doesNotMatch(css, /\.agent-provider-options/);
   });
 });

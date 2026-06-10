@@ -1,15 +1,11 @@
 import { useI18n } from "../../i18n";
 import { DEFAULT_IMAGE_MODEL, IMAGE_MODEL_OPTIONS, isGrokImageModel } from "../../lib/imageModels";
-import { getProviderIdentity } from "../../lib/providerIdentity";
-import { ProviderCard } from "../provider/ProviderCard";
 import type { AgentGenerationSettings } from "./agentTypes";
 
 type Props = {
   settings: AgentGenerationSettings;
   onChange: (patch: Partial<AgentGenerationSettings>) => void;
 };
-
-const AGENT_PROVIDER_OPTIONS: AgentGenerationSettings["provider"][] = ["oauth", "api", "grok", "agy"];
 
 export function AgentModelSelector({ settings, onChange }: Props) {
   const { t } = useI18n();
@@ -50,27 +46,15 @@ export function AgentModelSelector({ settings, onChange }: Props) {
           ))}
         </select>
       </label>
-      <div className="agent-settings-grid__field">
+      <label>
         <span>{t("agent.provider")}</span>
-        <div className="agent-provider-options" role="group" aria-label={t("agent.provider")}>
-          {AGENT_PROVIDER_OPTIONS.map((provider) => {
-            const identity = getProviderIdentity(provider);
-            const selected = settings.provider === provider;
-            return (
-              <ProviderCard
-                key={provider}
-                identity={identity}
-                selected={selected}
-                ok
-                statusLabel={t("agent.statusReady")}
-                title={identity.longLabel}
-                ariaLabel={t("provider.availableAria", { name: identity.longLabel })}
-                onClick={() => setProvider(provider)}
-              />
-            );
-          })}
-        </div>
-      </div>
+        <select value={settings.provider} onChange={(event) => setProvider(event.target.value as AgentGenerationSettings["provider"])}>
+          <option value="oauth">GPT OAuth</option>
+          <option value="api">API</option>
+          <option value="grok">Grok</option>
+          <option value="agy">Gemini</option>
+        </select>
+      </label>
       <label>
         <span>{t("agent.reasoningEffort")}</span>
         <select value={settings.reasoningEffort} onChange={(event) => onChange({ reasoningEffort: event.target.value as AgentGenerationSettings["reasoningEffort"] })}>

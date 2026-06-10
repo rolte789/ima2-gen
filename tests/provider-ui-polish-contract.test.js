@@ -10,61 +10,55 @@ function readSource(path) {
   return readFileSync(join(root, path), "utf8");
 }
 
-describe("provider UI polish contract", () => {
-  it("renders provider selection from the provider identity map", () => {
+describe("provider UI contract", () => {
+  it("renders provider selection as logo-free compact pills", () => {
     const select = readSource("ui/src/components/ProviderSelect.tsx");
 
-    assert.match(select, /PROVIDER_COLUMNS/);
-    assert.match(select, /getProviderIdentity/);
-    assert.match(select, /ProviderCard/);
-    assert.doesNotMatch(select, /const GRID/);
-    assert.doesNotMatch(select, /provider-pill/);
-    assert.match(select, /setProvider\(nextProvider\)/);
-    assert.match(select, /getProviderIdentity\(blocked\)\.compactLabel/);
+    assert.match(select, /const GRID/);
+    assert.match(select, /provider-pill/);
+    assert.match(select, /status-dot/);
+    assert.match(select, /value: "grok-api"/);
+    assert.match(select, /value: "gemini-api"/);
+    assert.match(select, /setProvider\(cell\.value\)/);
+    assert.doesNotMatch(select, /ProviderCard/);
+    assert.doesNotMatch(select, /getProviderIdentity/);
   });
 
-  it("owns provider component styles outside toast-modal css", () => {
+  it("owns logo-free provider pill styles outside toast-modal css", () => {
     const indexCss = readSourceTree("ui/src/index.css");
     const providerCss = readSource("ui/src/styles/provider-controls.css");
     const toastCss = readSource("ui/src/styles/toast-modal.css");
 
     assert.match(indexCss, /@import "\.\/styles\/provider-controls\.css";/);
-    assert.match(providerCss, /\.provider-card/);
-    assert.match(providerCss, /\.provider-card--gpt/);
-    assert.match(providerCss, /\.provider-card--grok/);
-    assert.match(providerCss, /\.provider-card--gemini/);
-    assert.match(providerCss, /\.provider-status-badge/);
-    assert.match(providerCss, /container-type:\s*inline-size/);
-    assert.doesNotMatch(toastCss, /\.provider-pill/);
+    assert.match(providerCss, /\.provider-pill/);
+    assert.match(providerCss, /\.provider-pill\.selected/);
+    assert.match(providerCss, /\.status-dot--ok/);
+    assert.match(providerCss, /\.status-dot--bad/);
+    assert.doesNotMatch(providerCss, /provider-card/);
+    assert.doesNotMatch(providerCss, /provider-card__mark/);
     assert.doesNotMatch(toastCss, /\.provider-grid/);
   });
 
-  it("keeps provider cards accessible and stable", () => {
-    const card = readSource("ui/src/components/provider/ProviderCard.tsx");
-    const badge = readSource("ui/src/components/provider/ProviderStatusBadge.tsx");
+  it("keeps provider pills accessible and stable", () => {
+    const select = readSource("ui/src/components/ProviderSelect.tsx");
     const css = readSource("ui/src/styles/provider-controls.css");
 
-    assert.match(card, /type="button"/);
-    assert.match(card, /aria-label=\{ariaLabel\}/);
-    assert.match(card, /aria-pressed=\{selected\}/);
-    assert.match(card, /ProviderStatusBadge/);
-    assert.match(badge, /status-dot--ok/);
-    assert.match(badge, /status-dot--bad/);
-    assert.match(css, /min-height:\s*54px/);
-    assert.match(css, /text-overflow:\s*ellipsis/);
+    assert.match(select, /type="button"/);
+    assert.match(select, /aria-label=/);
+    assert.match(select, /aria-pressed=\{selected\}/);
+    assert.match(css, /min-height:\s*44px/);
     assert.match(css, /:focus-visible/);
   });
 
-  it("reuses provider cards in Agent mode instead of native provider select", () => {
+  it("keeps Agent mode provider selection as a native select", () => {
     const agent = readSource("ui/src/components/agent/AgentModelSelector.tsx");
     const css = readSource("ui/src/styles/provider-controls.css");
 
-    assert.match(agent, /AGENT_PROVIDER_OPTIONS/);
-    assert.match(agent, /ProviderCard/);
-    assert.match(agent, /getProviderIdentity\(provider\)/);
-    assert.match(agent, /role="group"/);
-    assert.doesNotMatch(agent, /<select value=\{settings\.provider\}/);
-    assert.match(css, /\.agent-provider-options/);
+    assert.match(agent, /<select value=\{settings\.provider\}/);
+    assert.doesNotMatch(agent, /ProviderCard/);
+    assert.doesNotMatch(agent, /getProviderIdentity/);
+    assert.doesNotMatch(agent, /agent-provider-options/);
+    assert.doesNotMatch(css, /\.agent-provider-options/);
   });
 
   it("moves Gemini API compatibility copy and grid layout out of inline React branches", () => {
