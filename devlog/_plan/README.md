@@ -1,6 +1,6 @@
 ---
 created: 2026-04-23
-updated: 2026-06-01
+updated: 2026-06-11
 tags: [ima2-gen, devlog, roadmap]
 aliases: [ima2 active plan, image_gen current roadmap, ima2 개발계획]
 ---
@@ -37,6 +37,7 @@ Deferred / 미래 항목은 `_plan/`이 아니라 `devlog/_future/`에 둔다.
 | 11 | `260531_pr-issue-review-rebase-plan/` | reference | PR #81/#3 통합 계획 + 이슈 triage 문서. |
 | 12 | `260531_video-settings-persistence/` | investigated / not fixed | Video setting localStorage persistence. |
 | 13 | `260601_video-mode-persistence-refresh/` | investigated / not fixed | Video mode refresh persistence and continue-from-video mode switch. |
+| 14 | `260611_provider-brand-ui-polish/` | planning / research | GPT/Grok/Gemini provider/company-specific frontend design polish. |
 
 ## 2026-05-16 GH / Devlog Closeout
 
