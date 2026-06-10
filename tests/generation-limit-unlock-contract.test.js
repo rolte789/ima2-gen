@@ -48,6 +48,16 @@ test("server generation paths no longer keep hard-coded 8 image-count caps", () 
   }
 });
 
+test("Agent natural-language fanout parser is not limited to eight variants", () => {
+  const planner = readSource("lib/agentGenerationPlanner.ts");
+
+  assert.match(planner, /NUMERIC_COUNT_PATTERN/);
+  assert.match(planner, /twenty\[-\\s\]\?four/);
+  assert.match(planner, /스물네/);
+  assert.doesNotMatch(planner, /\(\?:eight\|8\)/);
+  assert.doesNotMatch(planner, /\(\?:여덟\|8\)/);
+});
+
 test("frontend count persistence uses the shared 24 image limit", () => {
   const limits = readSource("ui/src/lib/generationLimits.ts");
   const picker = readSource("ui/src/components/CountPicker.tsx");

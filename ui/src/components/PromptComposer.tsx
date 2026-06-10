@@ -5,9 +5,10 @@ import { SavePromptPopover } from "./SavePromptPopover";
 import { WebSearchToggle } from "./WebSearchToggle";
 import { continueFromItem } from "../lib/continueFromItem";
 import { isVideoItem, extractLastFrame } from "../lib/videoMedia";
+import { MAX_REFERENCE_IMAGES } from "../store/storeHelpers";
 import type { VideoReferenceDragPayload } from "../lib/videoContinuity";
 
-const MAX_REFS = 5;
+const MAX_REFS = MAX_REFERENCE_IMAGES;
 
 type PromptComposerProps = {
   variant?: "sidebar" | "bottom";

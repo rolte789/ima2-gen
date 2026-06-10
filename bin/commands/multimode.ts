@@ -7,6 +7,7 @@ import { config } from "../../config.js";
 import { createCliRequestId, recoverGeneratedOutputs, formatRecoveryHint } from "../lib/recover-output.js";
 
 const MAX_GENERATION_COUNT = Math.max(1, Math.trunc(Number(config.limits.maxGeneratedImages) || 24));
+const MAX_REFERENCE_COUNT = Math.max(1, Math.trunc(Number(config.limits.maxRefCount) || 5));
 
 const SPEC = {
   flags: {
@@ -48,7 +49,7 @@ const HELP = `
         --provider <auto|oauth|api|grok|grok-api|agy|gemini-api>
                                       Provider (oauth = GPT OAuth; grok = xAI Grok; agy/gemini-api = Gemini)
         --mode <auto|direct>            Prompt handling mode. Default: auto
-        --ref <file>                    Attach reference image (repeatable, max 5)
+        --ref <file>                    Attach reference image (repeatable, max ${MAX_REFERENCE_COUNT})
         --reasoning-effort <none|low|medium|high|xhigh>
         --web-search / --no-web-search
         --moderation <auto|low>
@@ -83,7 +84,7 @@ export default async function multimodeCmd(argv: string[]) {
 
   const maxImages = Math.max(1, Math.min(MAX_GENERATION_COUNT, parseInt(String(args["max-images"])) || 4));
   const refs = (Array.isArray(args.ref) ? args.ref : []) as string[];
-  if (refs.length > 5) die(2, "max 5 --ref attachments");
+  if (refs.length > MAX_REFERENCE_COUNT) die(2, `max ${MAX_REFERENCE_COUNT} --ref attachments`);
   const references = await Promise.all(refs.map((p: string) => fileToDataUri(p)));
   const outDir = args["out-dir"] ? String(args["out-dir"]) : null;
   const explicitOut = args.out ? String(args.out) : null;

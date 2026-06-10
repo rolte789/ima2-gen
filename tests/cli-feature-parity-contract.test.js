@@ -48,7 +48,8 @@ describe("CLI feature parity contract", () => {
     assert.match(src, /ref:\s*\{\s*type:\s*"string",\s*repeatable:\s*true\s*\}/);
     assert.match(src, /VALID_PROVIDERS = new Set\(\["auto", "oauth", "api", "grok", "grok-api", "agy", "gemini-api"\]\)/);
     assert.match(src, /VALID_MODES = new Set\(\["auto", "direct"\]\)/);
-    assert.match(src, /refs\.length > 5/);
+    assert.match(src, /MAX_REFERENCE_COUNT/);
+    assert.match(src, /refs\.length > MAX_REFERENCE_COUNT/);
     assert.match(src, /refs\.map\(\(p: string\) => fileToDataUri\(p\)\)/);
     assert.match(src, /mode: args\.mode/);
     assert.match(src, /references,/);

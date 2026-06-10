@@ -11,6 +11,7 @@ const VALID_MODERATION = new Set(["auto", "low"]);
 const VALID_PROVIDERS = new Set(["auto", "oauth", "api", "grok", "grok-api", "agy", "gemini-api"]);
 const KNOWN_IMAGE_MODELS = new Set(["gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5.3-codex-spark", "grok-imagine-image", "grok-imagine-image-quality", "nano-banana-2", "nano-banana-pro"]);
 const MAX_GENERATION_COUNT = Math.max(1, Math.trunc(Number(config.limits.maxGeneratedImages) || 24));
+const MAX_REFERENCE_COUNT = Math.max(1, Math.trunc(Number(config.limits.maxRefCount) || 5));
 
 const SPEC = {
   flags: {
@@ -52,7 +53,7 @@ const HELP = `
     -q, --quality <low|medium|high>         Default: low
     -s, --size <WxH | auto>                 Default: 1024x1024
     -n, --count <1..${MAX_GENERATION_COUNT}>                     Default: 1
-        --ref <file>                        Attach reference image (repeatable, max 5)
+        --ref <file>                        Attach reference image (repeatable, max ${MAX_REFERENCE_COUNT})
     -o, --out <file>                        Single-image output path (implies -n 1)
     -d, --out-dir <dir>                     Output dir for multiple images
         --json                              Print JSON result to stdout
@@ -90,7 +91,7 @@ export default async function genCmd(argv: string[]) {
   if (!prompt) die(2, "prompt is required (positional or via --stdin)");
 
   const refs = (Array.isArray(args.ref) ? args.ref : []) as string[];
-  if (refs.length > 5) die(2, "max 5 --ref attachments");
+  if (refs.length > MAX_REFERENCE_COUNT) die(2, `max ${MAX_REFERENCE_COUNT} --ref attachments`);
   if (!VALID_MODES.has(String(args.mode))) die(2, "--mode must be one of: auto, direct");
   if (!VALID_MODERATION.has(String(args.moderation))) die(2, "--moderation must be one of: auto, low");
   if (args.provider && !VALID_PROVIDERS.has(String(args.provider))) {

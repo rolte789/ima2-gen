@@ -39,6 +39,32 @@ describe("Agent Mode auto generation planner contract", () => {
     assert.equal(fanout.source, "auto-request");
   });
 
+  it("infers numeric Agent fanout requests up to the configured image limit", () => {
+    const twelve = deriveAgentGenerationPlan({
+      prompt: "make 12 image variants",
+      settings: { ...DEFAULT_AGENT_GENERATION_SETTINGS, provider: "api", parallelism: 24 },
+    });
+    assert.equal(twelve.requestedVariants, 12);
+    assert.equal(twelve.plannedVariants, 12);
+    assert.equal(twelve.plannedParallelism, 12);
+    assert.equal(twelve.source, "auto-request");
+
+    const twentyFour = deriveAgentGenerationPlan({
+      prompt: "make twenty-four image variants",
+      settings: { ...DEFAULT_AGENT_GENERATION_SETTINGS, provider: "api", parallelism: 24 },
+    });
+    assert.equal(twentyFour.requestedVariants, 24);
+    assert.equal(twentyFour.plannedVariants, 24);
+    assert.equal(twentyFour.plannedParallelism, 24);
+
+    const korean = deriveAgentGenerationPlan({
+      prompt: "스물네 가지 시안 만들어줘",
+      settings: { ...DEFAULT_AGENT_GENERATION_SETTINGS, provider: "api", parallelism: 24 },
+    });
+    assert.equal(korean.requestedVariants, 24);
+    assert.equal(korean.plannedVariants, 24);
+  });
+
   it("lets slash commands override variant count and per-turn parallelism", () => {
     const variants = parseAgentSlashCommand("/variants 4 neon product shot");
     assert.equal(variants?.name, "variants");

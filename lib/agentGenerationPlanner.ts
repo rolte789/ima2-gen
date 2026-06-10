@@ -9,25 +9,34 @@ import { config } from "../config.js";
 const HARD_MAX_VARIANTS = Math.max(1, Math.trunc(Number(config.limits.maxGeneratedImages) || 24));
 const AMBIGUOUS_MULTI_VARIANTS = 3;
 const KOREAN_COUNT_WORDS: Array<[RegExp, number]> = [
-  [/(?:한|하나|1)\s*(?:장|개|가지|컷|시안|버전)/u, 1],
-  [/(?:두|둘|2)\s*(?:장|개|가지|컷|시안|버전)/u, 2],
-  [/(?:세|셋|3)\s*(?:장|개|가지|컷|시안|버전)/u, 3],
-  [/(?:네|넷|4)\s*(?:장|개|가지|컷|시안|버전)/u, 4],
-  [/(?:다섯|5)\s*(?:장|개|가지|컷|시안|버전)/u, 5],
-  [/(?:여섯|6)\s*(?:장|개|가지|컷|시안|버전)/u, 6],
-  [/(?:일곱|7)\s*(?:장|개|가지|컷|시안|버전)/u, 7],
-  [/(?:여덟|8)\s*(?:장|개|가지|컷|시안|버전)/u, 8],
+  [/(?:스물네|스물\s*네|이십사)\s*(?:장|개|가지|컷|시안|버전)/u, 24],
+  [/(?:열두|열\s*두|십이)\s*(?:장|개|가지|컷|시안|버전)/u, 12],
+  [/(?:열|열\s*개)\s*(?:장|개|가지|컷|시안|버전)?/u, 10],
+  [/(?:한|하나)\s*(?:장|개|가지|컷|시안|버전)/u, 1],
+  [/(?:두|둘)\s*(?:장|개|가지|컷|시안|버전)/u, 2],
+  [/(?:세|셋)\s*(?:장|개|가지|컷|시안|버전)/u, 3],
+  [/(?:네|넷)\s*(?:장|개|가지|컷|시안|버전)/u, 4],
+  [/(?:다섯)\s*(?:장|개|가지|컷|시안|버전)/u, 5],
+  [/(?:여섯)\s*(?:장|개|가지|컷|시안|버전)/u, 6],
+  [/(?:일곱)\s*(?:장|개|가지|컷|시안|버전)/u, 7],
+  [/(?:여덟)\s*(?:장|개|가지|컷|시안|버전)/u, 8],
+  [/(?:아홉)\s*(?:장|개|가지|컷|시안|버전)/u, 9],
 ];
 const ENGLISH_COUNT_WORDS: Array<[RegExp, number]> = [
-  [/\b(?:one|1)\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 1],
-  [/\b(?:two|2)\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 2],
-  [/\b(?:three|3)\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 3],
-  [/\b(?:four|4)\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 4],
-  [/\b(?:five|5)\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 5],
-  [/\b(?:six|6)\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 6],
-  [/\b(?:seven|7)\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 7],
-  [/\b(?:eight|8)\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 8],
+  [/\btwenty[-\s]?four\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 24],
+  [/\btwelve\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 12],
+  [/\bten\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 10],
+  [/\bone\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 1],
+  [/\btwo\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 2],
+  [/\bthree\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 3],
+  [/\bfour\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 4],
+  [/\bfive\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 5],
+  [/\bsix\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 6],
+  [/\bseven\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 7],
+  [/\beight\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 8],
+  [/\bnine\s*(?:image|variant|version|option|candidate|shot|render)?s?\b/iu, 9],
 ];
+const NUMERIC_COUNT_PATTERN = /(?:^|\b)(\d{1,3})\s*(?:장|개|가지|컷|시안|버전|image|images|variant|variants|version|versions|option|options|candidate|candidates|shot|shots|render|renders)(?:\b|$)/iu;
 
 type PlanningInput = {
   prompt: string;
@@ -151,6 +160,11 @@ function decideVariantCount(
 
 function inferRequestedVariantCount(prompt: string): { count: number; reason: string } {
   const text = prompt.trim();
+  const numericMatch = NUMERIC_COUNT_PATTERN.exec(text);
+  if (numericMatch) {
+    const count = Math.max(1, Math.trunc(Number.parseInt(numericMatch[1] ?? "", 10) || 1));
+    return { count, reason: `User request explicitly implies ${count} variant${count === 1 ? "" : "s"}.` };
+  }
   for (const [pattern, count] of [...KOREAN_COUNT_WORDS, ...ENGLISH_COUNT_WORDS]) {
     if (pattern.test(text)) {
       return { count, reason: `User request explicitly implies ${count} variant${count === 1 ? "" : "s"}.` };
