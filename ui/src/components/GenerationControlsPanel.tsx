@@ -65,7 +65,10 @@ function nearestGeminiParams(w: number, h: number): { ratio: string; res: string
   const ratio = w / h;
   let bestLabel = "1:1";
   let bestDist = Infinity;
-  for (const label of Object.keys(GEMINI_RATIO_TO_SIZE)) {
+  // Extended ratios match the server map in lib/geminiApiImageAdapter.ts,
+  // which accepts more than the 10 grid presets.
+  const labels = [...Object.keys(GEMINI_RATIO_TO_SIZE), "1:8", "8:1", "1:4", "4:1"];
+  for (const label of labels) {
     const [rw, rh] = label.split(":").map(Number);
     const dist = Math.abs(ratio - rw / rh);
     if (dist < bestDist) { bestDist = dist; bestLabel = label; }
