@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef } from "react";
 import {
   ReactFlow,
   Background,
+  BackgroundVariant,
   Controls,
   MiniMap,
   applyNodeChanges,
@@ -102,7 +103,10 @@ function NodeCanvasInner() {
   );
 
   return (
-    <main className="node-canvas" ref={wrapperRef}>
+    <main
+      className={`node-canvas${nodes.length === 0 ? " node-canvas--empty" : ""}`}
+      ref={wrapperRef}
+    >
       {sessionLoading && <div className="node-canvas__loading">{t("nodeCanvas.loading")}</div>}
       {nodes.length === 0 ? (
         <button type="button" className="node-canvas__plus" onClick={() => addRootNode()}>
@@ -130,7 +134,12 @@ function NodeCanvasInner() {
             proOptions={{ hideAttribution: true }}
           >
             <NodeBatchBar />
-            <Background gap={24} color="var(--canvas-grid)" />
+            <Background
+              gap={24}
+              size={1.6}
+              color="var(--node-canvas-grid)"
+              variant={BackgroundVariant.Dots}
+            />
             <Controls className="node-canvas__controls" />
             {!isMobile && (
               <MiniMap

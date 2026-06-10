@@ -69,6 +69,7 @@
   color: var(--accent);
 }
 .node-canvas {
+  --node-canvas-grid: color-mix(in srgb, var(--canvas-grid) 58%, var(--text-dim));
   flex: 1;
   position: relative;
   display: flex;
@@ -76,6 +77,12 @@
   justify-content: center;
   background: var(--surface);
   overflow: hidden;
+}
+.node-canvas--empty {
+  background:
+    radial-gradient(circle, var(--node-canvas-grid) 1px, transparent 1.35px)
+      0 0 / 24px 24px,
+    var(--surface);
 }
 .node-canvas__plus {
   background: var(--accent);
@@ -481,4 +488,3 @@
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
-

@@ -119,6 +119,22 @@ describe("node UI compact metadata contract", () => {
     assert.match(hoverRule, /box-shadow:/);
   });
 
+  it("keeps node canvas dot grid visible for empty and zoomed-out graphs", () => {
+    const canvas = readSource("ui/src/components/NodeCanvas.tsx");
+    const css = readSource("ui/src/index.css");
+    const canvasRule = /\.node-canvas\s*\{[^}]*\}/s.exec(css)?.[0] ?? "";
+    const emptyRule = /\.node-canvas--empty\s*\{[^}]*\}/s.exec(css)?.[0] ?? "";
+
+    assert.match(canvas, /BackgroundVariant/);
+    assert.match(canvas, /node-canvas--empty/);
+    assert.match(canvas, /variant=\{BackgroundVariant\.Dots\}/);
+    assert.match(canvas, /size=\{1\.6\}/);
+    assert.match(canvas, /color="var\(--node-canvas-grid\)"/);
+    assert.match(canvasRule, /--node-canvas-grid:/);
+    assert.match(emptyRule, /radial-gradient\(circle,\s*var\(--node-canvas-grid\)\s*1px/);
+    assert.match(emptyRule, /\/\s*24px 24px/);
+  });
+
   it("renders one visible connection dot per node side", () => {
     const css = readSource("ui/src/index.css");
     const sourceRule = /\.image-node__handle--source\s*\{[^}]*\}/s.exec(css)?.[0] ?? "";
