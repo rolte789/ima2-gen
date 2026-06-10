@@ -260,6 +260,7 @@
   box-shadow: 0 14px 38px rgba(0, 0, 0, 0.32);
   max-height: calc(100dvh - 80px);
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .image-model-select__section {

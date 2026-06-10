@@ -18,10 +18,11 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menuItemRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const [menuPos, setMenuPos] = useState<{ top: number; left: number; width: number }>({
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number; width: number; maxHeight: number }>({
     top: 0,
     left: 12,
     width: 280,
+    maxHeight: 480,
   });
   const imageModel = useAppStore((s) => s.imageModel);
   const provider = useAppStore((s) => s.provider);
@@ -128,11 +129,18 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
         const preferredLeft = rect.right - width;
         const maxLeft = window.innerWidth - width - gutter;
         const left = Math.max(gutter, Math.min(preferredLeft, maxLeft));
-        setMenuPos({ top: rect.bottom + 7, left, width });
+        const top = rect.bottom + 7;
+        const maxHeight = Math.max(160, window.innerHeight - top - gutter);
+        setMenuPos({ top, left, width, maxHeight });
       }
     };
     measure();
-    const close = () => setOpen(false);
+    const close = (event?: Event) => {
+      // Scrolling inside the menu itself must not dismiss it — only outside
+      // scrolls (sidebar/page) detach the fixed menu from its trigger.
+      if (event && menuRef.current?.contains(event.target as Node)) return;
+      setOpen(false);
+    };
     const scroller = document.querySelector(".sidebar__scroll");
     scroller?.addEventListener("scroll", close, { passive: true });
     window.addEventListener("scroll", close, true);
@@ -193,6 +201,8 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
               top: menuPos.top,
               left: menuPos.left,
               width: menuPos.width,
+              maxHeight: menuPos.maxHeight,
+              overflowY: "auto",
               zIndex: 160,
             }}
           >
