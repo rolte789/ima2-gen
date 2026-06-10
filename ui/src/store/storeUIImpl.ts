@@ -31,7 +31,6 @@ import {
 } from "./storePersistence";
 import {
   loadInFlight,
-  MAX_REFERENCE_IMAGES,
   retainHistoryItems,
   saveInFlight,
 } from "./storeHelpers";
@@ -111,9 +110,9 @@ export function applyMergedCanvasImageImpl(item: GenerateItem, set: StoreSet): v
   }));
 }
 
-export function addReferenceDataUrlImpl(dataUrl: string, set: StoreSet): void {
+export function addReferenceDataUrlImpl(dataUrl: string, set: StoreSet, get: StoreGet): void {
   set((s) =>
-    s.referenceImages.length >= MAX_REFERENCE_IMAGES
+    s.referenceImages.length >= get().referenceLimit
       ? s
       : { referenceImages: [...s.referenceImages, dataUrl], providerUrlReference: null },
   );

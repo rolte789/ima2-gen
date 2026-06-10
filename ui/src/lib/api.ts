@@ -1,4 +1,5 @@
 export { jsonFetch, parseSseBlock, getBrowserId, jsonFetchWithBrowserId } from "./api-core";
+export { getCapabilities, type Ima2Capabilities } from "./api-capabilities";
 export { getInflight, cancelInflight, getOAuthStatus, getBilling } from "./api-inflight";
 export {
   postGenerate,

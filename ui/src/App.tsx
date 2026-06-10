@@ -49,6 +49,7 @@ export default function App() {
   useVisualViewportInset();
   const hydrateHistory = useAppStore((s) => s.hydrateHistory);
   const loadSessions = useAppStore((s) => s.loadSessions);
+  const syncCapabilities = useAppStore((s) => s.syncCapabilities);
   const startInFlightPolling = useAppStore((s) => s.startInFlightPolling);
   const reconcileInflight = useAppStore((s) => s.reconcileInflight);
   const syncFromStorage = useAppStore((s) => s.syncFromStorage);
@@ -81,6 +82,7 @@ export default function App() {
   useBrowserAttentionBadge(unseenGeneratedCount);
 
   useEffect(() => {
+    void syncCapabilities();
     hydrateHistory();
     if (ENABLE_AGENT_MODE || ENABLE_NODE_MODE) loadSessions();
     reconcileInflight();
@@ -90,7 +92,7 @@ export default function App() {
     onConnectionStateChange((state) => {
       if (state === "failed") console.warn("[SSE] connection failed after multiple retries");
     });
-  }, [hydrateHistory, loadSessions, reconcileInflight, startInFlightPolling]);
+  }, [hydrateHistory, loadSessions, reconcileInflight, startInFlightPolling, syncCapabilities]);
 
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {

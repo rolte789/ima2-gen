@@ -153,7 +153,7 @@ export function loadInFlight(): PersistedInFlight[] {
 }
 
 export const HISTORY_LIMIT = 500;
-export const MAX_REFERENCE_IMAGES = 5;
+export const DEFAULT_REFERENCE_IMAGE_LIMIT = 5;
 
 export function narrowGenerateKind(k?: string | null): GenerateItem["kind"] {
   return k === "classic" || k === "edit" || k === "generate" ||

@@ -5,10 +5,7 @@ import { SavePromptPopover } from "./SavePromptPopover";
 import { WebSearchToggle } from "./WebSearchToggle";
 import { continueFromItem } from "../lib/continueFromItem";
 import { isVideoItem, extractLastFrame } from "../lib/videoMedia";
-import { MAX_REFERENCE_IMAGES } from "../store/storeHelpers";
 import type { VideoReferenceDragPayload } from "../lib/videoContinuity";
-
-const MAX_REFS = MAX_REFERENCE_IMAGES;
 
 type PromptComposerProps = {
   variant?: "sidebar" | "bottom";
@@ -31,6 +28,7 @@ export function PromptComposer({ variant = "sidebar" }: PromptComposerProps) {
   const { t } = useI18n();
 
   const refs = useAppStore((s) => s.referenceImages);
+  const maxRefs = useAppStore((s) => s.referenceLimit);
   const providerUrlReference = useAppStore((s) => s.providerUrlReference);
   const setProviderUrlReference = useAppStore((s) => s.setProviderUrlReference);
   const addReferences = useAppStore((s) => s.addReferences);
@@ -62,7 +60,7 @@ export function PromptComposer({ variant = "sidebar" }: PromptComposerProps) {
     ...afterPrompts.map((item) => item.id),
   ];
 
-  const canAddMore = refs.length < MAX_REFS;
+  const canAddMore = refs.length < maxRefs;
   const placeholder = multimode
     ? refs.length > 0
       ? t("multimode.promptPlaceholderWithRefs")
@@ -143,7 +141,7 @@ export function PromptComposer({ variant = "sidebar" }: PromptComposerProps) {
     const files = extractClipboardImages(e.clipboardData?.items ?? null);
     if (files.length === 0) return;
     e.preventDefault();
-    const room = MAX_REFS - refs.length;
+    const room = maxRefs - refs.length;
     void addReferences(files.slice(0, room));
   };
 
@@ -171,14 +169,14 @@ export function PromptComposer({ variant = "sidebar" }: PromptComposerProps) {
       if (tag === "INPUT" || tag === "TEXTAREA" || t?.isContentEditable) return;
       const files = extractClipboardImages(e.clipboardData?.items ?? null);
       if (files.length === 0) return;
-      if (refs.length >= MAX_REFS) return;
+      if (refs.length >= maxRefs) return;
       e.preventDefault();
-      const room = MAX_REFS - refs.length;
+      const room = maxRefs - refs.length;
       void addReferences(files.slice(0, room));
     };
     window.addEventListener("paste", handler);
     return () => window.removeEventListener("paste", handler);
-  }, [refs.length, addReferences]);
+  }, [refs.length, maxRefs, addReferences]);
 
   const canMovePromptBlock = (id: string, direction: "up" | "down"): boolean => {
     const index = visualPromptIds.indexOf(id);
@@ -266,7 +264,7 @@ export function PromptComposer({ variant = "sidebar" }: PromptComposerProps) {
           )}
           {refs.length > 0 && (
             <span className="composer__count">
-              {t("prompt.refCount", { count: refs.length, max: MAX_REFS })}
+              {t("prompt.refCount", { count: refs.length, max: maxRefs })}
             </span>
           )}
         </div>
@@ -407,7 +405,7 @@ export function PromptComposer({ variant = "sidebar" }: PromptComposerProps) {
 
       {dragOver && (
         <div className="composer__dropzone" aria-hidden="true">
-          {t("prompt.dropHere", { max: MAX_REFS })}
+          {t("prompt.dropHere", { max: maxRefs })}
         </div>
       )}
 

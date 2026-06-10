@@ -76,3 +76,31 @@ test("frontend count persistence uses the shared 24 image limit", () => {
   assert.doesNotMatch(agentPanel, /max=\{8\}/);
   assert.doesNotMatch(agentSettings, /maxAutoVariants: 8/);
 });
+
+test("frontend reference limit syncs from server capabilities", () => {
+  const app = readSource("ui/src/App.tsx");
+  const api = readSource("ui/src/lib/api-capabilities.ts");
+  const store = readSource("ui/src/store/useAppStore.ts");
+  const types = readSource("ui/src/store/storeTypes.ts");
+  const capabilitiesStore = readSource("ui/src/store/storeCapabilitiesImpl.ts");
+  const helpers = readSource("ui/src/store/storeHelpers.ts");
+  const refs = readSource("ui/src/store/storeReferenceImpl.ts");
+  const nodeRefs = readSource("ui/src/store/storeNodeRefImpl.ts");
+  const ui = readSource("ui/src/store/storeUIImpl.ts");
+  const composer = readSource("ui/src/components/PromptComposer.tsx");
+
+  assert.match(api, /\/api\/capabilities/);
+  assert.match(capabilitiesStore, /getCapabilities/);
+  assert.match(capabilitiesStore, /capabilities\.limits\?\.maxRefCount/);
+  assert.match(app, /syncCapabilities/);
+  assert.match(types, /referenceLimit: number/);
+  assert.match(store, /referenceLimit: DEFAULT_REFERENCE_IMAGE_LIMIT/);
+  assert.match(helpers, /DEFAULT_REFERENCE_IMAGE_LIMIT = 5/);
+  assert.match(refs, /get\(\)\.referenceLimit/);
+  assert.match(nodeRefs, /get\(\)\.referenceLimit/);
+  assert.match(ui, /get\(\)\.referenceLimit/);
+  assert.match(composer, /const maxRefs = useAppStore\(\(s\) => s\.referenceLimit\)/);
+  assert.doesNotMatch(refs, /MAX_REFERENCE_IMAGES/);
+  assert.doesNotMatch(nodeRefs, /MAX_REFERENCE_IMAGES/);
+  assert.doesNotMatch(composer, /MAX_REFS|MAX_REFERENCE_IMAGES/);
+});

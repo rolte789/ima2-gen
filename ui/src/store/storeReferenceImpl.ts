@@ -13,7 +13,7 @@ import {
   parseMetadataSize,
   saveGenerationDefaultsPatch,
 } from "./storePersistence";
-import { MAX_REFERENCE_IMAGES, compressReferenceSource } from "./storeHelpers";
+import { compressReferenceSource } from "./storeHelpers";
 import type { AppState, StoreSet, StoreGet } from "./storeTypes";
 import type { ClientNodeId } from "../lib/graph";
 
@@ -47,7 +47,8 @@ export async function addReferencesImpl(
   set: StoreSet,
   get: StoreGet,
 ): Promise<void> {
-  const allowed = MAX_REFERENCE_IMAGES - get().referenceImages.length;
+  const maxReferences = get().referenceLimit;
+  const allowed = maxReferences - get().referenceImages.length;
   const toAdd = files.slice(0, Math.max(0, allowed));
   const heicSkipped = toAdd.filter(isHeic);
   const usable = toAdd.filter((f) => !isHeic(f));
@@ -65,7 +66,7 @@ export async function addReferencesImpl(
   );
   const valid = results.filter((x): x is string => !!x);
   set((s) => ({
-    referenceImages: [...s.referenceImages, ...valid].slice(0, MAX_REFERENCE_IMAGES),
+    referenceImages: [...s.referenceImages, ...valid].slice(0, s.referenceLimit),
     providerUrlReference: valid.length > 0 ? null : s.providerUrlReference,
   }));
   if (heicSkipped.length > 0) get().showToast(t("toast.refHeicUnsupported"), true);
@@ -175,7 +176,7 @@ export async function attachCanvasVersionReferenceImpl(
     const withoutDuplicate = withoutPrevious.filter((ref) => ref !== dataUrl);
     return {
       canvasReferenceImage: dataUrl,
-      referenceImages: [dataUrl, ...withoutDuplicate].slice(0, MAX_REFERENCE_IMAGES),
+      referenceImages: [dataUrl, ...withoutDuplicate].slice(0, s.referenceLimit),
       providerUrlReference: null,
     };
   });
@@ -188,7 +189,7 @@ export async function useCurrentAsReferenceImpl(set: StoreSet, get: StoreGet): P
     get().showToast(t("toast.noCurrentImageForRef"), true);
     return;
   }
-  if (get().referenceImages.length >= MAX_REFERENCE_IMAGES) {
+  if (get().referenceImages.length >= get().referenceLimit) {
     get().showToast(t("toast.refSlotFull"), true);
     return;
   }
@@ -200,7 +201,7 @@ export async function useCurrentAsReferenceImpl(set: StoreSet, get: StoreGet): P
     return;
   }
   set((s) => ({
-    referenceImages: [...s.referenceImages, dataUrl].slice(0, MAX_REFERENCE_IMAGES),
+    referenceImages: [...s.referenceImages, dataUrl].slice(0, s.referenceLimit),
     providerUrlReference: null,
   }));
   get().showToast(t("toast.addedCurrentAsRef"));
@@ -211,7 +212,7 @@ export async function useImageAsReferenceImpl(
   set: StoreSet,
   get: StoreGet,
 ): Promise<void> {
-  if (get().referenceImages.length >= MAX_REFERENCE_IMAGES) {
+  if (get().referenceImages.length >= get().referenceLimit) {
     get().showToast(t("toast.refSlotFull"), true);
     return;
   }
@@ -223,7 +224,7 @@ export async function useImageAsReferenceImpl(
     return;
   }
   set((s) => ({
-    referenceImages: [...s.referenceImages, dataUrl].slice(0, MAX_REFERENCE_IMAGES),
+    referenceImages: [...s.referenceImages, dataUrl].slice(0, s.referenceLimit),
     providerUrlReference: null,
   }));
   get().showToast(t("toast.addedCurrentAsRef"));

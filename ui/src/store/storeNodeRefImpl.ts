@@ -6,7 +6,7 @@ import {
 } from "../lib/nodeRefStorage";
 import { isVideoUrl, extractLastFrame } from "../lib/videoMedia";
 import { t } from "../i18n";
-import { MAX_REFERENCE_IMAGES, compressReferenceSource } from "./storeHelpers";
+import { compressReferenceSource } from "./storeHelpers";
 import type { StoreSet, StoreGet } from "./storeTypes";
 
 export async function addNodeReferencesImpl(
@@ -18,7 +18,8 @@ export async function addNodeReferencesImpl(
   const node = get().graphNodes.find((n) => n.id === clientId);
   if (!node) return;
   const currentRefs = node.data.referenceImages ?? [];
-  const allowed = MAX_REFERENCE_IMAGES - currentRefs.length;
+  const maxReferences = get().referenceLimit;
+  const allowed = maxReferences - currentRefs.length;
   if (allowed <= 0) {
     get().showToast(t("toast.refLimitExceeded"), true);
     return;
@@ -47,7 +48,7 @@ export async function addNodeReferencesImpl(
         const refs = [
           ...(n.data.referenceImages ?? []),
           ...valid,
-        ].slice(0, MAX_REFERENCE_IMAGES);
+        ].slice(0, get().referenceLimit);
         saveNodeRefs(sessionId, clientId, refs);
         return {
           ...n,
@@ -74,7 +75,7 @@ export function addNodeReferenceDataUrlImpl(
     graphNodes: get().graphNodes.map((n) => {
       if (n.id !== clientId) return n;
       const refs = n.data.referenceImages ?? [];
-      if (refs.length >= MAX_REFERENCE_IMAGES) return n;
+      if (refs.length >= get().referenceLimit) return n;
       const nextRefs = [...refs, dataUrl];
       saveNodeRefs(get().activeSessionId, clientId, nextRefs);
       return { ...n, data: { ...n.data, referenceImages: nextRefs } };
@@ -92,7 +93,7 @@ export async function addNodeReferenceFromUrlImpl(
 ): Promise<void> {
   const node = get().graphNodes.find((n) => n.id === clientId);
   if (!node) return;
-  if ((node.data.referenceImages ?? []).length >= MAX_REFERENCE_IMAGES) {
+  if ((node.data.referenceImages ?? []).length >= get().referenceLimit) {
     get().showToast(t("toast.refLimitExceeded"), true);
     return;
   }

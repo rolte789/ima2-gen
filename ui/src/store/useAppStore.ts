@@ -32,8 +32,10 @@ import {
 } from "./storePersistence";
 import {
   HISTORY_LIMIT,
+  DEFAULT_REFERENCE_IMAGE_LIMIT,
   saveInFlight,
 } from "./storeHelpers";
+import { syncCapabilitiesImpl } from "./storeCapabilitiesImpl";
 import {
   scheduleGraphSaveImpl,
   flushGraphSaveImpl,
@@ -167,6 +169,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   prompt: storedGenerationDefaults.prompt ?? "",
   insertedPrompts: storedGenerationDefaults.insertedPrompts ?? [],
   referenceImages: [],
+  referenceLimit: DEFAULT_REFERENCE_IMAGE_LIMIT,
   providerUrlReference: null,
   canvasReferenceImage: null,
 
@@ -194,8 +197,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   canvasExportBackground: loadCanvasExportBackground().mode,
   canvasExportMatteColor: loadCanvasExportBackground().matteColor,
 
+  syncCapabilities: () => syncCapabilitiesImpl(set),
   addReferences: (files) => addReferencesImpl(files, set, get),
-  addReferenceDataUrl: (dataUrl) => addReferenceDataUrlImpl(dataUrl, set),
+  addReferenceDataUrl: (dataUrl) => addReferenceDataUrlImpl(dataUrl, set, get),
   metadataRestore: null,
   readDroppedImageMetadata: (file, targetNodeId = null) => readDroppedImageMetadataImpl(file, targetNodeId, set, get),
   applyMetadataRestore: () => applyMetadataRestoreImpl(set, get),

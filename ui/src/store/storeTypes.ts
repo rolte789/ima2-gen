@@ -212,8 +212,10 @@ export type AppState = {
   promptMode: "auto" | "direct";
   prompt: string;
   referenceImages: string[];
+  referenceLimit: number;
   providerUrlReference: string | null;
   canvasReferenceImage: string | null;
+  syncCapabilities: () => Promise<void>;
   addReferences: (files: File[]) => Promise<void>;
   addReferenceDataUrl: (dataUrl: string) => void;
   removeReference: (index: number) => void;

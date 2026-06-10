@@ -22,7 +22,7 @@ useCurrentAsReference: async () => {
     get().showToast(t("toast.noCurrentImageForRef"), true);
     return;
   }
-  if (get().referenceImages.length >= MAX_REFERENCE_IMAGES) {
+  if (get().referenceImages.length >= get().referenceLimit) {
     get().showToast(t("toast.refSlotFull"), true);
     return;
   }
@@ -34,7 +34,7 @@ useCurrentAsReference: async () => {
     return;
   }
   set((s) => ({
-    referenceImages: [...s.referenceImages, dataUrl].slice(0, MAX_REFERENCE_IMAGES),
+    referenceImages: [...s.referenceImages, dataUrl].slice(0, s.referenceLimit),
   }));
   get().showToast(t("toast.addedCurrentAsRef"));
 },

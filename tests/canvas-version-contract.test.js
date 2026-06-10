@@ -82,7 +82,7 @@ describe("canvas version frontend contract", () => {
     assert.match(store, /attachCanvasVersionReference.*attachCanvasVersionReferenceImpl/);
     assert.match(store, /compressReferenceSource\(\s*overrideSource \?\? item\.image/);
     assert.match(store, /withoutPrevious/);
-    assert.match(store, /MAX_REFERENCE_IMAGES/);
+    assert.match(store, /referenceLimit: DEFAULT_REFERENCE_IMAGE_LIMIT/);
     assert.doesNotMatch(store, /referenceImages:\s*\[\s*item\.image/);
   });
 
