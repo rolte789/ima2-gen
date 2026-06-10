@@ -37,6 +37,7 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   const d = data as ImageNodeData;
   const updateNodePrompt = useAppStore((s) => s.updateNodePrompt);
   const addNodeReferences = useAppStore((s) => s.addNodeReferences);
+  const addNodeReferenceFromUrl = useAppStore((s) => s.addNodeReferenceFromUrl);
   const readDroppedImageMetadata = useAppStore((s) => s.readDroppedImageMetadata);
   const removeNodeReference = useAppStore((s) => s.removeNodeReference);
   const generateNode = useAppStore((s) => s.generateNode);
@@ -116,6 +117,17 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
     e.preventDefault();
     e.stopPropagation();
     setIsDraggingRef(false);
+    // Internal gallery/history drag — payload is a URL, not a File
+    const refData = e.dataTransfer.getData("application/ima2-ref");
+    if (refData) {
+      if (!canAttachRefs) return;
+      try {
+        const item = JSON.parse(refData) as { image?: string; url?: string; filename?: string };
+        const src = item.url || item.image;
+        if (src) void addNodeReferenceFromUrl(id, src, item.filename);
+      } catch { /* ignore malformed */ }
+      return;
+    }
     const files = Array.from(e.dataTransfer.files).filter((f) =>
       f.type.startsWith("image/"),
     );

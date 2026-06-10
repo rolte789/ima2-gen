@@ -326,6 +326,7 @@ export type AppState = {
   updateNodePrompt: (clientId: ClientNodeId, prompt: string) => void;
   addNodeReferences: (clientId: ClientNodeId, files: File[]) => Promise<void>;
   addNodeReferenceDataUrl: (clientId: ClientNodeId, dataUrl: string) => void;
+  addNodeReferenceFromUrl: (clientId: ClientNodeId, src: string, filename?: string) => Promise<void>;
   removeNodeReference: (clientId: ClientNodeId, index: number) => void;
   clearNodeReferences: (clientId: ClientNodeId) => void;
   generateNode: (clientId: ClientNodeId) => Promise<void>;

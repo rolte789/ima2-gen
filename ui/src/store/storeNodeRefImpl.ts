@@ -4,8 +4,9 @@ import {
   clearNodeRefs as clearStoredNodeRefs,
   saveNodeRefs,
 } from "../lib/nodeRefStorage";
+import { isVideoUrl, extractLastFrame } from "../lib/videoMedia";
 import { t } from "../i18n";
-import { MAX_REFERENCE_IMAGES } from "./storeHelpers";
+import { MAX_REFERENCE_IMAGES, compressReferenceSource } from "./storeHelpers";
 import type { StoreSet, StoreGet } from "./storeTypes";
 
 export async function addNodeReferencesImpl(
@@ -80,6 +81,32 @@ export function addNodeReferenceDataUrlImpl(
     }),
   });
   get().scheduleGraphSave();
+}
+
+export async function addNodeReferenceFromUrlImpl(
+  clientId: ClientNodeId,
+  src: string,
+  filename: string | undefined,
+  set: StoreSet,
+  get: StoreGet,
+): Promise<void> {
+  const node = get().graphNodes.find((n) => n.id === clientId);
+  if (!node) return;
+  if ((node.data.referenceImages ?? []).length >= MAX_REFERENCE_IMAGES) {
+    get().showToast(t("toast.refLimitExceeded"), true);
+    return;
+  }
+  let dataUrl: string;
+  try {
+    dataUrl =
+      isVideoUrl(src) || isVideoUrl(filename)
+        ? await extractLastFrame(src)
+        : await compressReferenceSource(src, filename || "node-reference.png");
+  } catch {
+    get().showToast(t("toast.currentImageLoadFailed"), true);
+    return;
+  }
+  addNodeReferenceDataUrlImpl(clientId, dataUrl, set, get);
 }
 
 export function removeNodeReferenceImpl(
