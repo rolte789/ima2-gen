@@ -11,10 +11,14 @@ import {
 } from "./agentStore.js";
 import {
   AGENT_ALLOWED_TOOLS,
+  type AgentGenerationErrorRecord,
   type AgentGenerationPlan,
   type AgentToolCallSummary,
   type AgentToolName,
+  type AgentVideoParams,
 } from "./agentTypes.js";
+import { getAgentGenerationErrors } from "./agentQueueStore.js";
+import { AGENT_TOOL_MANIFEST } from "./agentToolManifest.js";
 import { errInfo } from "./errInfo.js";
 import { type RuntimeContext } from "./runtimeContext.js";
 
@@ -30,6 +34,7 @@ export type AgentRunOptions = {
   webSearchEnabled?: boolean;
   parallelism?: number;
   signal?: AbortSignal | null;
+  videoParams?: AgentVideoParams | null;
 };
 
 export function assertAgentAllowedTools(tools: readonly string[]) {
@@ -49,7 +54,7 @@ export function assertAgentAllowedTools(tools: readonly string[]) {
 }
 
 export function agentAllowedToolPayload() {
-  return { tools: [...AGENT_ALLOWED_TOOLS] };
+  return { tools: [...AGENT_ALLOWED_TOOLS], manifest: [...AGENT_TOOL_MANIFEST] };
 }
 
 export async function runAgentTurn(ctx: RuntimeContext, sessionId: string, prompt: string, options: AgentRunOptions = {}) {
@@ -86,7 +91,7 @@ export async function runAgentGenerationPlan(
   const webSearchEnabled = options.provider === "agy" ? false : options.provider === "grok" ? true : options.webSearchEnabled ?? session.webSearchEnabled;
   const enabledTools: AgentToolName[] = webSearchEnabled
     ? [...AGENT_ALLOWED_TOOLS]
-    : ["ima2.get_image_context", "ima2.generate_image", "ima2.generate_video"];
+    : ["ima2.get_image_context", "ima2.generate_image", "ima2.generate_video", "ima2.get_generation_errors"];
   assertAgentAllowedTools(enabledTools);
   if (behavior.appendUserTurn !== false) {
     appendAgentTurn({ sessionId, role: "user", text: prompt, status: "complete" });
@@ -102,9 +107,13 @@ export async function runAgentGenerationPlan(
     });
     return { assistantTurn, imageIds: [], webFindingIds: [] };
   }
+  if (plan.mode === "errors") {
+    return runAgentErrorLookup(sessionId, plan);
+  }
   if (plan.mode === "video") {
-    return runAgentVideoGeneration(ctx, sessionId, prompt, {
+    return runAgentVideoGeneration(ctx, sessionId, plan.prompts[0] ?? prompt, {
       ...options,
+      videoParams: plan.videoParams ?? options.videoParams ?? null,
       requestId: options.requestId ?? `agent_video_${ulid()}`,
       skipUserTurn: true,
     });
@@ -196,6 +205,50 @@ export async function runAgentGenerationPlan(
     status: "complete",
   });
   return { assistantTurn, imageIds, webFindingIds: findingIds };
+}
+
+function runAgentErrorLookup(sessionId: string, plan: AgentGenerationPlan) {
+  const startedAt = Date.now();
+  const errors = getAgentGenerationErrors(sessionId, 10);
+  appendAgentTurn({
+    sessionId,
+    role: "tool",
+    text: "ima2.get_generation_errors",
+    status: "complete",
+    raw: {
+      toolCalls: [{
+        id: `tc_errors_${ulid()}`,
+        name: "ima2.get_generation_errors",
+        status: "complete",
+        startedAt,
+        finishedAt: Date.now(),
+        durationMs: Date.now() - startedAt,
+        outputSummary: errors.length > 0
+          ? `Found ${errors.length} recent generation error${errors.length === 1 ? "" : "s"}.`
+          : "No recent generation errors recorded for this session.",
+      } satisfies AgentToolCallSummary],
+    },
+  });
+  const assistantTurn = appendAgentTurn({
+    sessionId,
+    role: "assistant",
+    text: plan.assistantText?.trim() || formatGenerationErrors(errors),
+    imageIds: [],
+    webFindingIds: [],
+    status: "complete",
+  });
+  return { assistantTurn, imageIds: [] as string[], webFindingIds: [] as string[] };
+}
+
+function formatGenerationErrors(errors: readonly AgentGenerationErrorRecord[]): string {
+  if (errors.length === 0) return "No generation errors are recorded for this session.";
+  const lines = errors.map((error, index) => {
+    const when = new Date(error.at).toISOString();
+    const code = error.code ? ` [${error.code}]` : "";
+    const promptPart = error.prompt ? ` (prompt: ${error.prompt.slice(0, 80)})` : "";
+    return `${index + 1}. ${when}${code} ${error.message}${promptPart}`;
+  });
+  return `Recent generation errors (most recent first):\n${lines.join("\n")}`;
 }
 
 function formatAgentAssistantText(plan: AgentGenerationPlan, imageCount: number, responseTexts: readonly string[]): string {

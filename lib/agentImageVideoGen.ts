@@ -221,7 +221,13 @@ export async function runAgentVideoGeneration(
     }
   }
 
-  const videoParams = parseVideoParams(prompt);
+  // LLM-planned params win; the prompt regex remains the fallback extractor.
+  const parsedParams = parseVideoParams(prompt);
+  const videoParams = {
+    duration: options.videoParams?.duration ?? parsedParams.duration,
+    resolution: options.videoParams?.resolution ?? parsedParams.resolution,
+    aspectRatio: options.videoParams?.aspectRatio ?? parsedParams.aspectRatio,
+  };
 
   const result = await generateVideoViaGrok(prompt, ctx, {
     model: "grok-imagine-video",

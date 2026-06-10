@@ -16,6 +16,7 @@ import {
 import {
   cancelAgentQueueItem,
   createAgentQueueItem,
+  getAgentGenerationErrors,
   getAgentQueueItem,
   listAgentQueueItems,
   retryAgentQueueItem,
@@ -149,6 +150,17 @@ export function registerAgentRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
 
   app.get("/api/agent/queue", (_req: Request, res: Response) => {
     res.json({ queue: listAgentQueueItems() });
+  });
+
+  app.get("/api/agent/sessions/:sessionId/errors", (req: Request<{ sessionId: string }>, res: Response) => {
+    try {
+      if (!getAgentSession(req.params.sessionId)) throw notFound(req.params.sessionId);
+      const limitRaw = Number(req.query.limit);
+      const limit = Number.isFinite(limitRaw) ? limitRaw : 10;
+      res.json({ errors: getAgentGenerationErrors(req.params.sessionId, limit) });
+    } catch (error) {
+      sendError(res, error);
+    }
   });
 
   app.get("/api/agent/sessions/:sessionId/queue", (req: Request<{ sessionId: string }>, res: Response) => {

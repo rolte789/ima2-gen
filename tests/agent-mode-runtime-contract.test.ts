@@ -93,9 +93,19 @@ describe("Agent Mode runtime contract", () => {
   it("exposes only ima2 image-agent tools", async () => {
     await withApp(async (baseUrl) => {
       const res = await fetch(`${baseUrl}/api/agent/tools`);
-      assert.deepEqual(await res.json(), {
-        tools: ["ima2.get_image_context", "ima2.web_search", "ima2.generate_image", "ima2.generate_video"],
-      });
+      const payload = await res.json() as { tools: string[]; manifest: Array<{ name: string; description: string; parameters: unknown }> };
+      assert.deepEqual(payload.tools, [
+        "ima2.get_image_context",
+        "ima2.web_search",
+        "ima2.generate_image",
+        "ima2.generate_video",
+        "ima2.get_generation_errors",
+      ]);
+      assert.deepEqual(payload.manifest.map((entry) => entry.name), payload.tools);
+      for (const entry of payload.manifest) {
+        assert.equal(typeof entry.description, "string");
+        assert.ok(entry.parameters && typeof entry.parameters === "object");
+      }
     });
   });
 

@@ -311,6 +311,10 @@ export const config = {
       false,
     ),
   },
+  agentPlanner: {
+    enabled: pickBool(env.IMA2_AGENT_PLANNER_ENABLED, fileCfg.agentPlanner?.enabled, true),
+    timeoutMs: pickInt(env.IMA2_AGENT_PLANNER_TIMEOUT_MS, fileCfg.agentPlanner?.timeoutMs, 30_000),
+  },
   comfy: {
     defaultUrl: pickStr(env.IMA2_COMFY_URL, fileCfg.comfy?.defaultUrl, "http://127.0.0.1:8188"),
     uploadTimeoutMs: pickPositiveInt(

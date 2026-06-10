@@ -3,6 +3,7 @@ export const AGENT_ALLOWED_TOOLS = [
   "ima2.web_search",
   "ima2.generate_image",
   "ima2.generate_video",
+  "ima2.get_generation_errors",
 ] as const;
 
 export type AgentToolName = typeof AGENT_ALLOWED_TOOLS[number];
@@ -12,8 +13,8 @@ export type AgentToolCallStatus = "queued" | "running" | "complete" | "error";
 export type AgentQueueStatus = "queued" | "running" | "succeeded" | "failed" | "canceled";
 export type AgentSessionRunStatus = "idle" | "queued" | "running" | "error";
 export type AgentGenerationStrategy = "auto" | "manual";
-export type AgentGenerationPlanMode = "single" | "fanout" | "question" | "video";
-export type AgentGenerationPlanSource = "auto-default" | "auto-request" | "manual-settings" | "slash-command" | "question-command";
+export type AgentGenerationPlanMode = "single" | "fanout" | "question" | "video" | "errors";
+export type AgentGenerationPlanSource = "auto-default" | "auto-request" | "manual-settings" | "slash-command" | "question-command" | "llm-planner";
 export type AgentSlashCommandName = "question" | "help" | "variants" | "generate" | "parallelism";
 
 export interface AgentGenerationSettings {
@@ -72,6 +73,12 @@ export interface AgentQueueItem {
   plan: AgentGenerationPlan;
 }
 
+export interface AgentVideoParams {
+  duration?: number;
+  resolution?: "480p" | "720p";
+  aspectRatio?: string;
+}
+
 export interface AgentGenerationPlan {
   mode: AgentGenerationPlanMode;
   prompts: string[];
@@ -82,6 +89,15 @@ export interface AgentGenerationPlan {
   reason: string;
   command?: AgentSlashCommandName | null;
   assistantText?: string | null;
+  videoParams?: AgentVideoParams | null;
+}
+
+export interface AgentGenerationErrorRecord {
+  scope: "queue" | "turn";
+  code: string | null;
+  message: string;
+  prompt?: string | null;
+  at: number;
 }
 
 export interface AgentSessionRunSummary {

@@ -1,6 +1,8 @@
 import { ulid } from "ulid";
 import { getDb } from "./db.js";
 import {
+  type AgentGenerationErrorRecord,
+  type AgentGenerationPlan,
   type AgentGenerationSettings,
   type AgentQueueItem,
   type AgentQueueStatus,
@@ -188,6 +190,50 @@ export function cancelAgentQueueItem(id: string) {
     WHERE id = ? AND status = 'queued'
   `).run(Date.now(), id);
   return res.changes > 0;
+}
+
+export function updateAgentQueueItemPlan(id: string, plan: AgentGenerationPlan) {
+  const res = getDb().prepare(`
+    UPDATE agent_queue_items
+    SET tool_plan = ?
+    WHERE id = ?
+  `).run(JSON.stringify(plan), id);
+  return res.changes > 0;
+}
+
+export function getAgentGenerationErrors(sessionId: string, limit = 10): AgentGenerationErrorRecord[] {
+  const cap = Math.max(1, Math.min(20, Math.round(limit)));
+  const queueRows = getDb().prepare(`
+    SELECT error_code AS code, error_message AS message, prompt, finished_at AS at
+    FROM agent_queue_items
+    WHERE session_id = ? AND status = 'failed'
+    ORDER BY finished_at DESC
+    LIMIT ?
+  `).all(sessionId, cap) as Array<{ code: string | null; message: string | null; prompt: string; at: number | null }>;
+  const turnRows = getDb().prepare(`
+    SELECT text, created_at AS at
+    FROM agent_turns
+    WHERE session_id = ? AND status = 'error'
+    ORDER BY created_at DESC
+    LIMIT ?
+  `).all(sessionId, cap) as Array<{ text: string; at: number }>;
+  const records: AgentGenerationErrorRecord[] = [
+    ...queueRows.map((row) => ({
+      scope: "queue" as const,
+      code: row.code,
+      message: row.message ?? "Generation failed without a recorded message.",
+      prompt: row.prompt,
+      at: row.at ?? 0,
+    })),
+    ...turnRows.map((row) => ({
+      scope: "turn" as const,
+      code: null,
+      message: row.text,
+      prompt: null,
+      at: row.at,
+    })),
+  ];
+  return records.sort((a, b) => b.at - a.at).slice(0, cap);
 }
 
 export function retryAgentQueueItem(id: string) {
