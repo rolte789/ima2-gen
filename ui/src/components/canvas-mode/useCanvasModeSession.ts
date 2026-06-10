@@ -219,12 +219,14 @@ export function useCanvasModeSession({
         showToast(t("toast.noPromptToFork"), true);
         return;
       }
+      const inheritedSize = canvasDisplayImage.size ?? currentImage?.size ?? null;
+      const editSize = inheritedSize && /^\d+x\d+$/.test(inheritedSize) ? inheritedSize : getResolvedSize();
       const response = await postEdit({
         image: editImage,
         mask: await blobToDataUrl(maskBlob),
         prompt,
         quality,
-        size: canvasDisplayImage.size ?? currentImage?.size ?? getResolvedSize(),
+        size: editSize,
         format,
         moderation,
         provider,
