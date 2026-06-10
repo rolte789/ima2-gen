@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useAppStore } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import { OptionGroup } from "./OptionGroup";
@@ -49,13 +50,29 @@ const GEMINI_RATIO_TO_SIZE: Record<string, Record<string, string>> = {
   "21:9": { "512": "792x168",  "1K": "1584x672",  "2K": "3168x1344", "4K": "6336x2688" },
 };
 
-function parseCurrentGeminiSettings(size: string): { ratio: string; res: string } {
+function parseCurrentGeminiSettings(size: string): { ratio: string; res: string } | null {
   for (const [ratio, resMap] of Object.entries(GEMINI_RATIO_TO_SIZE)) {
     for (const [res, sizeStr] of Object.entries(resMap)) {
       if (sizeStr === size) return { ratio, res };
     }
   }
-  return { ratio: "1:1", res: "1K" };
+  return null;
+}
+
+// Mirrors the server-side nearest-ratio mapping in lib/geminiApiImageAdapter.ts
+// so the custom-size preview shows what the API will actually receive.
+function nearestGeminiParams(w: number, h: number): { ratio: string; res: string } {
+  const ratio = w / h;
+  let bestLabel = "1:1";
+  let bestDist = Infinity;
+  for (const label of Object.keys(GEMINI_RATIO_TO_SIZE)) {
+    const [rw, rh] = label.split(":").map(Number);
+    const dist = Math.abs(ratio - rw / rh);
+    if (dist < bestDist) { bestDist = dist; bestLabel = label; }
+  }
+  const maxDim = Math.max(w, h);
+  const res = maxDim <= 512 ? "512" : maxDim <= 1024 ? "1K" : maxDim <= 2048 ? "2K" : "4K";
+  return { ratio: bestLabel, res };
 }
 
 export function GenerationControlsPanel() {
@@ -87,13 +104,30 @@ export function GenerationControlsPanel() {
   const hideFormatControls = isGrok || isAnyGemini;
 
   const currentSize = sizePreset === "custom" ? `${customW}x${customH}` : "1024x1024";
-  const geminiSettings = isGeminiApi ? parseCurrentGeminiSettings(currentSize) : { ratio: "1:1", res: "1K" };
+  const isGeminiAuto = isGeminiApi && sizePreset === "auto";
+  const geminiMatched = isGeminiApi && !isGeminiAuto ? parseCurrentGeminiSettings(currentSize) : null;
+  const geminiSettings = geminiMatched ?? { ratio: "", res: "" };
+  const isGeminiCustomSize = isGeminiApi && !isGeminiAuto && sizePreset === "custom" && !geminiMatched;
+
+  const [geminiCustomOpen, setGeminiCustomOpen] = useState(false);
+  const [geminiDraftW, setGeminiDraftW] = useState(String(customW));
+  const [geminiDraftH, setGeminiDraftH] = useState(String(customH));
 
   const setGeminiSize = (ratio: string, res: string) => {
-    const sizeStr = GEMINI_RATIO_TO_SIZE[ratio]?.[res] || "1024x1024";
+    const sizeStr = GEMINI_RATIO_TO_SIZE[ratio || "1:1"]?.[res || "1K"] || "1024x1024";
     const [w, h] = sizeStr.split("x").map(Number);
+    setGeminiCustomOpen(false);
     setSizePreset("custom");
     setCustomSize(w, h);
+  };
+
+  const applyGeminiCustomSize = () => {
+    const w = Number(geminiDraftW);
+    const h = Number(geminiDraftH);
+    if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return;
+    setSizePreset("custom");
+    setCustomSize(w, h);
+    setGeminiCustomOpen(false);
   };
 
   const qualityItems = [
@@ -232,6 +266,67 @@ export function GenerationControlsPanel() {
               </button>
             ))}
           </div>
+        </div>
+        <div className="option-group">
+          <div className="option-row">
+            <button
+              type="button"
+              className={`option-btn${isGeminiAuto ? " active" : ""}`}
+              onClick={() => { setGeminiCustomOpen(false); setSizePreset("auto"); }}
+            >
+              {t("size.autoLabel")}
+              <br />
+              <span className="option-sub">{t("size.autoSub")}</span>
+            </button>
+            <button
+              type="button"
+              className={`option-btn${isGeminiCustomSize || geminiCustomOpen ? " active" : ""}`}
+              onClick={() => setGeminiCustomOpen((v) => !v)}
+            >
+              {t("size.customPlus")}
+              <br />
+              <span className="option-sub">{t("size.customSub")}</span>
+            </button>
+          </div>
+          {geminiCustomOpen ? (
+            <>
+              <div className="option-row size-picker__custom-row">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  className="custom-size-input"
+                  value={geminiDraftW}
+                  onChange={(e) => setGeminiDraftW(e.target.value.replace(/\D/g, ""))}
+                  placeholder={t("size.width")}
+                />
+                <span className="size-picker__dimension-separator" aria-hidden="true">×</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  className="custom-size-input"
+                  value={geminiDraftH}
+                  onChange={(e) => setGeminiDraftH(e.target.value.replace(/\D/g, ""))}
+                  placeholder={t("size.height")}
+                />
+              </div>
+              {Number(geminiDraftW) > 0 && Number(geminiDraftH) > 0 ? (
+                <div className="size-picker__preview">
+                  <span>{t("size.normalizedPreview")}</span>
+                  <strong>
+                    {(() => {
+                      const near = nearestGeminiParams(Number(geminiDraftW), Number(geminiDraftH));
+                      return `${near.ratio} · ${near.res}`;
+                    })()}
+                  </strong>
+                </div>
+              ) : null}
+              <button type="button" className="size-picker__save" onClick={applyGeminiCustomSize}>
+                {t("settings.apiKeys.save")}
+              </button>
+            </>
+          ) : null}
         </div>
         </>
       ) : (
