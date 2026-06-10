@@ -55,6 +55,18 @@ describe("provider UI polish contract", () => {
     assert.match(css, /:focus-visible/);
   });
 
+  it("reuses provider cards in Agent mode instead of native provider select", () => {
+    const agent = readSource("ui/src/components/agent/AgentModelSelector.tsx");
+    const css = readSource("ui/src/styles/provider-controls.css");
+
+    assert.match(agent, /AGENT_PROVIDER_OPTIONS/);
+    assert.match(agent, /ProviderCard/);
+    assert.match(agent, /getProviderIdentity\(provider\)/);
+    assert.match(agent, /role="group"/);
+    assert.doesNotMatch(agent, /<select value=\{settings\.provider\}/);
+    assert.match(css, /\.agent-provider-options/);
+  });
+
   it("moves Gemini API compatibility copy and grid layout out of inline React branches", () => {
     const controls = readSource("ui/src/components/GenerationControlsPanel.tsx");
     const settings = readSource("ui/src/components/SettingsWorkspace.tsx");

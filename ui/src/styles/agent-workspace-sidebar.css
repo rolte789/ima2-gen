@@ -157,6 +157,7 @@
 }
 
 .agent-settings-grid label,
+.agent-settings-grid__field,
 .agent-sidebar-search {
   min-width: 0;
   display: grid;

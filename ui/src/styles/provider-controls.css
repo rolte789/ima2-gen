@@ -279,3 +279,25 @@
     gap: 6px;
   }
 }
+
+.agent-provider-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.agent-provider-options .provider-card {
+  min-height: 58px;
+  grid-template-columns: 20px minmax(0, 1fr);
+  padding: 7px 8px;
+}
+
+.agent-provider-options .provider-card__mark {
+  width: 20px;
+  height: 20px;
+}
+
+.agent-provider-options .provider-card__method,
+.agent-provider-options .provider-status-badge {
+  font-size: 9.5px;
+}
