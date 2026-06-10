@@ -55,24 +55,38 @@ export async function retryPromptOnlyJsonImage({
   reasoningEffort?: string;
 }) {
   if (provider === "api") return null;
-  const retryKind = "prompt_only_with_developer";
-  const retryMeta = {
-    retryKind,
-    initialEventCount: initial.eventCount,
-    initialEventTypes: initial.eventTypes,
-    referencesDroppedOnRetry,
-    developerPromptDroppedOnRetry: false,
-    webSearchDroppedOnRetry,
-  };
-
   const developerPrompt = webSearchDroppedOnRetry
     ? GENERATE_NO_SEARCH_DEVELOPER_PROMPT
     : GENERATE_DEVELOPER_PROMPT;
 
+  // Retry chain: keep the developer prompt for the first MAX_RETRIES attempts
+  // (censorship relief), then make one final attempt with the user prompt only
+  // so a clean, instruction-free generation gets the last word.
+  const attemptPlans = [
+    ...Array.from({ length: MAX_RETRIES }, () => ({
+      retryKind: "prompt_only_with_developer",
+      developerPromptDroppedOnRetry: false,
+    })),
+    {
+      retryKind: "prompt_only_json_image_tool",
+      developerPromptDroppedOnRetry: true,
+    },
+  ];
+
+  const baseMeta = {
+    initialEventCount: initial.eventCount,
+    initialEventTypes: initial.eventTypes,
+    referencesDroppedOnRetry,
+    webSearchDroppedOnRetry,
+  };
+  let retryMeta = { ...baseMeta, ...attemptPlans[attemptPlans.length - 1] };
+
   let lastRetry: ParsedResponsesResult | null = null;
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    logEvent("oauth", "retry_attempt", { requestId, attempt, maxRetries: MAX_RETRIES, ...retryMeta });
+  for (let attempt = 1; attempt <= attemptPlans.length; attempt++) {
+    const plan = attemptPlans[attempt - 1];
+    retryMeta = { ...baseMeta, ...plan };
+    logEvent("oauth", "retry_attempt", { requestId, attempt, maxRetries: attemptPlans.length, ...retryMeta });
     try {
       lastRetry = await postResponses({
         ctx,
@@ -84,7 +98,7 @@ export async function retryPromptOnlyJsonImage({
         payload: {
           model,
           input: [
-            { role: "developer", content: developerPrompt },
+            ...(plan.developerPromptDroppedOnRetry ? [] : [{ role: "developer", content: developerPrompt }]),
             { role: "user", content: buildUserTextPrompt(prompt, mode, { webSearchEnabled: false }) },
           ],
           tools: tools(false, { quality, size, moderation }),
@@ -95,7 +109,7 @@ export async function retryPromptOnlyJsonImage({
         },
       });
     } catch (e) {
-      if (attempt === MAX_RETRIES) {
+      if (attempt === attemptPlans.length) {
         if (e && typeof e === "object") Object.assign(e, retryMeta);
         throw e;
       }
@@ -104,10 +118,10 @@ export async function retryPromptOnlyJsonImage({
     }
     const image = lastRetry.images[0];
     if (image?.b64) {
-      logEvent("oauth", "retry_image", { requestId, retryKind, attempt, imageChars: image.b64.length });
+      logEvent("oauth", "retry_image", { requestId, retryKind: plan.retryKind, attempt, imageChars: image.b64.length });
       return { b64: image.b64, usage: lastRetry.usage, webSearchCalls: initial.webSearchCalls, revisedPrompt: image.revisedPrompt, text: lastRetry.text, ...retryMeta };
     }
-    logEvent("oauth", "retry_no_image", { requestId, retryKind, attempt, fallbackEventCount: lastRetry.eventCount });
+    logEvent("oauth", "retry_no_image", { requestId, retryKind: plan.retryKind, attempt, fallbackEventCount: lastRetry.eventCount });
   }
 
   const diagSource = lastRetry ?? initial;
