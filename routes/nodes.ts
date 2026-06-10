@@ -241,9 +241,9 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       let b64: string | undefined, usage: unknown, webSearchCalls = 0, revisedPrompt: string | null = null;
       const grokDirectApiKey = activeProvider === "grok-api" ? ctx.xaiApiKey : undefined;
       let resultFormat: "png" | "jpeg" | "webp" = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api" ? "jpeg" : format as "png" | "jpeg" | "webp";
-      const MAX_RETRIES = 1;
+      const maxAttempts = inputImageCount > 0 ? 1 : 2;
       let lastErr: UpstreamErr | null = null;
-      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
         try {
           logEvent("node", "attempt", {
             requestId,
@@ -341,7 +341,7 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           lastErr = asUpstream(e);
           if (isNonRetryableGenerationError(lastErr)) break;
         }
-        if (attempt < MAX_RETRIES) {
+        if (attempt + 1 < maxAttempts) {
           logEvent("node", "retry", {
             requestId,
             attempt: attempt + 1,
@@ -357,7 +357,7 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
 
       if (!b64) {
         const finalErr = normalizeGenerationFailure(lastErr, {
-          safetyMessage: lastErr?.message || "Empty response after retry",
+          safetyMessage: lastErr?.message || "Empty response after generation attempt",
         });
         finishStatus = "error";
         finishHttpStatus = finalErr.status || 500;
@@ -372,7 +372,7 @@ export function registerNodeRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           diagnosticReason: lastErr?.diagnosticReason,
           retryKind: lastErr?.retryKind,
           referencesDroppedOnRetry: lastErr?.referencesDroppedOnRetry,
-          attempts: MAX_RETRIES + 1,
+          attempts: maxAttempts,
           outerHttpAlreadyCommitted: res.headersSent,
           sseErrorSent: streamResponse,
         });

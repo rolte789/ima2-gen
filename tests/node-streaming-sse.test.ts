@@ -42,6 +42,20 @@ function writeOauthSse(res, { includePartial = true } = {}) {
   res.end();
 }
 
+function writeEmptyOauthSse(res) {
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "no-cache",
+  });
+  res.write(
+    `data: ${JSON.stringify({
+      type: "response.completed",
+      response: { usage: { total_tokens: 1 } },
+    })}\n\n`,
+  );
+  res.end();
+}
+
 describe("Node route SSE streaming", () => {
   let rootDir;
   let oauthServer;
@@ -57,6 +71,11 @@ describe("Node route SSE streaming", () => {
     oauthApp.use(express.json({ limit: "2mb" }));
     oauthApp.post("/v1/responses", (req, res) => {
       oauthBodies.push(req.body);
+      const text = JSON.stringify(req.body?.input ?? "");
+      if (text.includes("empty ref node")) {
+        writeEmptyOauthSse(res);
+        return;
+      }
       writeOauthSse(res, { includePartial: !!req.body?.tools?.[1]?.partial_images });
     });
     await new Promise((resolve) => {
@@ -147,5 +166,31 @@ describe("Node route SSE streaming", () => {
     assert.match(body.image, /^data:image\/png;base64,/);
     assert.equal(body.revisedPrompt, "revised");
     assert.equal(oauthBodies[0].tools[1].partial_images, undefined);
+  });
+
+  it("does not retry image-input node requests after an empty image response", async () => {
+    oauthBodies = [];
+    const ref = Buffer.from("ref").toString("base64");
+    const res = await fetch(`${baseUrl}/api/node/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        parentNodeId: null,
+        prompt: "empty ref node",
+        quality: "medium",
+        size: "1024x1024",
+        format: "png",
+        moderation: "low",
+        requestId: "req_ref_empty_once",
+        sessionId: "s_1",
+        clientNodeId: "nc_ref_once",
+        references: [ref],
+      }),
+    });
+
+    const body = await res.json();
+    assert.equal(res.status, 422);
+    assert.equal(body.error.code, "EMPTY_RESPONSE");
+    assert.equal(oauthBodies.length, 1);
   });
 });
