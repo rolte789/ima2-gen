@@ -117,16 +117,23 @@ export async function generateViaGeminiApi(
     authHeaders = { "Content-Type": "application/json", "x-goog-api-key": apiKey! };
   }
 
-  const imageParams = parseGeminiImageParams(options.size);
-  const imageConfig = { aspect_ratio: imageParams.aspectRatio, image_size: imageParams.imageSize };
+  // size "auto" → omit image config entirely so the model decides ratio/size
+  const isAutoSize = !options.size || options.size === "auto";
+  const imageParams = isAutoSize ? null : parseGeminiImageParams(options.size);
+  // Vertex AI rejects responseFormat; it expects imageConfig directly under
+  // generationConfig (camelCase). Public API uses response_format.image (snake_case).
   const generationConfig: Record<string, unknown> = useVertex
     ? {
         responseModalities: ["TEXT", "IMAGE"],
-        responseFormat: { image: imageConfig },
+        ...(imageParams
+          ? { imageConfig: { aspectRatio: imageParams.aspectRatio, imageSize: imageParams.imageSize } }
+          : {}),
       }
     : {
         response_modalities: ["TEXT", "IMAGE"],
-        response_format: { image: imageConfig },
+        ...(imageParams
+          ? { response_format: { image: { aspect_ratio: imageParams.aspectRatio, image_size: imageParams.imageSize } } }
+          : {}),
       };
   const configKey = useVertex ? "generationConfig" : "generation_config";
   const body = { contents: buildContents(prompt, references), [configKey]: generationConfig };
