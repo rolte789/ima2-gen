@@ -221,7 +221,7 @@ export type AppState = {
   setProviderUrlReference: (url: string | null) => void;
   useCurrentAsReference: () => Promise<void>;
   useImageAsReference: (item: GenerateItem) => Promise<void>;
-  attachCanvasVersionReference: (item: GenerateItem) => Promise<void>;
+  attachCanvasVersionReference: (item: GenerateItem, overrideSource?: string) => Promise<void>;
   activeGenerations: number;
   unseenGeneratedCount: number;
   inFlight: PersistedInFlight[];

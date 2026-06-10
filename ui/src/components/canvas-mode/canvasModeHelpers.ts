@@ -1,5 +1,6 @@
 import type { GenerateItem, GenerateResponse } from "../../types";
 import { isMultiResponse } from "../../types";
+import { blobToDataUrl } from "../../lib/canvas/maskRenderer";
 
 export const OBJECT_ERASER_CURSOR =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Ccircle cx='14' cy='14' r='8' fill='white' fill-opacity='0.16' stroke='black' stroke-width='3'/%3E%3Ccircle cx='14' cy='14' r='8' fill='none' stroke='white' stroke-width='1.5'/%3E%3Ccircle cx='14' cy='14' r='2' fill='white' stroke='black' stroke-width='1'/%3E%3C/svg%3E\") 14 14, auto";
@@ -26,6 +27,21 @@ export function getCanvasDisplaySrc(image: GenerateItem): string {
   if (!image.canvasVersion || !image.canvasMergedAt || src.startsWith("data:")) return src;
   const separator = src.includes("?") ? "&" : "?";
   return `${src}${separator}canvasMergedAt=${image.canvasMergedAt}`;
+}
+
+export function resolveCleanSourceUrl(source: GenerateItem): string {
+  const filename = source.canvasSourceFilename ?? source.filename;
+  if (filename) return `/generated/${encodeURIComponent(filename)}`;
+  return source.url ?? source.image;
+}
+
+export async function loadCleanSourceDataUrl(source: GenerateItem): Promise<string> {
+  const url = resolveCleanSourceUrl(source);
+  if (url.startsWith("data:")) return url;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`clean_source_fetch_failed: ${resp.status}`);
+  const blob = await resp.blob();
+  return blobToDataUrl(blob);
 }
 
 export function withSourcePrompt(item: GenerateItem, source: GenerateItem | null): GenerateItem {

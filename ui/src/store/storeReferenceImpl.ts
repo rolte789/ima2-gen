@@ -156,11 +156,12 @@ export async function attachCanvasVersionReferenceImpl(
   item: GenerateItem,
   set: StoreSet,
   get: StoreGet,
+  overrideSource?: string,
 ): Promise<void> {
   let dataUrl: string;
   try {
     dataUrl = await compressReferenceSource(
-      item.image,
+      overrideSource ?? item.image,
       item.filename || "canvas-version-reference.png",
     );
   } catch {

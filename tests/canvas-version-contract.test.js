@@ -72,7 +72,7 @@ describe("canvas version frontend contract", () => {
     const api = readSource("ui/src/lib/api.ts");
     assert.match(source, /return \{ \.\.\.item, prompt: source\.prompt \}/);
     assert.match(source, /applyMergedCanvasImage\(savedItem\)/);
-    assert.match(source, /attachCanvasVersionReference\(savedItem\)/);
+    assert.match(source, /attachCanvasVersionReference\(savedItem, cleanDataUrl\)/);
     assert.doesNotMatch(api, /X-Ima2-Canvas-Prompt/);
   });
 
@@ -80,7 +80,7 @@ describe("canvas version frontend contract", () => {
     const store = readSource("ui/src/store/useAppStore.ts");
     assert.match(store, /canvasReferenceImage/);
     assert.match(store, /attachCanvasVersionReference.*attachCanvasVersionReferenceImpl/);
-    assert.match(store, /compressReferenceSource\(\s*item\.image/);
+    assert.match(store, /compressReferenceSource\(\s*overrideSource \?\? item\.image/);
     assert.match(store, /withoutPrevious/);
     assert.match(store, /MAX_REFERENCE_IMAGES/);
     assert.doesNotMatch(store, /referenceImages:\s*\[\s*item\.image/);

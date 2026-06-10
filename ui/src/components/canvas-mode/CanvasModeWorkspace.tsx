@@ -92,6 +92,7 @@ export function CanvasModeWorkspace(_props: CanvasModeWorkspaceProps) {
   const draftSaveTimerRef = useRef<number | null>(null);
   const canvasSourceImageRef = useRef<GenerateItem | null>(null);
   const lastMergedDataUrlRef = useRef<string | null>(null);
+  const lastCleanDataUrlRef = useRef<string | null>(null);
   const [canvasVersionItem, setCanvasVersionItem] = useState<GenerateItem | null>(null);
   const [canvasSaveState, setCanvasSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [isApplying, setIsApplying] = useState(false);
@@ -150,6 +151,7 @@ export function CanvasModeWorkspace(_props: CanvasModeWorkspaceProps) {
     setCanvasSaveState("idle");
     backgroundCleanup.resetBackgroundCleanup();
     lastMergedDataUrlRef.current = null;
+    lastCleanDataUrlRef.current = null;
     resetPointerSession();
   };
 
@@ -278,6 +280,7 @@ export function CanvasModeWorkspace(_props: CanvasModeWorkspaceProps) {
     canvasDisplayImage,
     canvasSourceImageRef,
     lastMergedDataUrlRef,
+    lastCleanDataUrlRef,
     canvasVersionItem,
     annotations,
     exportBackground,

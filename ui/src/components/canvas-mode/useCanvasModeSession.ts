@@ -8,9 +8,9 @@ import {
 import { renderMergedCanvasImage } from "../../lib/canvas/mergeRenderer";
 import {
   blobToDataUrl,
-  imageElementToPngDataUrl,
   renderMaskFromBoxes,
 } from "../../lib/canvas/maskRenderer";
+import { buildMemoEditInstructions } from "../../lib/canvas/memoPrompt";
 import {
   downloadCanvasBlob,
   exportCanvasImage,
@@ -20,6 +20,7 @@ import { objectKeyMatches } from "../../lib/canvas/objectKeys";
 import type { Format, GenerateItem, ImageModel, Moderation, Provider, Quality } from "../../types";
 import type { ReasoningEffort } from "../../lib/reasoning";
 import {
+  loadCleanSourceDataUrl,
   responseToGenerateItem,
   withSourcePrompt,
 } from "./canvasModeHelpers";
@@ -30,6 +31,7 @@ interface UseCanvasModeSessionArgs {
   canvasDisplayImage: GenerateItem | null;
   canvasSourceImageRef: RefObject<GenerateItem | null>;
   lastMergedDataUrlRef: RefObject<string | null>;
+  lastCleanDataUrlRef: RefObject<string | null>;
   canvasVersionItem: GenerateItem | null;
   annotations: any;
   exportBackground: string;
@@ -50,7 +52,7 @@ interface UseCanvasModeSessionArgs {
   setIsEditingWithMask: (value: boolean) => void;
   applyMergedCanvasImage: (item: GenerateItem) => void;
   addGeneratedHistoryItem: (item: GenerateItem) => Promise<void> | void;
-  attachCanvasVersionReference: (item: GenerateItem) => Promise<void>;
+  attachCanvasVersionReference: (item: GenerateItem, overrideSource?: string) => Promise<void>;
   closeCanvas: () => void;
   resetCanvasSession: () => void;
   showToast: (message: string, error?: boolean) => void;
@@ -63,6 +65,7 @@ export function useCanvasModeSession({
   canvasDisplayImage,
   canvasSourceImageRef,
   lastMergedDataUrlRef,
+  lastCleanDataUrlRef,
   canvasVersionItem,
   annotations,
   exportBackground,
@@ -106,6 +109,8 @@ export function useCanvasModeSession({
         memos: annotations.memos,
       });
       lastMergedDataUrlRef.current = merged.dataUrl;
+      const cleanDataUrl = await loadCleanSourceDataUrl(source);
+      lastCleanDataUrlRef.current = cleanDataUrl;
       const result = canvasVersionItem?.filename
         ? await updateCanvasVersion(canvasVersionItem.filename, {
             image: merged.blob,
@@ -120,7 +125,7 @@ export function useCanvasModeSession({
       const savedItem = withSourcePrompt(result.item, source);
       setCanvasVersionItem(savedItem);
       applyMergedCanvasImage(savedItem);
-      await attachCanvasVersionReference(savedItem);
+      await attachCanvasVersionReference(savedItem, cleanDataUrl);
       await deleteCanvasAnnotations(source.filename).catch(() => {});
       annotations.resetLocal();
       annotations.markSaved();
@@ -143,6 +148,7 @@ export function useCanvasModeSession({
     currentImage,
     imageElementRef,
     lastMergedDataUrlRef,
+    lastCleanDataUrlRef,
     setCanvasSaveState,
     setCanvasVersionItem,
     setIsApplying,
@@ -189,13 +195,16 @@ export function useCanvasModeSession({
     if (!imageElementRef.current || !canvasDisplayImage || annotations.boxes.length === 0) return;
     setIsEditingWithMask(true);
     try {
-      let editImage = lastMergedDataUrlRef.current;
+      const memosForPrompt = annotations.memos;
+      let editImage = lastCleanDataUrlRef.current;
       if (annotations.isDirty || annotations.hasAnnotations) {
         const saved = await saveCanvasVersionAndUseReference();
         if (!saved) return;
-        editImage = lastMergedDataUrlRef.current;
+        editImage = lastCleanDataUrlRef.current;
       }
-      if (!editImage) editImage = await imageElementToPngDataUrl(imageElementRef.current);
+      if (!editImage) {
+        editImage = await loadCleanSourceDataUrl(canvasSourceImageRef.current ?? canvasDisplayImage);
+      }
       const selectedBoxes = annotations.boxes.filter((box: { id: string }) =>
         annotations.selectedIds.some((id: string) => objectKeyMatches(id, "box", box.id)),
       );
@@ -203,7 +212,9 @@ export function useCanvasModeSession({
         imageElement: imageElementRef.current,
         boxes: selectedBoxes.length > 0 ? selectedBoxes : annotations.boxes,
       });
-      const prompt = canvasDisplayImage.prompt ?? currentImage?.prompt ?? "";
+      const memoInstructions = buildMemoEditInstructions(memosForPrompt);
+      const basePrompt = (canvasDisplayImage.prompt ?? currentImage?.prompt ?? "").trim();
+      const prompt = [basePrompt, memoInstructions].filter(Boolean).join("\n\n");
       if (!prompt.trim()) {
         showToast(t("toast.noPromptToFork"), true);
         return;

@@ -203,7 +203,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   removeReference: (index) => removeReferenceImpl(index, set, get),
   setProviderUrlReference: (url) => set({ providerUrlReference: url }),
   clearReferences: () => clearReferencesImpl(set, get),
-  attachCanvasVersionReference: (item) => attachCanvasVersionReferenceImpl(item, set, get),
+  attachCanvasVersionReference: (item, overrideSource) => attachCanvasVersionReferenceImpl(item, set, get, overrideSource),
   useCurrentAsReference: () => useCurrentAsReferenceImpl(set, get),
   useImageAsReference: (item) => useImageAsReferenceImpl(item, set, get),
   activeGenerations: 0,

@@ -21,7 +21,10 @@ describe("canvas edit mask flow contract", () => {
     assert.match(canvas, /addGeneratedHistoryItem/);
     assert.match(canvas, /responseToGenerateItem/);
     assert.match(canvas, /EDIT_MASK_NOT_SUPPORTED/);
-    assert.match(canvas, /imageElementToPngDataUrl/);
+    assert.match(canvas, /lastCleanDataUrlRef/);
+    assert.match(canvas, /loadCleanSourceDataUrl/);
+    assert.match(canvas, /buildMemoEditInstructions/);
+    assert.doesNotMatch(canvas, /imageElementToPngDataUrl/);
   });
 
   it("wires toolbar mask edit affordance without changing default viewer policy", () => {
