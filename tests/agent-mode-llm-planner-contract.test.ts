@@ -54,6 +54,12 @@ describe("Agent Mode LLM planner contract", () => {
     for (const tool of AGENT_ALLOWED_TOOLS) {
       assert.ok(promptBlock.includes(tool), `prompt manifest missing ${tool}`);
     }
+    const imageTool = AGENT_TOOL_MANIFEST.find((entry) => entry.name === "ima2.generate_image");
+    assert.ok(imageTool);
+    const properties = (imageTool.parameters as { properties?: Record<string, unknown> }).properties ?? {};
+    assert.ok(properties.sourceImagePolicy);
+    assert.match(JSON.stringify(properties.sourceImagePolicy), /none/);
+    assert.match(JSON.stringify(properties.sourceImagePolicy), /current/);
   });
 
   it("includes ima2.get_generation_errors as the fifth allowed tool", () => {
@@ -87,6 +93,23 @@ describe("Agent Mode LLM planner contract", () => {
     assert.equal(plan.mode, "video");
     assert.equal(plan.source, "llm-planner");
     assert.deepEqual(plan.videoParams, { duration: 10, resolution: "720p", aspectRatio: "16:9" });
+  });
+
+  it("preserves planner source image policy on image plans", () => {
+    const plan = normalizeAgentGenerationPlan(
+      "이 이미지 스타일 유지해서 다시 만들어줘",
+      {
+        mode: "single",
+        prompts: ["이 이미지 스타일 유지해서 다시 만들어줘"],
+        source: "llm-planner",
+        sourceImagePolicy: "current",
+        reason: "explicit current image edit",
+      },
+      DEFAULT_AGENT_GENERATION_SETTINGS,
+    );
+    assert.equal(plan.mode, "single");
+    assert.equal(plan.source, "llm-planner");
+    assert.equal(plan.sourceImagePolicy, "current");
   });
 
   it("clamps and rejects malformed video params", () => {
@@ -151,6 +174,9 @@ describe("Agent Mode LLM planner contract", () => {
     assert.match(developerPrompt, /grok-4\.3 means Grok planner\/provider routing/);
     assert.match(developerPrompt, /ima2\.generate_image/);
     assert.match(developerPrompt, /ima2\.get_generation_errors/);
+    assert.match(developerPrompt, /sourceImagePolicy/);
+    assert.match(developerPrompt, /i2i 말고/);
+    assert.match(developerPrompt, /current image/);
   });
 
   it("plans through grok chat completions for grok sessions including video params", async () => {

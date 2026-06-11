@@ -2,7 +2,7 @@ import { after, afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
 import sharp from "sharp";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -48,7 +48,7 @@ async function pngB64() {
   return buffer.toString("base64");
 }
 
-async function withApp(fn: (baseUrl: string) => Promise<void>) {
+async function withApp(fn: (baseUrl: string, generatedDir: string) => Promise<void>) {
   const generatedDir = join(TEST_DIR, `generated-${Date.now()}`);
   const app = express();
   app.use(express.json({ limit: "8mb" }));
@@ -65,7 +65,7 @@ async function withApp(fn: (baseUrl: string) => Promise<void>) {
   });
   const addr = server.address() as import("node:net").AddressInfo;
   try {
-    await fn(`http://127.0.0.1:${addr.port}`);
+    await fn(`http://127.0.0.1:${addr.port}`, generatedDir);
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
@@ -110,7 +110,9 @@ describe("Agent Mode runtime contract", () => {
   });
 
   it("keeps the image context manifest across compact/resume", async () => {
-    await withApp(async (baseUrl) => {
+    await withApp(async (baseUrl, generatedDir) => {
+      mkdirSync(generatedDir, { recursive: true });
+      writeFileSync(join(generatedDir, "seed.png"), Buffer.from(await pngB64(), "base64"));
       const created = await createSession(baseUrl);
       assert.match(created.manifest, /img_seed/);
       await fetch(`${baseUrl}/api/agent/sessions/${created.selectedSessionId}`, {
@@ -238,6 +240,7 @@ describe("Agent Mode runtime contract", () => {
       assert.equal(calls.filter((call) => call.url.endsWith("/v1/responses")).length, 1);
       assert.equal(calls.filter((call) => call.url.endsWith("/v1/chat/completions")).length, 1);
       assert.equal(calls.filter((call) => call.url.endsWith("/v1/images/generations")).length, 1);
+      assert.equal(calls.filter((call) => call.url.endsWith("/v1/images/edits")).length, 0);
       assert.equal(calls.find((call) => call.url.endsWith("/v1/images/generations"))?.body.model, "grok-imagine-image-quality");
       assert.equal(calls.find((call) => call.url.endsWith("/v1/images/generations"))?.body.model === "grok-4.3", false);
       assert.match(calls.find((call) => call.url.endsWith("/v1/chat/completions"))?.body.messages[1].content[0].text, /English only/);
@@ -268,7 +271,7 @@ describe("Agent Mode runtime contract", () => {
         currentImageId: string;
         imagesById: Record<string, { id: string }>;
         imageIdsBySession: Record<string, string[]>;
-        turnsBySession: Record<string, Array<{ text: string; imageIds?: string[] }>>;
+        turnsBySession: Record<string, Array<{ role: string; text: string; imageIds?: string[] }>>;
       };
       const turns = generatedBody.turnsBySession[created.selectedSessionId];
 
@@ -276,7 +279,11 @@ describe("Agent Mode runtime contract", () => {
       assert.notEqual(generatedBody.currentImageId, "img_seed");
       assert.ok(generatedBody.imageIdsBySession[created.selectedSessionId].includes("img_seed"));
       assert.equal(generatedBody.imageIdsBySession[created.selectedSessionId].length, 2);
-      assert.ok(turns.some((turn) => turn.text.includes("Generated 1 image artifact.")));
+      const assistantImageTurn = turns.find((turn) => turn.role === "assistant" && turn.imageIds?.includes(generatedBody.currentImageId));
+      assert.ok(assistantImageTurn);
+      assert.ok(!assistantImageTurn.text.includes("Generated 1 image artifact."));
+      assert.ok(!assistantImageTurn.text.includes("Single-image plan completed."));
+      assert.equal(assistantImageTurn.text, "Done - I generated the image.");
       assert.ok(turns.some((turn) => turn.imageIds?.includes(generatedBody.currentImageId)));
 
       const selected = await fetch(`${baseUrl}/api/agent/sessions/${created.selectedSessionId}`, {

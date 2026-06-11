@@ -141,19 +141,27 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(en, /"agent"/);
   });
 
-  it("shows optimistic chat turns and visible pending state while Agent generation is in flight", () => {
+  it("shows durable composer-adjacent run progress while Agent generation is in flight", () => {
     const workspace = readSource("ui/src/components/agent/AgentWorkspace.tsx");
+    const localTurns = readSource("ui/src/components/agent/agentLocalTurns.ts");
+    const runProgress = readSource("ui/src/components/agent/agentRunProgress.ts");
+    const chat = readSource("ui/src/components/agent/AgentChatPane.tsx");
+    const statusBar = readSource("ui/src/components/agent/AgentRunStatusBar.tsx");
     const list = readSource("ui/src/components/agent/AgentMessageList.tsx");
     const runGroup = readSource("ui/src/components/agent/AgentRunGroup.tsx");
     const message = readSource("ui/src/components/agent/AgentMessage.tsx");
+    const composerCss = readSource("ui/src/styles/agent-panels-composer.css");
     const panelCss = readSource("ui/src/styles/agent-workspace-panels.css");
     const ko = readSource("ui/src/i18n/ko.json");
     const en = readSource("ui/src/i18n/en.json");
 
-    assert.match(workspace, /LOCAL_TURN_PREFIX/);
-    assert.match(workspace, /localUserTurn/);
-    assert.match(workspace, /localPendingTurn/);
-    assert.match(workspace, /status: "streaming"/);
+    assert.match(localTurns, /LOCAL_TURN_PREFIX/);
+    assert.match(localTurns, /localUserTurn/);
+    assert.match(localTurns, /localPendingTurn/);
+    assert.match(localTurns, /status: "streaming"/);
+    assert.match(workspace, /deriveAgentRunProgress/);
+    assert.match(workspace, /localPendingCount/);
+    assert.match(workspace, /turns\.filter\(\(turn\) => !isLocalPendingTurn\(turn\)\)/);
     assert.match(workspace, /pendingTurnsRef/);
     assert.match(workspace, /mergeWorkspaceWithLocalTurns/);
     assert.match(workspace, /replacePendingWithError/);
@@ -161,6 +169,13 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(workspace, /if \(busy\) continue/);
     assert.match(workspace, /payload\.workspace/);
     assert.match(workspace, /t\("agent\.pending"\)/);
+    assert.match(chat, /runProgress: AgentRunProgress \| null/);
+    assert.match(chat, /<AgentRunStatusBar progress=\{runProgress\} \/>/);
+    assert.match(statusBar, /role="status"/);
+    assert.match(statusBar, /aria-live="polite"/);
+    assert.match(statusBar, /agent-run-status/);
+    assert.match(runProgress, /labelKey: "pendingQueued" \| "pendingPlanning" \| "pendingGenerating" \| "runError"/);
+    assert.match(runProgress, /turn\.role === "tool"/);
     assert.match(list, /aria-live="polite"/);
     assert.match(list, /kind: "run"/);
     assert.match(list, /turn\.role === "user"/);
@@ -172,13 +187,13 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(runGroup, /agent-run__steps/);
     assert.match(runGroup, /agent-run__step/);
     assert.match(message, /aria-busy/);
-    assert.match(message, /agent-message__stream-progress/);
     assert.match(panelCss, /\.agent-message\.is-streaming/);
     assert.match(panelCss, /\.agent-message--assistant-run/);
     assert.match(panelCss, /\.agent-run__header-tool/);
     assert.match(panelCss, /\.agent-run__steps/);
     assert.match(panelCss, /\.agent-run__step\.is-streaming \.agent-run__step-marker/);
-    assert.match(panelCss, /\.agent-message__stream-progress/);
+    assert.match(composerCss, /\.agent-run-status/);
+    assert.match(composerCss, /\.agent-run-status__spinner/);
     assert.match(panelCss, /prefers-reduced-motion: reduce/);
     assert.match(panelCss, /@keyframes agent-spin/);
     assert.match(panelCss, /@keyframes agent-typing/);
