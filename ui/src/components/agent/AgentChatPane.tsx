@@ -1,6 +1,7 @@
 import { useI18n } from "../../i18n";
 import { AgentComposer } from "./AgentComposer";
 import { AgentMessageList } from "./AgentMessageList";
+import { AgentModelSelector } from "./AgentModelSelector";
 import { AgentStatusBadge } from "./AgentStatusBadge";
 import type { AgentGenerationSettings, AgentImageHandle, AgentRuntimeStatus, AgentSessionSummary, AgentTurn } from "./agentTypes";
 
@@ -12,17 +13,12 @@ type Props = {
   runtimeStatus: AgentRuntimeStatus;
   settings?: AgentGenerationSettings;
   insertedPrompt?: { id: number; text: string } | null;
-  onOpenModelSettings?: () => void;
+  onSettingsChange?: (patch: Partial<AgentGenerationSettings>) => void;
   onWebSearchChange: (enabled: boolean) => void;
   onAttachFiles: (files: File[]) => void;
   onImageSelect: (imageId: string) => void;
   onSend: (text: string) => void;
 };
-
-function formatModelSummary(settings: AgentGenerationSettings): string {
-  const variantMode = settings.generationStrategy === "auto" ? `auto<=${settings.maxAutoVariants}` : `${settings.variants}x`;
-  return `${settings.model} · ${settings.quality} · ${variantMode}/${settings.parallelism}p`;
-}
 
 export function AgentChatPane({
   session,
@@ -32,14 +28,13 @@ export function AgentChatPane({
   runtimeStatus,
   settings,
   insertedPrompt,
-  onOpenModelSettings,
+  onSettingsChange,
   onWebSearchChange,
   onAttachFiles,
   onImageSelect,
   onSend,
 }: Props) {
   const { t } = useI18n();
-  const modelSummary = settings ? formatModelSummary(settings) : null;
 
   return (
     <section className="agent-chat" aria-label={t("agent.chat")}>
@@ -49,18 +44,7 @@ export function AgentChatPane({
           <strong>{session?.title ?? t("agent.newSession")}</strong>
         </div>
         <div className="agent-pane-header__actions">
-          {modelSummary ? (
-            <button
-              type="button"
-              className="agent-model-chip"
-              aria-label={t("agent.openModelSettings")}
-              title={t("agent.openModelSettings")}
-              onClick={onOpenModelSettings}
-            >
-              <span>{t("agent.model")}</span>
-              <strong>{modelSummary}</strong>
-            </button>
-          ) : null}
+          {settings && onSettingsChange ? <AgentModelSelector settings={settings} onChange={onSettingsChange} /> : null}
           <AgentStatusBadge status={runtimeStatus} compacted={session?.compacted} />
         </div>
       </header>

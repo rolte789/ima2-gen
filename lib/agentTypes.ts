@@ -24,7 +24,7 @@ export interface AgentGenerationSettings {
   size: string;
   format: "png" | "jpeg" | "webp";
   moderation: "auto" | "low";
-  reasoningEffort: "low" | "medium" | "high" | "xhigh";
+  reasoningEffort: "none" | "low" | "medium" | "high" | "xhigh";
   webSearchEnabled: boolean;
   generationStrategy: AgentGenerationStrategy;
   variants: number;

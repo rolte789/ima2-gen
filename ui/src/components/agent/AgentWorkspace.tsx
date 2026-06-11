@@ -15,7 +15,6 @@ import type { GenerateItem } from "../../types";
 import { useAgentWorkspaceLayout } from "../../hooks/useAgentWorkspaceLayout";
 import { AgentChatPane } from "./AgentChatPane";
 import { AgentImageSheet } from "./AgentImageSheet";
-import { AgentModelSheet } from "./AgentModelSheet";
 import { AgentRightSidebar } from "./AgentRightSidebar";
 import { AgentSessionDrawer } from "./AgentSessionDrawer";
 import { AgentSessionRail } from "./AgentSessionRail";
@@ -185,7 +184,6 @@ export function AgentWorkspace() {
   const [insertedPrompt, setInsertedPrompt] = useState<{ id: number; text: string } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [imageSheetOpen, setImageSheetOpen] = useState(false);
-  const [modelSheetOpen, setModelSheetOpen] = useState(false);
   const [runtimeStatus, setRuntimeStatus] = useState<AgentRuntimeStatus>("reconnecting");
 
   const applyWorkspace = useCallback((payload: AgentWorkspacePayload) => {
@@ -395,13 +393,6 @@ export function AgentWorkspace() {
       applyWorkspace,
     }).catch(console.error);
   };
-  const openModelSettings = () => {
-    if (showRightSidebar) {
-      setSidebarTab("model");
-      return;
-    }
-    setModelSheetOpen(true);
-  };
   const sendMessage = (text: string) => {
     if (!selectedSessionId) return;
     const sessionId = selectedSessionId;
@@ -467,7 +458,7 @@ export function AgentWorkspace() {
           runtimeStatus={derivedRuntimeStatus}
           settings={selectedSettings}
           insertedPrompt={insertedPrompt}
-          onOpenModelSettings={openModelSettings}
+          onSettingsChange={updateGenerationSettings}
           onWebSearchChange={setSessionWebSearch}
           onAttachFiles={attachFiles}
           onImageSelect={selectImage}
@@ -494,7 +485,6 @@ export function AgentWorkspace() {
       </div>
       <AgentSessionDrawer open={drawerOpen} sessions={workspace.sessions} selectedId={selectedSessionId ?? ""} imagesById={workspace.imagesById} runSummaryBySession={workspace.runSummaryBySession} onClose={() => setDrawerOpen(false)} onCreate={createSession} onSelect={selectSession} onRename={renameSession} onDelete={deleteSession} />
       <AgentImageSheet open={imageSheetOpen} currentImage={currentImage} images={images} activeTab={activeTab} onTabChange={setActiveTab} onImageSelect={selectImage} onClose={() => setImageSheetOpen(false)} />
-      <AgentModelSheet open={modelSheetOpen && !showRightSidebar} settings={selectedSettings} onSettingsChange={updateGenerationSettings} onClose={() => setModelSheetOpen(false)} />
     </main>
   );
 }

@@ -14,8 +14,9 @@ describe("Agent Mode right sidebar contract", () => {
     const workspace = readSource("ui/src/components/agent/AgentWorkspace.tsx");
     const chat = readSource("ui/src/components/agent/AgentChatPane.tsx");
     const sidebar = readSource("ui/src/components/agent/AgentRightSidebar.tsx");
-    const modelSheet = readSource("ui/src/components/agent/AgentModelSheet.tsx");
     const tabs = readSource("ui/src/components/agent/AgentSidebarTabs.tsx");
+    const serverSettings = readSource("lib/agentSettings.ts");
+    const uiSettings = readSource("ui/src/lib/agentGenerationSettings.ts");
     const quality = readSource("ui/src/components/agent/AgentQualityPanel.tsx");
     const model = readSource("ui/src/components/agent/AgentModelSelector.tsx");
     const promptLibrary = readSource("ui/src/components/agent/AgentPromptLibraryPanel.tsx");
@@ -24,14 +25,13 @@ describe("Agent Mode right sidebar contract", () => {
     const en = readSource("ui/src/i18n/en.json");
 
     assert.match(workspace, /AgentRightSidebar/);
-    assert.match(workspace, /AgentModelSheet/);
     assert.match(workspace, /settings={selectedSettings}/);
-    assert.match(workspace, /const openModelSettings = \(\) =>/);
-    assert.match(workspace, /setSidebarTab\("model"\)/);
-    assert.match(workspace, /setModelSheetOpen\(true\)/);
-    assert.match(workspace, /open={modelSheetOpen && !showRightSidebar}/);
-    assert.match(chat, /agent-model-chip/);
-    assert.match(chat, /formatModelSummary/);
+    assert.match(workspace, /onSettingsChange={updateGenerationSettings}/);
+    assert.match(chat, /AgentModelSelector/);
+    assert.doesNotMatch(workspace, /AgentModelSheet/);
+    assert.doesNotMatch(workspace, /setModelSheetOpen/);
+    assert.doesNotMatch(chat, /agent-model-chip/);
+    assert.doesNotMatch(chat, /formatModelSummary/);
     assert.match(sidebar, /AgentImagePane/);
     assert.match(sidebar, /AgentPromptLibraryPanel/);
     assert.match(sidebar, /AgentFormTemplatePanel/);
@@ -39,19 +39,22 @@ describe("Agent Mode right sidebar contract", () => {
     assert.match(sidebar, /AgentQualityPanel/);
     assert.match(sidebar, /AgentModelSelector/);
     assert.match(sidebar, /AgentQueuePanel/);
-    assert.match(modelSheet, /role="dialog"/);
-    assert.match(modelSheet, /AgentModelSelector/);
     assert.match(tabs, /\["image", "library", "forms", "quality", "model", "queue"\]/);
     assert.match(quality, /generationStrategy/);
+    assert.match(model, /image-model-select__trigger--pill/);
+    assert.match(model, /image-model-select__menu/);
+    assert.match(model, /OPENAI_IMAGE_MODEL_OPTIONS/);
+    assert.match(model, /REASONING_EFFORT_OPTIONS/);
     assert.match(model, /reasoningEffort/);
+    assert.match(model, /provider: "oauth"/);
+    assert.match(model, /role="menuitemradio"/);
+    assert.match(serverSettings, /reasoningEffort: "none"/);
+    assert.match(uiSettings, /reasoningEffort: "none"/);
     assert.match(promptLibrary, /agent:form/);
     assert.match(css, /\.agent-right-sidebar/);
     assert.match(css, /\.agent-sidebar-tabs/);
-    assert.match(css, /\.agent-model-chip/);
-    assert.match(en, /"openModelSettings": "Open model settings"/);
-    assert.match(en, /"closeModelSettings": "Close model settings"/);
-    assert.match(ko, /"openModelSettings": "모델 설정 열기"/);
-    assert.match(ko, /"closeModelSettings": "모델 설정 닫기"/);
+    assert.match(en, /"quickSettingsMenu": "Model and reasoning quick settings"/);
+    assert.match(ko, /"quickSettingsMenu": "모델 및 추론 빠른 설정"/);
   });
 
   it("syncs sidebar settings and queue actions through the server-backed workspace", () => {
@@ -73,21 +76,24 @@ describe("Agent Mode right sidebar contract", () => {
     assert.match(api, /retryAgentQueueItem/);
   });
 
-  it("allows Grok as an Agent Mode provider and keeps model/provider in sync", () => {
+  it("keeps Agent model dropdown scoped to LLM model and reasoning", () => {
     const model = readSource("ui/src/components/agent/AgentModelSelector.tsx");
     const types = readSource("ui/src/components/agent/agentTypes.ts");
     const css = readSource("ui/src/styles/provider-controls.css");
 
     assert.match(types, /provider: "oauth" \| "api" \| "grok"/);
-    assert.match(model, /<select value=\{settings\.provider\}/);
-    assert.match(model, /<option value="oauth">GPT OAuth<\/option>/);
-    assert.match(model, /<option value="grok">Grok<\/option>/);
-    assert.match(model, /<option value="agy">Gemini<\/option>/);
+    assert.match(model, /OPENAI_IMAGE_MODEL_OPTIONS/);
+    assert.match(model, /REASONING_EFFORT_OPTIONS/);
+    assert.match(model, /image-model-select__trigger--pill/);
+    assert.match(model, /image-model-select__menu/);
+    assert.match(model, /provider: "oauth"/);
+    assert.doesNotMatch(model, /<select value=\{settings\.provider\}/);
+    assert.doesNotMatch(model, /<option value="grok">Grok<\/option>/);
+    assert.doesNotMatch(model, /GROK_IMAGE_MODEL_OPTIONS|GEMINI_IMAGE_MODEL_OPTIONS|VIDEO_MODEL_OPTIONS/);
     assert.doesNotMatch(model, /ProviderCard/);
     assert.doesNotMatch(model, /getProviderIdentity\(provider\)/);
-    assert.match(model, /isGrokImageModel\(settings\.model\)/);
-    assert.match(model, /provider === "grok"/);
-    assert.match(model, /onChange\(\{ model, provider: "grok" \}\)/);
+    assert.doesNotMatch(model, /isGrokImageModel\(settings\.model\)/);
+    assert.doesNotMatch(model, /provider === "grok"/);
     assert.doesNotMatch(css, /\.agent-provider-options/);
   });
 });

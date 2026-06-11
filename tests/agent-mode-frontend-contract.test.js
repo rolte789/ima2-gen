@@ -56,7 +56,7 @@ describe("Agent Mode frontend shell contract", () => {
     const types = readSource("ui/src/components/agent/agentTypes.ts");
     const drawer = readSource("ui/src/components/agent/AgentSessionDrawer.tsx");
     const sheet = readSource("ui/src/components/agent/AgentImageSheet.tsx");
-    const modelSheet = readSource("ui/src/components/agent/AgentModelSheet.tsx");
+    const modelSelector = readSource("ui/src/components/agent/AgentModelSelector.tsx");
     const css = readSource("ui/src/styles/agent-workspace.css");
     const panelCss = readSource("ui/src/styles/agent-workspace-panels.css");
     const composerCss = readSource("ui/src/styles/agent-panels-composer.css");
@@ -77,7 +77,11 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(css, /grid-template-areas: "image" "chat"/);
     assert.match(drawer, /role="dialog"/);
     assert.match(sheet, /role="dialog"/);
-    assert.match(modelSheet, /role="dialog"/);
+    assert.match(modelSelector, /image-model-select__trigger--pill/);
+    assert.match(modelSelector, /image-model-select__menu/);
+    assert.match(modelSelector, /OPENAI_IMAGE_MODEL_OPTIONS/);
+    assert.match(modelSelector, /REASONING_EFFORT_OPTIONS/);
+    assert.match(modelSelector, /role="menu"/);
     assert.match(composerCss, /\.agent-image-sheet/);
     assert.match(composerCss, /\.agent-model-sheet/);
   });
