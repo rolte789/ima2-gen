@@ -300,6 +300,36 @@ describe("Agent Mode runtime contract", () => {
     });
   });
 
+  it("imports a patched current image into an existing Agent session", async () => {
+    await withApp(async (baseUrl) => {
+      const created = await createSession(baseUrl);
+      const patched = await fetch(`${baseUrl}/api/agent/sessions/${created.selectedSessionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentImage: {
+            id: "img_pasted",
+            filename: "pasted.png",
+            url: "/generated/pasted.png",
+            prompt: "pasted clipboard image",
+          },
+        }),
+      });
+      const body = await patched.json() as {
+        currentImageId: string;
+        imageIdsBySession: Record<string, string[]>;
+        manifest: string;
+      };
+
+      assert.equal(patched.status, 200);
+      assert.equal(body.currentImageId, "img_pasted");
+      assert.ok(body.imageIdsBySession[created.selectedSessionId].includes("img_seed"));
+      assert.ok(body.imageIdsBySession[created.selectedSessionId].includes("img_pasted"));
+      assert.match(body.manifest, /id: img_pasted/);
+      assert.match(body.manifest, /pasted clipboard image/);
+    });
+  });
+
   it("does not treat text-only model output as success", async () => {
     let upstreamHits = 0;
     globalThis.fetch = async (url, init) => {

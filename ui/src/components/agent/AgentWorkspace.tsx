@@ -21,6 +21,7 @@ import { AgentSessionDrawer } from "./AgentSessionDrawer";
 import { AgentSessionRail } from "./AgentSessionRail";
 import { AgentSessionSidebar } from "./AgentSessionSidebar";
 import { AgentTopBar } from "./AgentTopBar";
+import { attachAgentImageFiles } from "./agentAttachFiles";
 import type {
   AgentContextTab,
   AgentGenerationSettings,
@@ -171,6 +172,7 @@ export function AgentWorkspace() {
   const { t } = useI18n();
   const layoutMode = useAgentWorkspaceLayout();
   const currentGeneratedImage = useAppStore((s) => s.currentImage);
+  const importLocalImageToHistory = useAppStore((s) => s.importLocalImageToHistory);
   const addHistoryItem = useAppStore((s) => s.addHistoryItem);
   const selectHistory = useAppStore((s) => s.selectHistory);
   const bootstrapped = useRef(false);
@@ -384,6 +386,15 @@ export function AgentWorkspace() {
   const retryQueue = (itemId: string) => {
     void retryAgentQueueItem(itemId).then(applyWorkspace).catch(console.error);
   };
+  const attachFiles = (files: File[]) => {
+    if (!selectedSessionId || files.length === 0) return;
+    void attachAgentImageFiles({
+      sessionId: selectedSessionId,
+      files,
+      importLocalImageToHistory,
+      applyWorkspace,
+    }).catch(console.error);
+  };
   const openModelSettings = () => {
     if (showRightSidebar) {
       setSidebarTab("model");
@@ -458,6 +469,7 @@ export function AgentWorkspace() {
           insertedPrompt={insertedPrompt}
           onOpenModelSettings={openModelSettings}
           onWebSearchChange={setSessionWebSearch}
+          onAttachFiles={attachFiles}
           onImageSelect={selectImage}
           onSend={sendMessage}
         />

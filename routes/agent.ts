@@ -7,6 +7,7 @@ import {
   getAgentGenerationSettings,
   getAgentSession,
   getAgentWorkspacePayload,
+  importAgentImage,
   renameAgentSession,
   setAgentCurrentImage,
   setAgentGenerationSettings,
@@ -94,6 +95,10 @@ export function registerAgentRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       if (typeof body.webSearchEnabled === "boolean") setAgentWebSearch(req.params.sessionId, body.webSearchEnabled);
       if (Object.prototype.hasOwnProperty.call(body, "generationSettings")) {
         setAgentGenerationSettings(req.params.sessionId, body.generationSettings);
+      }
+      if (Object.prototype.hasOwnProperty.call(body, "currentImage")) {
+        const image = normalizeCurrentImage(body.currentImage);
+        if (image) importAgentImage(req.params.sessionId, image);
       }
       if (Object.prototype.hasOwnProperty.call(body, "currentImageId")) {
         const ok = setAgentCurrentImage(req.params.sessionId, body.currentImageId);

@@ -85,6 +85,7 @@ describe("Agent Mode frontend shell contract", () => {
   it("wires Agent workspace to server-backed runtime APIs and image handles", () => {
     const api = readSource("ui/src/lib/agentApi.ts");
     const workspace = readSource("ui/src/components/agent/AgentWorkspace.tsx");
+    const attachFiles = readSource("ui/src/components/agent/agentAttachFiles.ts");
     const composer = readSource("ui/src/components/agent/AgentComposer.tsx");
     const message = readSource("ui/src/components/agent/AgentMessage.tsx");
     const ko = readSource("ui/src/i18n/ko.json");
@@ -94,6 +95,7 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(api, /\/queue/);
     assert.match(api, /\/turns/);
     assert.match(api, /currentImageId\?: string/);
+    assert.match(api, /currentImage\?: AgentImageHandle \| null/);
     assert.match(api, /imageHandleFromCurrent/);
     assert.match(api, /enqueueAgentTurn/);
     assert.match(api, /cancelAgentQueueItem/);
@@ -102,11 +104,20 @@ describe("Agent Mode frontend shell contract", () => {
     assert.doesNotMatch(api, /base64/i);
     assert.match(workspace, /getAgentWorkspace/);
     assert.match(workspace, /enqueueAgentTurn/);
+    assert.match(workspace, /importLocalImageToHistory/);
+    assert.match(workspace, /attachAgentImageFiles/);
+    assert.match(attachFiles, /imageHandleFromCurrent\(item\)/);
+    assert.match(attachFiles, /updateAgentSession\(sessionId, \{ currentImage \}\)/);
     assert.match(workspace, /derivedRuntimeStatus/);
     assert.match(workspace, /imageIdsBySession/);
     assert.match(workspace, /queueBySession/);
     assert.match(workspace, /runSummaryBySession/);
     assert.match(composer, /onWebSearchChange/);
+    assert.match(composer, /onAttachFiles/);
+    assert.match(composer, /type="file"/);
+    assert.match(composer, /accept="image\/png,image\/jpeg,image\/webp"/);
+    assert.match(composer, /fileInputRef\.current\?\.click\(\)/);
+    assert.match(composer, /onPaste=\{handlePaste\}/);
     assert.match(composer, /onSend/);
     assert.match(message, /imageIds/);
     assert.match(ko, /"agent"/);

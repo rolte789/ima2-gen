@@ -14,6 +14,7 @@ type Props = {
   insertedPrompt?: { id: number; text: string } | null;
   onOpenModelSettings?: () => void;
   onWebSearchChange: (enabled: boolean) => void;
+  onAttachFiles: (files: File[]) => void;
   onImageSelect: (imageId: string) => void;
   onSend: (text: string) => void;
 };
@@ -33,6 +34,7 @@ export function AgentChatPane({
   insertedPrompt,
   onOpenModelSettings,
   onWebSearchChange,
+  onAttachFiles,
   onImageSelect,
   onSend,
 }: Props) {
@@ -63,7 +65,7 @@ export function AgentChatPane({
         </div>
       </header>
       <AgentMessageList turns={turns} imagesById={imagesById} currentImageId={currentImageId} onImageSelect={onImageSelect} />
-      <AgentComposer webSearchEnabled={session?.webSearchEnabled ?? false} insertedPrompt={insertedPrompt} onWebSearchChange={onWebSearchChange} onSend={onSend} />
+      <AgentComposer webSearchEnabled={session?.webSearchEnabled ?? false} insertedPrompt={insertedPrompt} onWebSearchChange={onWebSearchChange} onAttachFiles={onAttachFiles} onSend={onSend} />
     </section>
   );
 }
