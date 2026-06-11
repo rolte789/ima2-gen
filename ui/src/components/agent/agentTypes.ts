@@ -16,6 +16,7 @@ export type AgentQueueStatus = "queued" | "running" | "succeeded" | "failed" | "
 export type AgentSessionRunStatus = "idle" | "queued" | "running" | "error";
 export type AgentGenerationStrategy = "auto" | "manual";
 export type AgentSidebarTab = "image" | "library" | "forms" | "quality" | "model" | "queue";
+export type AgentSourceImagePolicy = "auto" | "none" | "current";
 
 export type AgentGenerationSettings = {
   provider: "oauth" | "api" | "grok" | "agy";
@@ -65,6 +66,7 @@ export type AgentGenerationPlan = {
   command?: "question" | "help" | "variants" | "generate" | "parallelism" | null;
   assistantText?: string | null;
   videoParams?: AgentVideoParams | null;
+  sourceImagePolicy?: AgentSourceImagePolicy | null;
 };
 
 export type AgentQueueItem = {

@@ -43,13 +43,6 @@ export function AgentRunGroup({ turns, imagesById, currentImageId, onImageSelect
                 <span className="agent-run__step-marker" aria-hidden="true" />
                 <div className="agent-run__step-body">
                   {turn.text.trim().length > 0 ? <p>{turn.text}</p> : null}
-                  {turn.status === "streaming" ? (
-                    <div className="agent-message__stream-progress" aria-hidden="true">
-                      <span />
-                      <span />
-                      <span />
-                    </div>
-                  ) : null}
                   {imageIds.length > 0 ? (
                     <div className="agent-message__images">
                       {imageIds.map((imageId) => {

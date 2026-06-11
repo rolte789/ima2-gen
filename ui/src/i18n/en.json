@@ -696,6 +696,7 @@
     "pendingQueued": "Waiting in queue...",
     "pendingPlanning": "Planning the response...",
     "pendingGenerating": "Running tools and generating...",
+    "runError": "Run failed",
     "errorRole": "Error",
     "composerPlaceholder": "Ask anything or describe what to create",
     "slashCommands": "Agent slash commands",

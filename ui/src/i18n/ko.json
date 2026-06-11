@@ -696,6 +696,7 @@
     "pendingQueued": "대기열에서 기다리는 중...",
     "pendingPlanning": "응답을 계획하는 중...",
     "pendingGenerating": "도구 실행·생성 진행 중...",
+    "runError": "실행 중 오류가 발생했어요",
     "errorRole": "오류",
     "composerPlaceholder": "무엇이든 물어보거나 만들 것을 설명하세요",
     "slashCommands": "에이전트 슬래시 명령",

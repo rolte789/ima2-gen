@@ -397,6 +397,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .agent-status__dot,
+  .agent-run-status__spinner,
   .agent-message.is-streaming .agent-message__role::after,
   .agent-run__step.is-streaming .agent-run__step-marker,
   .agent-message__stream-progress span {

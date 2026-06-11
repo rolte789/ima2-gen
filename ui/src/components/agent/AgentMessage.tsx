@@ -28,13 +28,6 @@ export function AgentMessage({ turn, imagesById, currentImageId, onImageSelect }
     >
       <div className="agent-message__role">{roleLabel}</div>
       <p>{turn.text}</p>
-      {turn.status === "streaming" ? (
-        <div className="agent-message__stream-progress" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
-      ) : null}
       {imageIds.length > 0 ? (
         <div className="agent-message__images">
           {imageIds.map((imageId) => {

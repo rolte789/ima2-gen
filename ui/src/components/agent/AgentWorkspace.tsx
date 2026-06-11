@@ -21,6 +21,14 @@ import { AgentSessionDrawer } from "./AgentSessionDrawer";
 import { AgentSessionSidebar } from "./AgentSessionSidebar";
 import { AgentTopBar } from "./AgentTopBar";
 import { attachAgentImageFiles } from "./agentAttachFiles";
+import {
+  isLocalPendingTurn,
+  isLocalTurn,
+  localErrorTurn,
+  localPendingTurn,
+  localUserTurn,
+} from "./agentLocalTurns";
+import { deriveAgentRunProgress } from "./agentRunProgress";
 import type {
   AgentContextTab,
   AgentGenerationSettings,
@@ -30,9 +38,6 @@ import type {
   AgentTurn,
   AgentWorkspacePayload,
 } from "./agentTypes";
-
-const LOCAL_TURN_PREFIX = "agent-local-";
-let localTurnSequence = 0;
 
 function emptyWorkspace(): AgentWorkspacePayload {
   return {
@@ -52,57 +57,6 @@ function emptyWorkspace(): AgentWorkspacePayload {
     manifest: null,
     queueBySession: {},
     runSummaryBySession: {},
-  };
-}
-
-function nextLocalTurnId(kind: string): string {
-  localTurnSequence += 1;
-  return `${LOCAL_TURN_PREFIX}${kind}-${Date.now()}-${localTurnSequence}`;
-}
-
-function isLocalTurn(turn: AgentTurn): boolean {
-  return turn.id.startsWith(LOCAL_TURN_PREFIX);
-}
-
-const PENDING_TURN_PREFIX = `${LOCAL_TURN_PREFIX}pending-`;
-
-function isLocalPendingTurn(turn: AgentTurn): boolean {
-  return turn.id.startsWith(PENDING_TURN_PREFIX);
-}
-
-function localUserTurn(text: string, createdAt: number): AgentTurn {
-  return {
-    id: nextLocalTurnId("user"),
-    role: "user",
-    text,
-    imageIds: [],
-    webFindingIds: [],
-    status: "complete",
-    createdAt,
-  };
-}
-
-function localPendingTurn(text: string, createdAt: number): AgentTurn {
-  return {
-    id: nextLocalTurnId("pending"),
-    role: "assistant",
-    text,
-    imageIds: [],
-    webFindingIds: [],
-    status: "streaming",
-    createdAt,
-  };
-}
-
-function localErrorTurn(text: string): AgentTurn {
-  return {
-    id: nextLocalTurnId("error"),
-    role: "assistant",
-    text,
-    imageIds: [],
-    webFindingIds: [],
-    status: "error",
-    createdAt: Date.now(),
   };
 }
 
@@ -247,25 +201,16 @@ export function AgentWorkspace() {
     ? (workspace.imageIdsBySession[selectedSessionId] ?? []).map((imageId) => workspace.imagesById[imageId]).filter((image): image is AgentImageHandle => !!image)
     : [];
   const turns = selectedSession ? workspace.turnsBySession[selectedSession.id] ?? [] : [];
-  // Rewrite the pending bubble copy at render time so the user sees where the
-  // run actually is (queued → planning → running tools) instead of a static
-  // "Generating response..." for the whole turn.
-  const pendingStageText = (() => {
-    const pendingTurns = turns.filter(isLocalPendingTurn);
-    if (pendingTurns.length === 0) return null;
-    const summary = selectedSessionId ? workspace.runSummaryBySession[selectedSessionId] : undefined;
-    if (summary?.status === "queued") return t("agent.pendingQueued");
-    if (summary?.status !== "running") return null;
-    const oldestPendingAt = Math.min(...pendingTurns.map((turn) => turn.createdAt ?? 0));
-    const serverProgressStarted = turns.some((turn) =>
-      !isLocalTurn(turn) && turn.role !== "user" && (turn.createdAt ?? 0) >= oldestPendingAt);
-    return serverProgressStarted ? t("agent.pendingGenerating") : t("agent.pendingPlanning");
-  })();
-  const displayTurns = pendingStageText
-    ? turns.map((turn) => (isLocalPendingTurn(turn) ? { ...turn, text: pendingStageText } : turn))
-    : turns;
+  const localPendingCount = turns.filter(isLocalPendingTurn).length;
+  const displayTurns = turns.filter((turn) => !isLocalPendingTurn(turn));
   const queueItems = selectedSessionId ? workspace.queueBySession[selectedSessionId] ?? [] : [];
   const selectedRunSummary = selectedSessionId ? workspace.runSummaryBySession[selectedSessionId] : undefined;
+  const runProgress = deriveAgentRunProgress({
+    turns,
+    queueItems,
+    runSummary: selectedRunSummary,
+    localPendingCount,
+  });
   const selectedSettings = withAgentGenerationDefaults(selectedSession?.generationSettings);
   const derivedRuntimeStatus: AgentRuntimeStatus =
     runtimeStatus === "reconnecting"
@@ -445,6 +390,7 @@ export function AgentWorkspace() {
           imagesById={workspace.imagesById}
           currentImageId={workspace.currentImageId}
           runtimeStatus={derivedRuntimeStatus}
+          runProgress={runProgress}
           settings={selectedSettings}
           insertedPrompt={insertedPrompt}
           onSettingsChange={updateGenerationSettings}

@@ -2,7 +2,9 @@ import { useI18n } from "../../i18n";
 import { AgentComposer } from "./AgentComposer";
 import { AgentMessageList } from "./AgentMessageList";
 import { AgentModelSelector } from "./AgentModelSelector";
+import { AgentRunStatusBar } from "./AgentRunStatusBar";
 import { AgentStatusBadge } from "./AgentStatusBadge";
+import type { AgentRunProgress } from "./agentRunProgress";
 import type { AgentGenerationSettings, AgentImageHandle, AgentRuntimeStatus, AgentSessionSummary, AgentTurn } from "./agentTypes";
 
 type Props = {
@@ -11,6 +13,7 @@ type Props = {
   imagesById: Record<string, AgentImageHandle>;
   currentImageId: string | null;
   runtimeStatus: AgentRuntimeStatus;
+  runProgress: AgentRunProgress | null;
   settings?: AgentGenerationSettings;
   insertedPrompt?: { id: number; text: string } | null;
   onSettingsChange?: (patch: Partial<AgentGenerationSettings>) => void;
@@ -26,6 +29,7 @@ export function AgentChatPane({
   imagesById,
   currentImageId,
   runtimeStatus,
+  runProgress,
   settings,
   insertedPrompt,
   onSettingsChange,
@@ -49,6 +53,7 @@ export function AgentChatPane({
         </div>
       </header>
       <AgentMessageList turns={turns} imagesById={imagesById} currentImageId={currentImageId} onImageSelect={onImageSelect} />
+      <AgentRunStatusBar progress={runProgress} />
       <AgentComposer webSearchEnabled={session?.webSearchEnabled ?? false} insertedPrompt={insertedPrompt} onWebSearchChange={onWebSearchChange} onAttachFiles={onAttachFiles} onSend={onSend} />
     </section>
   );
