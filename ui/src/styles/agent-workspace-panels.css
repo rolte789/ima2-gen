@@ -75,6 +75,68 @@
   background: var(--surface-2);
 }
 
+.agent-message--assistant-run {
+  gap: 10px;
+}
+
+.agent-run__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.agent-run__tools {
+  display: grid;
+  gap: 6px;
+}
+
+.agent-run__tools .agent-message--tool {
+  max-width: none;
+}
+
+.agent-run__tools .agent-message__tool-toggle {
+  background: color-mix(in srgb, var(--surface-2) 52%, transparent);
+}
+
+.agent-run__steps {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agent-run__step {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.agent-run__step-marker {
+  width: 7px;
+  height: 7px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: var(--text-faint);
+}
+
+.agent-run__step.is-streaming .agent-run__step-marker {
+  background: var(--green);
+  animation: agent-pulse 1s ease-in-out infinite;
+}
+
+.agent-run__step.is-error .agent-run__step-marker {
+  background: var(--red);
+}
+
+.agent-run__step-body {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
 .agent-message--tool {
   max-width: 520px;
   color: var(--text-dim);
@@ -325,6 +387,7 @@
 @media (prefers-reduced-motion: reduce) {
   .agent-status__dot,
   .agent-message.is-streaming .agent-message__role::after,
+  .agent-run__step.is-streaming .agent-run__step-marker,
   .agent-message__stream-progress span {
     animation: none;
   }

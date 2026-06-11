@@ -127,6 +127,7 @@ describe("Agent Mode frontend shell contract", () => {
   it("shows optimistic chat turns and visible pending state while Agent generation is in flight", () => {
     const workspace = readSource("ui/src/components/agent/AgentWorkspace.tsx");
     const list = readSource("ui/src/components/agent/AgentMessageList.tsx");
+    const runGroup = readSource("ui/src/components/agent/AgentRunGroup.tsx");
     const message = readSource("ui/src/components/agent/AgentMessage.tsx");
     const panelCss = readSource("ui/src/styles/agent-workspace-panels.css");
     const ko = readSource("ui/src/i18n/ko.json");
@@ -144,9 +145,22 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(workspace, /payload\.workspace/);
     assert.match(workspace, /t\("agent\.pending"\)/);
     assert.match(list, /aria-live="polite"/);
+    assert.match(list, /kind: "run"/);
+    assert.match(list, /turn\.role === "user"/);
+    assert.match(list, /<AgentRunGroup/);
+    assert.match(runGroup, /agent-message--assistant-run/);
+    assert.match(runGroup, /aria-busy={isStreaming \? "true" : undefined}/);
+    assert.match(runGroup, /agent-run__tools/);
+    assert.match(runGroup, /<AgentToolGroup/);
+    assert.match(runGroup, /agent-run__steps/);
+    assert.match(runGroup, /agent-run__step/);
     assert.match(message, /aria-busy/);
     assert.match(message, /agent-message__stream-progress/);
     assert.match(panelCss, /\.agent-message\.is-streaming/);
+    assert.match(panelCss, /\.agent-message--assistant-run/);
+    assert.match(panelCss, /\.agent-run__tools/);
+    assert.match(panelCss, /\.agent-run__steps/);
+    assert.match(panelCss, /\.agent-run__step\.is-streaming \.agent-run__step-marker/);
     assert.match(panelCss, /\.agent-message__stream-progress/);
     assert.match(panelCss, /prefers-reduced-motion: reduce/);
     assert.match(panelCss, /@keyframes agent-spin/);
@@ -160,7 +174,7 @@ describe("Agent Mode frontend shell contract", () => {
   });
 
   it("collapses Agent tool turns behind accessible summary controls", () => {
-    const message = readSource("ui/src/components/agent/AgentMessage.tsx");
+    const runGroup = readSource("ui/src/components/agent/AgentRunGroup.tsx");
     const group = readSource("ui/src/components/agent/AgentToolGroup.tsx");
     const row = readSource("ui/src/components/agent/AgentToolCallRow.tsx");
     const icons = readSource("ui/src/components/agent/AgentIcons.tsx");
@@ -170,8 +184,9 @@ describe("Agent Mode frontend shell contract", () => {
     const en = readSource("ui/src/i18n/en.json");
 
     const messageList = readSource("ui/src/components/agent/AgentMessageList.tsx");
-    assert.match(messageList, /turn\.role === "tool"/);
-    assert.match(messageList, /AgentToolGroup/);
+    assert.match(messageList, /kind: "run"/);
+    assert.match(runGroup, /turn\.role === "tool"/);
+    assert.match(runGroup, /AgentToolGroup/);
     assert.match(group, /useState\(false\)/);
     assert.match(group, /agent-message__tool-toggle/);
     assert.match(group, /aria-expanded={expanded}/);
