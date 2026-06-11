@@ -15,6 +15,7 @@ export type AgentSessionRunStatus = "idle" | "queued" | "running" | "error";
 export type AgentGenerationStrategy = "auto" | "manual";
 export type AgentGenerationPlanMode = "single" | "fanout" | "question" | "video" | "errors";
 export type AgentGenerationPlanSource = "auto-default" | "auto-request" | "manual-settings" | "slash-command" | "question-command" | "llm-planner";
+export type AgentSourceImagePolicy = "auto" | "none" | "current";
 export type AgentSlashCommandName = "question" | "help" | "variants" | "generate" | "parallelism";
 
 export interface AgentGenerationSettings {
@@ -90,6 +91,7 @@ export interface AgentGenerationPlan {
   command?: AgentSlashCommandName | null;
   assistantText?: string | null;
   videoParams?: AgentVideoParams | null;
+  sourceImagePolicy?: AgentSourceImagePolicy | null;
 }
 
 export interface AgentGenerationErrorRecord {

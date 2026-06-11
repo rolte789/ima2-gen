@@ -2,6 +2,7 @@ import type {
   AgentGenerationPlan,
   AgentGenerationPlanSource,
   AgentGenerationSettings,
+  AgentSourceImagePolicy,
   AgentSlashCommand,
   AgentVideoParams,
 } from "./agentTypes.js";
@@ -64,6 +65,7 @@ export function deriveAgentGenerationPlan({ prompt, settings, command = null }: 
       reason: command.name === "help" ? "Slash help answered without image generation." : "Question command answered without image generation.",
       command: command.name,
       assistantText: null,
+      sourceImagePolicy: null,
     };
   }
 
@@ -78,6 +80,7 @@ export function deriveAgentGenerationPlan({ prompt, settings, command = null }: 
       reason: "Video generation detected from prompt keywords.",
       command: command?.name ?? null,
       assistantText: null,
+      sourceImagePolicy: "auto",
     };
   }
 
@@ -94,6 +97,7 @@ export function deriveAgentGenerationPlan({ prompt, settings, command = null }: 
     reason: variantDecision.reason,
     command: command?.name ?? null,
     assistantText: null,
+    sourceImagePolicy: inferSourceImagePolicy(prompt, prompts.length > 1 ? "fanout" : "single"),
   };
 }
 
@@ -121,6 +125,7 @@ export function normalizeAgentGenerationPlan(
       command: cleanCommandName(input.command),
       assistantText: typeof input.assistantText === "string" ? input.assistantText : null,
       videoParams: null,
+      sourceImagePolicy: null,
     };
   }
   if (prompts.length === 0) return deriveAgentGenerationPlan({ prompt, settings, command: cleanCommand(input.command) });
@@ -144,7 +149,21 @@ export function normalizeAgentGenerationPlan(
     command: cleanCommandName(input.command),
     assistantText: typeof input.assistantText === "string" ? input.assistantText : null,
     videoParams: mode === "video" ? cleanVideoParams(input.videoParams) : null,
+    sourceImagePolicy: cleanSourceImagePolicy(input.sourceImagePolicy) ?? inferSourceImagePolicy(prompt, mode),
   };
+}
+
+function inferSourceImagePolicy(prompt: string, mode: AgentGenerationPlan["mode"]): AgentSourceImagePolicy | null {
+  if (mode === "question" || mode === "errors") return null;
+  if (mode === "video") return "auto";
+  const text = prompt.trim();
+  if (/(?:i2i\s*말고|image-to-image\s*말고|새로운\s*방식|새로|별도|독립|from\s+scratch|new\s+image|fresh\s+image|without\s+(?:reference|refs?)|no\s+(?:reference|refs?))/iu.test(text)) {
+    return "none";
+  }
+  if (/(?:이\s*이미지|현재\s*이미지|방금\s*(?:그거|그\s*이미지|이미지)|참조|레퍼런스|reference|refs?|i2i|image-to-image|수정|편집|바꿔|변형|유지(?:해서)?|그걸|그거)/iu.test(text)) {
+    return "current";
+  }
+  return "none";
 }
 
 function decideVariantCount(
@@ -243,6 +262,11 @@ function cleanPlanSource(value: unknown): AgentGenerationPlanSource {
     value === "llm-planner"
   ) return value;
   return "auto-default";
+}
+
+function cleanSourceImagePolicy(value: unknown): AgentSourceImagePolicy | null {
+  if (value === "auto" || value === "none" || value === "current") return value;
+  return null;
 }
 
 export function cleanVideoParams(value: unknown): AgentVideoParams | null {

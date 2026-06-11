@@ -19,7 +19,7 @@ import {
   getAgentSession,
   importAgentImage,
 } from "./agentStore.js";
-import type { AgentToolCallSummary } from "./agentTypes.js";
+import type { AgentSourceImagePolicy, AgentToolCallSummary } from "./agentTypes.js";
 import { errInfo } from "./errInfo.js";
 import { type RuntimeContext } from "./runtimeContext.js";
 import { type AgentRunOptions, forceImagePrompt, isTextOnlyResult, textOnlyError, notFound } from "./agentRuntime.js";
@@ -94,7 +94,7 @@ async function generateAgentImage(
         size: providerOptions.size,
         requestId,
         signal: options.signal ?? undefined,
-        references: await loadAgentCurrentImageReferences(ctx, sessionId),
+        references: await loadAgentCurrentImageReferences(ctx, sessionId, options.sourceImagePolicy ?? "none"),
         plannerModel: grokPlannerModel,
       })
     : await generateViaResponses(
@@ -125,15 +125,27 @@ async function generateAgentImage(
   return { image, webSearchCalls: response.webSearchCalls || 0, text: responseText, provider: activeProvider };
 }
 
-async function loadAgentCurrentImageReferences(ctx: RuntimeContext, sessionId: string): Promise<GrokReferenceImage[]> {
+async function loadAgentCurrentImageReferences(
+  ctx: RuntimeContext,
+  sessionId: string,
+  policy: AgentSourceImagePolicy,
+): Promise<GrokReferenceImage[]> {
+  if (policy === "none") {
+    logEvent("agent", "grok_ref_policy", { sessionId, policy, attached: false });
+    return [];
+  }
   const session = getAgentSession(sessionId);
   const currentImage = session?.lastImageId
     ? getAgentImages(sessionId).find((image) => image.id === session.lastImageId)
     : null;
-  if (!currentImage?.filename) return [];
+  if (!currentImage?.filename) {
+    logEvent("agent", "grok_ref_policy", { sessionId, policy, attached: false });
+    return [];
+  }
   try {
     const b64 = (await readFile(join(ctx.config.storage.generatedDir, currentImage.filename))).toString("base64");
     const mime = detectImageMimeFromB64(b64);
+    logEvent("agent", "grok_ref_policy", { sessionId, policy, attached: true, filename: currentImage.filename });
     return [{ b64, declaredMime: mime, detectedMime: mime }];
   } catch (error) {
     const err = errInfo(error);

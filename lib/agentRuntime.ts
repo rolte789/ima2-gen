@@ -13,6 +13,7 @@ import {
   AGENT_ALLOWED_TOOLS,
   type AgentGenerationErrorRecord,
   type AgentGenerationPlan,
+  type AgentSourceImagePolicy,
   type AgentToolCallSummary,
   type AgentToolName,
   type AgentVideoParams,
@@ -35,6 +36,7 @@ export type AgentRunOptions = {
   parallelism?: number;
   signal?: AbortSignal | null;
   videoParams?: AgentVideoParams | null;
+  sourceImagePolicy?: AgentSourceImagePolicy | null;
 };
 
 export function assertAgentAllowedTools(tools: readonly string[]) {
@@ -72,6 +74,7 @@ export async function runAgentTurn(ctx: RuntimeContext, sessionId: string, promp
       reason: "Direct turn endpoint defaults to one image.",
       command: null,
       assistantText: null,
+      sourceImagePolicy: "none",
     },
     options,
     { appendUserTurn: true },
@@ -147,6 +150,7 @@ export async function runAgentGenerationPlan(
     const result = await runGeneratorWithRuntimeRecovery(ctx, sessionId, generationPrompt, manifest, webSearchEnabled, {
       ...options,
       requestId,
+      sourceImagePolicy: plan.sourceImagePolicy ?? "none",
     });
     const findingIds = recordSearchFindings(sessionId, generationPrompt, result.webSearchCalls, result.provider ?? "oauth");
     const finishedAt = Date.now();
@@ -201,7 +205,7 @@ export async function runAgentGenerationPlan(
   const assistantTurn = appendAgentTurn({
     sessionId,
     role: "assistant",
-    text: formatAgentAssistantText(plan, imageIds.length, responseTexts, preludeSent),
+    text: formatAgentAssistantText(plan, prompt, imageIds.length, responseTexts, preludeSent),
     imageIds,
     webFindingIds: findingIds,
     status: "complete",
@@ -269,6 +273,7 @@ function formatGenerationErrors(errors: readonly AgentGenerationErrorRecord[]): 
 
 function formatAgentAssistantText(
   plan: AgentGenerationPlan,
+  prompt: string,
   imageCount: number,
   responseTexts: readonly string[],
   omitPlannerText = false,
@@ -280,11 +285,10 @@ function formatAgentAssistantText(
   const modelText = responseTexts.join("\n\n").trim();
   const prose = [plannerText, modelText].filter(Boolean).join("\n\n");
   if (prose) return prose;
-  const countText = imageCount === 1 ? "Generated 1 image artifact." : `Generated ${imageCount} image artifacts.`;
-  const modeText = plan.mode === "fanout"
-    ? `Fanout used ${plan.plannedParallelism} concurrent tool call${plan.plannedParallelism === 1 ? "" : "s"}.`
-    : "Single-image plan completed.";
-  return `${countText} ${modeText} ${plan.reason}`.trim();
+  const languageProbe = [prompt, ...plan.prompts].find((item) => item.trim().length > 0) ?? "";
+  const isKorean = /[\uAC00-\uD7AF]/u.test(languageProbe);
+  if (isKorean) return imageCount === 1 ? "이미지 생성이 완료됐어요." : `이미지 ${imageCount}장을 생성했어요.`;
+  return imageCount === 1 ? "Done - I generated the image." : `Done - I generated ${imageCount} images.`;
 }
 
 async function runGeneratorWithRuntimeRecovery(

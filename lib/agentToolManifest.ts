@@ -43,6 +43,11 @@ export const AGENT_TOOL_MANIFEST: readonly AgentToolManifestEntry[] = [
         },
         plannedVariants: { type: "integer", minimum: 1, description: "Number of images to generate." },
         plannedParallelism: { type: "integer", minimum: 1, description: "Concurrent generation calls." },
+        sourceImagePolicy: {
+          type: "string",
+          enum: ["auto", "none", "current"],
+          description: "none creates a fresh image and ignores the current session image; current uses the current session image as edit/reference input; auto lets the runtime choose.",
+        },
       },
       required: ["prompts"],
       additionalProperties: false,
