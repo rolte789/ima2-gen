@@ -81,21 +81,28 @@
 
 .agent-run__header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
 }
 
-.agent-run__tools {
-  display: grid;
-  gap: 6px;
+.agent-run__header > .agent-message__role {
+  flex: 0 0 auto;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
 }
 
-.agent-run__tools .agent-message--tool {
+.agent-run__header-tool {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.agent-run__header-tool .agent-message--tool {
   max-width: none;
 }
 
-.agent-run__tools .agent-message__tool-toggle {
+.agent-run__header-tool .agent-message__tool-toggle {
   background: color-mix(in srgb, var(--surface-2) 52%, transparent);
 }
 

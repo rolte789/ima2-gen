@@ -150,7 +150,7 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(list, /<AgentRunGroup/);
     assert.match(runGroup, /agent-message--assistant-run/);
     assert.match(runGroup, /aria-busy={isStreaming \? "true" : undefined}/);
-    assert.match(runGroup, /agent-run__tools/);
+    assert.match(runGroup, /agent-run__header-tool/);
     assert.match(runGroup, /<AgentToolGroup/);
     assert.match(runGroup, /agent-run__steps/);
     assert.match(runGroup, /agent-run__step/);
@@ -158,7 +158,7 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(message, /agent-message__stream-progress/);
     assert.match(panelCss, /\.agent-message\.is-streaming/);
     assert.match(panelCss, /\.agent-message--assistant-run/);
-    assert.match(panelCss, /\.agent-run__tools/);
+    assert.match(panelCss, /\.agent-run__header-tool/);
     assert.match(panelCss, /\.agent-run__steps/);
     assert.match(panelCss, /\.agent-run__step\.is-streaming \.agent-run__step-marker/);
     assert.match(panelCss, /\.agent-message__stream-progress/);
@@ -186,7 +186,9 @@ describe("Agent Mode frontend shell contract", () => {
     const messageList = readSource("ui/src/components/agent/AgentMessageList.tsx");
     assert.match(messageList, /kind: "run"/);
     assert.match(runGroup, /turn\.role === "tool"/);
+    assert.match(runGroup, /agent-run__header-tool/);
     assert.match(runGroup, /AgentToolGroup/);
+    assert.doesNotMatch(runGroup, /agent-run__tools/);
     assert.match(group, /useState\(false\)/);
     assert.match(group, /agent-message__tool-toggle/);
     assert.match(group, /agent-message__tool-summary-line/);
@@ -200,6 +202,7 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(row, /AgentToolCallDetails/);
     assert.match(icons, /ChevronRightIcon/);
     assert.match(icons, /ChevronDownIcon/);
+    assert.match(panelCss, /\.agent-run__header-tool/);
     assert.match(panelCss, /\.agent-message__tool-toggle/);
     assert.match(panelCss, /\.agent-message__tool-summary-line/);
     assert.match(panelCss, /\.agent-message__tool-details\[hidden\]/);

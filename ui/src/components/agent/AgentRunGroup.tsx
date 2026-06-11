@@ -27,12 +27,12 @@ export function AgentRunGroup({ turns, imagesById, currentImageId, onImageSelect
     <article className={`agent-message agent-message--assistant-run${stateClass}`} aria-busy={isStreaming ? "true" : undefined}>
       <div className="agent-run__header">
         <div className="agent-message__role">{roleLabel}</div>
+        {toolTurns.length > 0 ? (
+          <div className="agent-run__header-tool">
+            <AgentToolGroup turns={toolTurns} imagesById={imagesById} currentImageId={currentImageId} onImageSelect={onImageSelect} />
+          </div>
+        ) : null}
       </div>
-      {toolTurns.length > 0 ? (
-        <div className="agent-run__tools">
-          <AgentToolGroup turns={toolTurns} imagesById={imagesById} currentImageId={currentImageId} onImageSelect={onImageSelect} />
-        </div>
-      ) : null}
       {assistantTurns.length > 0 ? (
         <ol className="agent-run__steps" aria-label={roleLabel}>
           {assistantTurns.map((turn) => {
