@@ -222,7 +222,7 @@ describe("Agent Mode runtime contract", () => {
         body: JSON.stringify({
           prompt: "make a Grok agent poster",
           provider: "grok",
-          model: "grok-imagine-image",
+          model: "grok-4.3",
           quality: "high",
           webSearchEnabled: false,
         }),
@@ -239,6 +239,7 @@ describe("Agent Mode runtime contract", () => {
       assert.equal(calls.filter((call) => call.url.endsWith("/v1/chat/completions")).length, 1);
       assert.equal(calls.filter((call) => call.url.endsWith("/v1/images/generations")).length, 1);
       assert.equal(calls.find((call) => call.url.endsWith("/v1/images/generations"))?.body.model, "grok-imagine-image-quality");
+      assert.equal(calls.find((call) => call.url.endsWith("/v1/images/generations"))?.body.model === "grok-4.3", false);
       assert.match(calls.find((call) => call.url.endsWith("/v1/chat/completions"))?.body.messages[1].content[0].text, /English only/);
     });
   });

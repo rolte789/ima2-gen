@@ -145,6 +145,12 @@ describe("Agent Mode LLM planner contract", () => {
     assert.equal(calls.length, 1);
     assert.ok(calls[0].url.endsWith("/v1/responses"));
     assert.equal(calls[0].body.model, DEFAULT_AGENT_GENERATION_SETTINGS.model);
+    const developerPrompt = (calls[0].body.input as Array<{ content: string }>)[0].content;
+    assert.match(developerPrompt, /Tool execution contract:/);
+    assert.match(developerPrompt, /session model is the planner\/LLM model, not an image or video model/);
+    assert.match(developerPrompt, /grok-4\.3 means Grok planner\/provider routing/);
+    assert.match(developerPrompt, /ima2\.generate_image/);
+    assert.match(developerPrompt, /ima2\.get_generation_errors/);
   });
 
   it("plans through grok chat completions for grok sessions including video params", async () => {
@@ -170,6 +176,7 @@ describe("Agent Mode LLM planner contract", () => {
     assert.deepEqual(plan.videoParams, { duration: 10, resolution: "720p", aspectRatio: "16:9" });
     assert.equal(calls.length, 1);
     assert.ok(calls[0].url.endsWith("/v1/chat/completions"));
+    assert.match((calls[0].body.messages as Array<{ content: string }>)[0].content, /Tool execution contract:/);
   });
 
   it("returns null for agy sessions, upstream failures, and unparseable output", async () => {
