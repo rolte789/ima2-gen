@@ -1,4 +1,4 @@
-import { useMemo, useId, useState } from "react";
+import { useEffect, useMemo, useId, useState } from "react";
 import { useI18n } from "../../i18n";
 import { getAgentToolCalls } from "../../lib/agentToolFormatting";
 import { ChevronDownIcon, ChevronRightIcon } from "./AgentIcons";
@@ -44,8 +44,23 @@ export function AgentToolGroup({ turns, imagesById, currentImageId, onImageSelec
   const { t } = useI18n();
   const detailsId = useId();
   const [expanded, setExpanded] = useState(false);
+  const [userCollapsed, setUserCollapsed] = useState(false);
   const { toolCalls, imageIds, isStreaming, label } = useMemo(() => mergeTurns(turns), [turns]);
   const actionLabel = expanded ? t("agent.toolCollapse") : t("agent.toolExpand");
+
+  useEffect(() => {
+    // Surface live tool execution without a click; respect an explicit
+    // collapse by the user for the rest of the run.
+    if (isStreaming && !userCollapsed) setExpanded(true);
+  }, [isStreaming, userCollapsed]);
+
+  const toggleExpanded = () => {
+    setExpanded((next) => {
+      const value = !next;
+      if (!value && isStreaming) setUserCollapsed(true);
+      return value;
+    });
+  };
 
   return (
     <article className={`agent-message agent-message--tool is-collapsible${isStreaming ? " is-streaming" : ""}`} aria-busy={isStreaming ? "true" : undefined}>
@@ -56,7 +71,7 @@ export function AgentToolGroup({ turns, imagesById, currentImageId, onImageSelec
           aria-expanded={expanded}
           aria-controls={detailsId}
           aria-label={`${actionLabel}: ${label}`}
-          onClick={() => setExpanded((next) => !next)}
+          onClick={toggleExpanded}
         >
           <span className="agent-message__tool-header">
             <span className="agent-message__tool-dot" aria-hidden="true" />

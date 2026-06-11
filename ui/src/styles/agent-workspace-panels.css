@@ -97,6 +97,15 @@
   background: color-mix(in srgb, var(--green) 9%, var(--surface));
 }
 
+.agent-message.is-error {
+  border-color: color-mix(in srgb, var(--red) 48%, var(--border));
+  background: color-mix(in srgb, var(--red) 8%, var(--surface));
+}
+
+.agent-message.is-error .agent-message__role {
+  color: var(--red);
+}
+
 .agent-message__role {
   color: var(--text-dim);
   font-size: 11px;

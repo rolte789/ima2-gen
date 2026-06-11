@@ -246,6 +246,23 @@ export function AgentWorkspace() {
     ? (workspace.imageIdsBySession[selectedSessionId] ?? []).map((imageId) => workspace.imagesById[imageId]).filter((image): image is AgentImageHandle => !!image)
     : [];
   const turns = selectedSession ? workspace.turnsBySession[selectedSession.id] ?? [] : [];
+  // Rewrite the pending bubble copy at render time so the user sees where the
+  // run actually is (queued → planning → running tools) instead of a static
+  // "Generating response..." for the whole turn.
+  const pendingStageText = (() => {
+    const pendingTurns = turns.filter(isLocalPendingTurn);
+    if (pendingTurns.length === 0) return null;
+    const summary = selectedSessionId ? workspace.runSummaryBySession[selectedSessionId] : undefined;
+    if (summary?.status === "queued") return t("agent.pendingQueued");
+    if (summary?.status !== "running") return null;
+    const oldestPendingAt = Math.min(...pendingTurns.map((turn) => turn.createdAt ?? 0));
+    const toolStarted = turns.some((turn) =>
+      !isLocalTurn(turn) && turn.role === "tool" && (turn.createdAt ?? 0) >= oldestPendingAt);
+    return toolStarted ? t("agent.pendingGenerating") : t("agent.pendingPlanning");
+  })();
+  const displayTurns = pendingStageText
+    ? turns.map((turn) => (isLocalPendingTurn(turn) ? { ...turn, text: pendingStageText } : turn))
+    : turns;
   const queueItems = selectedSessionId ? workspace.queueBySession[selectedSessionId] ?? [] : [];
   const selectedRunSummary = selectedSessionId ? workspace.runSummaryBySession[selectedSessionId] : undefined;
   const selectedSettings = withAgentGenerationDefaults(selectedSession?.generationSettings);
@@ -307,9 +324,11 @@ export function AgentWorkspace() {
   useEffect(() => {
     if (!selectedSessionId) return;
     if (selectedRunSummary?.status !== "queued" && selectedRunSummary?.status !== "running") return;
+    // 600ms keeps tool turns and stage copy feeling live without SSE; the
+    // workspace payload is small enough that this stays cheap locally.
     const timer = window.setInterval(() => {
       void refreshWorkspace(selectedSessionId).catch(console.error);
-    }, 1_500);
+    }, 600);
     return () => window.clearInterval(timer);
   }, [
     refreshWorkspace,
@@ -434,7 +453,7 @@ export function AgentWorkspace() {
         ) : null}
         <AgentChatPane
           session={selectedSession}
-          turns={turns}
+          turns={displayTurns}
           imagesById={workspace.imagesById}
           currentImageId={workspace.currentImageId}
           runtimeStatus={derivedRuntimeStatus}
