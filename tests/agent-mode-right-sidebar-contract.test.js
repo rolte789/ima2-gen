@@ -17,8 +17,11 @@ describe("Agent Mode right sidebar contract", () => {
     const tabs = readSource("ui/src/components/agent/AgentSidebarTabs.tsx");
     const serverSettings = readSource("lib/agentSettings.ts");
     const uiSettings = readSource("ui/src/lib/agentGenerationSettings.ts");
+    const shellSidebar = readSource("ui/src/components/Sidebar.tsx");
+    const sessionSidebar = readSource("ui/src/components/agent/AgentSessionSidebar.tsx");
     const quality = readSource("ui/src/components/agent/AgentQualityPanel.tsx");
     const model = readSource("ui/src/components/agent/AgentModelSelector.tsx");
+    const globalModel = readSource("ui/src/components/ImageModelSelect.tsx");
     const promptLibrary = readSource("ui/src/components/agent/AgentPromptLibraryPanel.tsx");
     const css = readSource("ui/src/styles/agent-workspace-sidebar.css");
     const ko = readSource("ui/src/i18n/ko.json");
@@ -26,7 +29,12 @@ describe("Agent Mode right sidebar contract", () => {
 
     assert.match(workspace, /AgentRightSidebar/);
     assert.match(workspace, /settings={selectedSettings}/);
+    assert.match(workspace, /<AgentSessionSidebar[\s\S]*?settings={selectedSettings}[\s\S]*?onSettingsChange={updateGenerationSettings}/);
     assert.match(workspace, /onSettingsChange={updateGenerationSettings}/);
+    assert.match(sessionSidebar, /settings: AgentGenerationSettings/);
+    assert.match(sessionSidebar, /<SidebarChrome agentSettings={props\.settings} onAgentSettingsChange={props\.onSettingsChange} \/>/);
+    assert.match(shellSidebar, /agentSettings\?: AgentGenerationSettings/);
+    assert.match(shellSidebar, /<ImageModelSelect variant="sidebar" agentSettings={agentSettings} onAgentSettingsChange={onAgentSettingsChange} \/>/);
     assert.match(chat, /AgentModelSelector/);
     assert.doesNotMatch(workspace, /AgentModelSheet/);
     assert.doesNotMatch(workspace, /setModelSheetOpen/);
@@ -49,6 +57,10 @@ describe("Agent Mode right sidebar contract", () => {
     assert.match(model, /reasoningEffort/);
     assert.match(model, /provider: option\.provider/);
     assert.match(model, /role="menuitemradio"/);
+    assert.match(globalModel, /agentMode = variant === "sidebar"/);
+    assert.match(globalModel, /AGENT_LLM_MODEL_OPTIONS/);
+    assert.match(globalModel, /onAgentSettingsChange\(\{ model: option\.value, provider: option\.provider \}\)/);
+    assert.match(globalModel, /onAgentSettingsChange\(\{ reasoningEffort: option\.value as AgentGenerationSettings\["reasoningEffort"\] \}\)/);
     assert.match(serverSettings, /reasoningEffort: "none"/);
     assert.match(uiSettings, /reasoningEffort: "none"/);
     assert.match(promptLibrary, /agent:form/);
@@ -79,6 +91,7 @@ describe("Agent Mode right sidebar contract", () => {
 
   it("keeps Agent model dropdown scoped to LLM model and reasoning", () => {
     const model = readSource("ui/src/components/agent/AgentModelSelector.tsx");
+    const globalModel = readSource("ui/src/components/ImageModelSelect.tsx");
     const agentGen = readSource("lib/agentImageVideoGen.ts");
     const grokAdapter = readSource("lib/grokImageAdapter.ts");
     const grokVideo = readSource("lib/grokVideoAdapter.ts");
@@ -88,6 +101,8 @@ describe("Agent Mode right sidebar contract", () => {
     assert.match(types, /provider: "oauth" \| "api" \| "grok"/);
     const options = readSource("ui/src/lib/agentModelOptions.ts");
     assert.match(model, /AGENT_LLM_MODEL_OPTIONS/);
+    assert.match(globalModel, /AGENT_LLM_MODEL_OPTIONS\.map/);
+    assert.match(globalModel, /currentAgentModel/);
     assert.match(options, /value: "gpt-5\.4-mini"[\s\S]*?shortLabel: "5\.4m"[\s\S]*?provider: "oauth"/);
     assert.match(options, /value: "gpt-5\.5"[\s\S]*?shortLabel: "5\.5"[\s\S]*?provider: "oauth"/);
     assert.match(options, /value: "gpt-5\.4"[\s\S]*?shortLabel: "5\.4"[\s\S]*?provider: "oauth"/);

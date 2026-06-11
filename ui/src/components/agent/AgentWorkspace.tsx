@@ -422,10 +422,12 @@ export function AgentWorkspace() {
         selectedId={selectedSessionId ?? ""}
         imagesById={workspace.imagesById}
         runSummaryBySession={workspace.runSummaryBySession}
+        settings={selectedSettings}
         onCreate={createSession}
         onSelect={selectSession}
         onRename={renameSession}
         onDelete={deleteSession}
+        onSettingsChange={updateGenerationSettings}
       />
       {showAgentTopBar ? (
         <AgentTopBar

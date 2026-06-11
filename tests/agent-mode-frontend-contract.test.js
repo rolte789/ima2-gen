@@ -50,6 +50,8 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(workspace, /AgentRightSidebar/);
     assert.match(shellSidebar, /<SidebarChrome \/>/);
     assert.match(sessionSidebar, /SidebarChrome/);
+    assert.match(sessionSidebar, /agentSettings={props\.settings}/);
+    assert.match(sessionSidebar, /onAgentSettingsChange={props\.onSettingsChange}/);
     assert.match(sessionSidebar, /agent-sessions/);
     assert.doesNotMatch(sessionSidebar, /UIModeSwitch/);
     assert.doesNotMatch(sessionSidebar, /ima2-gen/);

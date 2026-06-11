@@ -3,17 +3,19 @@ import { useI18n } from "../../i18n";
 import { SidebarChrome } from "../Sidebar";
 import { PlusIcon, SearchIcon } from "./AgentIcons";
 import { AgentSessionList } from "./AgentSessionList";
-import type { AgentImageHandle, AgentSessionRunSummary, AgentSessionSummary } from "./agentTypes";
+import type { AgentGenerationSettings, AgentImageHandle, AgentSessionRunSummary, AgentSessionSummary } from "./agentTypes";
 
 type Props = {
   sessions: AgentSessionSummary[];
   selectedId: string;
   imagesById: Record<string, AgentImageHandle>;
   runSummaryBySession?: Record<string, AgentSessionRunSummary>;
+  settings: AgentGenerationSettings;
   onCreate: () => void;
   onSelect: (id: string) => void;
   onRename: (id: string) => void;
   onDelete: (id: string) => void;
+  onSettingsChange: (patch: Partial<AgentGenerationSettings>) => void;
 };
 
 export function AgentSessionSidebar(props: Props) {
@@ -28,7 +30,7 @@ export function AgentSessionSidebar(props: Props) {
   return (
     <aside className="sidebar agent-session-sidebar" aria-label={t("agent.sessions")}>
       <div className="sidebar__scroll">
-        <SidebarChrome />
+        <SidebarChrome agentSettings={props.settings} onAgentSettingsChange={props.onSettingsChange} />
         <section className="agent-sessions" aria-label={t("agent.sessions")}>
           <button type="button" className="agent-sessions__create" onClick={props.onCreate}>
             <PlusIcon size={16} />
