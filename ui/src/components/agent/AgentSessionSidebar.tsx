@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useI18n } from "../../i18n";
-import { UIModeSwitch } from "../UIModeSwitch";
 import { PlusIcon, SearchIcon } from "./AgentIcons";
 import { AgentSessionList } from "./AgentSessionList";
 import type { AgentImageHandle, AgentSessionRunSummary, AgentSessionSummary } from "./agentTypes";
@@ -27,13 +26,6 @@ export function AgentSessionSidebar(props: Props) {
 
   return (
     <aside className="agent-sessions" aria-label={t("agent.sessions")}>
-      <div className="agent-sessions__brand">
-        <div>
-          <span>ima2-gen</span>
-          <strong>{t("agent.title")}</strong>
-        </div>
-        <UIModeSwitch />
-      </div>
       <button type="button" className="agent-sessions__create" onClick={props.onCreate}>
         <PlusIcon size={16} />
         <span>{t("agent.newSession")}</span>

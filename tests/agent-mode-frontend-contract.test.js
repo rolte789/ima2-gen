@@ -36,7 +36,9 @@ describe("Agent Mode frontend shell contract", () => {
 
   it("mounts a lazy Agent workspace instead of Classic or Node surfaces", () => {
     const app = readSource("ui/src/App.tsx");
+    const shellSidebar = readSource("ui/src/components/Sidebar.tsx");
     const workspace = readSource("ui/src/components/agent/AgentWorkspace.tsx");
+    const sessionSidebar = readSource("ui/src/components/agent/AgentSessionSidebar.tsx");
     const css = readSource("ui/src/styles/agent-workspace.css");
 
     assert.match(app, /LazyAgentWorkspace/);
@@ -46,8 +48,13 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(workspace, /AgentSessionSidebar/);
     assert.match(workspace, /AgentChatPane/);
     assert.match(workspace, /AgentRightSidebar/);
+    assert.match(shellSidebar, /<UIModeSwitch \/>/);
+    assert.doesNotMatch(sessionSidebar, /UIModeSwitch/);
+    assert.doesNotMatch(sessionSidebar, /ima2-gen/);
     assert.match(css, /\.app\[data-ui-mode="agent"\]/);
-    assert.match(css, /\.app\[data-ui-mode="agent"\] \.sidebar/);
+    assert.match(css, /grid-template-columns: 260px minmax\(0, 1fr\)/);
+    assert.doesNotMatch(css, /\.app\[data-ui-mode="agent"\] \.sidebar\s*\{\s*display: none;/);
+    assert.match(css, /\.app\[data-ui-mode="agent"\]\[data-mobile="1"\] \.sidebar/);
   });
 
   it("implements the planned responsive Agent regions and mobile overlays", () => {

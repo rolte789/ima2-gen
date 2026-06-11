@@ -1,5 +1,4 @@
 import { useI18n } from "../../i18n";
-import { UIModeSwitch } from "../UIModeSwitch";
 import { ImageIcon, MenuIcon } from "./AgentIcons";
 import { AgentSafeImage } from "./AgentSafeImage";
 import type { AgentImageHandle, AgentLayoutMode, AgentSessionSummary } from "./agentTypes";
@@ -25,7 +24,6 @@ export function AgentTopBar({ layoutMode, session, currentImage, onOpenSessions,
         <span>{t("agent.title")}</span>
         <strong>{session?.title ?? t("agent.newSession")}</strong>
       </div>
-      <UIModeSwitch />
       {mobile ? (
         <button type="button" className="agent-topbar__image" onClick={onOpenImage} aria-label={t("agent.openImage")} title={t("agent.openImage")}>
           {currentImage ? <AgentSafeImage src={currentImage.thumbUrl ?? currentImage.url} alt="" iconSize={18} /> : <ImageIcon size={18} />}

@@ -22,7 +22,15 @@ describe("Agent Mode layout contract", () => {
     assert.match(layout, /tablet-stacked/);
     assert.match(layout, /mobile-chat-image-sheet/);
     assert.match(hook, /resolveAgentLayout\(/);
+    assert.match(hook, /getAgentWorkspaceWidth/);
+    assert.match(hook, /querySelector<HTMLElement>/);
+    assert.match(hook, /\.app\[data-ui-mode=/);
+    assert.match(hook, /\.sidebar/);
+    assert.match(hook, /window\.innerWidth - width/);
     assert.match(workspace, /useAgentWorkspaceLayout/);
+    assert.match(css, /grid-template-columns: 260px minmax\(0, 1fr\)/);
+    assert.match(css, /\.agent-workspace\s*\{[\s\S]*?grid-column: 2;/);
+    assert.match(css, /\.app\[data-ui-mode="agent"\]\[data-mobile="1"\] \.agent-workspace\s*\{[\s\S]*?grid-column: 1;/);
     assert.match(css, /grid-template-columns: 280px minmax\(420px, 0\.95fr\) minmax\(520px, 1\.05fr\)/);
     assert.match(css, /grid-template-columns: 64px minmax\(420px, 1fr\) minmax\(440px, 1fr\)/);
   });
@@ -34,6 +42,8 @@ describe("Agent Mode layout contract", () => {
 
     assert.doesNotMatch(topbar, /AgentPaneToggle/);
     assert.doesNotMatch(sidebar, /AgentPaneToggle/);
+    assert.doesNotMatch(topbar, /UIModeSwitch/);
+    assert.doesNotMatch(sidebar, /UIModeSwitch/);
     assert.doesNotMatch(topbar, /onToggleSidebar/);
     assert.doesNotMatch(sidebar, /onCollapse/);
     assert.doesNotMatch(css, /agent-workspace--collapsed/);
