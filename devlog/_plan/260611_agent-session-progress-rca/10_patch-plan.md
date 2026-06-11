@@ -99,16 +99,20 @@ Rationale: `AgentWorkspace.tsx` is exactly 500 lines, so any non-trivial patch n
 
 Add optional synthetic styling:
 
-```ts
-const itemClass = [
+```tsx
+const stepClassName = [
+  "agent-run__step",
   turn.status === "streaming" ? "is-streaming" : "",
+  turn.status === "error" ? "is-error" : "",
   turn.id.startsWith("agent-synthetic-progress-") ? "is-synthetic" : "",
 ].filter(Boolean).join(" ");
+
+return <li key={turn.id} className={stepClassName}>...</li>;
 ```
 
 Keep rendering as an assistant run block. Do not create a second card.
 
-Alternative: avoid changing `AgentRunGroup` if synthetic turns can be styled through existing `status:"streaming"` only. If the patch uses `is-synthetic`, the marker must be derived from the stable `agent-synthetic-progress-` id prefix and tested.
+Alternative: avoid changing `AgentRunGroup` if synthetic turns can be styled through existing `status:"streaming"` only. If the patch uses `is-synthetic`, the marker must be derived from the stable `agent-synthetic-progress-` id prefix and tested. Do not keep the current leading-space `itemClass` convention if adding multiple conditional tokens; switch the whole `li` class to array + `join(" ")` so `.agent-run__step.is-synthetic` selectors match.
 
 ### MODIFY `ui/src/styles/agent-workspace-panels.css`
 
@@ -131,7 +135,7 @@ Add contract assertions:
 - `AgentRunGroup` recognizes synthetic progress turns.
 - `AgentWorkspace.tsx` imports local turn helpers from `agentLocalTurns.ts` instead of keeping them inline.
 
-### NEW `tests/agent-mode-run-progress-contract.test.js`
+### NEW `tests/agent-mode-run-progress-contract.test.ts`
 
 Executable behavior tests for pure helper. These must import and run `deriveAgentRunProgress()`, not only grep source strings.
 
