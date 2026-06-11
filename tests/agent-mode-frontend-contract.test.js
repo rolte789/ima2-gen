@@ -48,13 +48,16 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(workspace, /AgentSessionSidebar/);
     assert.match(workspace, /AgentChatPane/);
     assert.match(workspace, /AgentRightSidebar/);
-    assert.match(shellSidebar, /<UIModeSwitch \/>/);
+    assert.match(shellSidebar, /<SidebarChrome \/>/);
+    assert.match(sessionSidebar, /SidebarChrome/);
+    assert.match(sessionSidebar, /agent-sessions/);
     assert.doesNotMatch(sessionSidebar, /UIModeSwitch/);
     assert.doesNotMatch(sessionSidebar, /ima2-gen/);
     assert.match(css, /\.app\[data-ui-mode="agent"\]/);
     assert.match(css, /grid-template-columns: 260px minmax\(0, 1fr\)/);
-    assert.doesNotMatch(css, /\.app\[data-ui-mode="agent"\] \.sidebar\s*\{\s*display: none;/);
-    assert.match(css, /\.app\[data-ui-mode="agent"\]\[data-mobile="1"\] \.sidebar/);
+    assert.match(css, /\.app\[data-ui-mode="agent"\] > \.sidebar\s*\{\s*display: none;/);
+    assert.match(css, /\.agent-session-sidebar/);
+    assert.match(css, /\.agent-session-sidebar \.agent-sessions/);
   });
 
   it("implements the planned responsive Agent regions and mobile overlays", () => {
@@ -78,8 +81,8 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(layout, /width >= 960 && height >= 560/);
     assert.match(layout, /width >= 768 && height >= 700/);
     assert.match(layoutHook, /getWindowHeight/);
-    assert.match(css, /280px minmax\(420px, 0\.95fr\) minmax\(520px, 1\.05fr\)/);
-    assert.match(css, /64px minmax\(420px, 1fr\) minmax\(440px, 1fr\)/);
+    assert.match(css, /grid-template-columns: minmax\(420px, 0\.95fr\) minmax\(520px, 1\.05fr\)/);
+    assert.match(css, /grid-template-columns: minmax\(420px, 1fr\) minmax\(440px, 1fr\)/);
     assert.match(css, /minmax\(280px, min\(46dvh, 420px\)\) minmax\(0, 1fr\)/);
     assert.match(css, /grid-template-areas: "image" "chat"/);
     assert.match(drawer, /role="dialog"/);

@@ -1,19 +1,24 @@
 .app[data-ui-mode="agent"],
 .app[data-ui-mode="agent"].app--history-horizontal,
 .app[data-ui-mode="agent"].app--history-sidebar {
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   height: 100dvh;
   overflow: hidden;
 }
 
+.app[data-ui-mode="agent"] > .sidebar {
+  display: none;
+}
+
 .agent-workspace {
-  grid-column: 2;
+  grid-column: 1;
   grid-row: 1;
   min-width: 0;
   min-height: 0;
   height: 100dvh;
   display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   background: var(--bg);
   color: var(--text);
@@ -24,28 +29,35 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-.app[data-ui-mode="agent"][data-mobile="1"] .sidebar {
+.app[data-ui-mode="agent"][data-mobile="1"] .agent-session-sidebar {
   display: none;
 }
 
 .app[data-ui-mode="agent"][data-mobile="1"] .agent-workspace {
-  grid-column: 1;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .agent-workspace:not(.agent-workspace--desktop-three-pane) {
   grid-template-rows: auto minmax(0, 1fr);
 }
 
+.agent-session-sidebar {
+  grid-column: 1;
+  grid-row: 1 / -1;
+}
+
 .agent-workspace__body {
+  grid-column: 2;
+  grid-row: 1;
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-columns: 280px minmax(420px, 0.95fr) minmax(520px, 1.05fr);
+  grid-template-columns: minmax(420px, 0.95fr) minmax(520px, 1.05fr);
   overflow: hidden;
 }
 
 .agent-workspace--desktop-rail .agent-workspace__body {
-  grid-template-columns: 64px minmax(420px, 1fr) minmax(440px, 1fr);
+  grid-template-columns: minmax(420px, 1fr) minmax(440px, 1fr);
 }
 
 .agent-workspace--tablet-stacked .agent-workspace__body {
@@ -55,11 +67,15 @@
 }
 
 .agent-workspace--mobile-chat-image-sheet .agent-workspace__body {
+  grid-column: 1;
+  grid-row: 2;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
 }
 
 .agent-topbar {
+  grid-column: 1;
+  grid-row: 1;
   min-width: 0;
   min-height: 56px;
   display: grid;
@@ -145,6 +161,12 @@
   gap: 12px;
   padding: 14px;
   border-right: 1px solid var(--border);
+}
+
+.agent-session-sidebar .agent-sessions {
+  flex: 1 1 auto;
+  padding: 0;
+  border-right: 0;
 }
 
 .agent-sessions__create {

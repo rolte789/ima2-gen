@@ -13,11 +13,11 @@ import { withAgentGenerationDefaults } from "../../lib/agentGenerationSettings";
 import { useAppStore } from "../../store/useAppStore";
 import type { GenerateItem } from "../../types";
 import { useAgentWorkspaceLayout } from "../../hooks/useAgentWorkspaceLayout";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import { AgentChatPane } from "./AgentChatPane";
 import { AgentImageSheet } from "./AgentImageSheet";
 import { AgentRightSidebar } from "./AgentRightSidebar";
 import { AgentSessionDrawer } from "./AgentSessionDrawer";
-import { AgentSessionRail } from "./AgentSessionRail";
 import { AgentSessionSidebar } from "./AgentSessionSidebar";
 import { AgentTopBar } from "./AgentTopBar";
 import { attachAgentImageFiles } from "./agentAttachFiles";
@@ -170,6 +170,7 @@ function mergeWorkspaceWithLocalTurns(
 export function AgentWorkspace() {
   const { t } = useI18n();
   const layoutMode = useAgentWorkspaceLayout();
+  const isMobile = useIsMobile();
   const currentGeneratedImage = useAppStore((s) => s.currentImage);
   const importLocalImageToHistory = useAppStore((s) => s.importLocalImageToHistory);
   const addHistoryItem = useAppStore((s) => s.addHistoryItem);
@@ -272,9 +273,8 @@ export function AgentWorkspace() {
       : pendingTurnsRef.current > 0 || selectedRunSummary?.status === "queued" || selectedRunSummary?.status === "running"
         ? "generating"
         : "ready";
-  const showRail = layoutMode === "desktop-rail";
-  const showSidebar = layoutMode === "desktop-three-pane";
   const showRightSidebar = layoutMode !== "mobile-chat-image-sheet";
+  const showAgentTopBar = isMobile && layoutMode !== "desktop-three-pane";
 
   useEffect(() => {
     // Mirror freshly generated agent results into the main history store so
@@ -417,7 +417,17 @@ export function AgentWorkspace() {
 
   return (
     <main className={`agent-workspace agent-workspace--${layoutMode}`} data-layout={layoutMode} aria-label={t("agent.workspace")}>
-      {!showSidebar ? (
+      <AgentSessionSidebar
+        sessions={workspace.sessions}
+        selectedId={selectedSessionId ?? ""}
+        imagesById={workspace.imagesById}
+        runSummaryBySession={workspace.runSummaryBySession}
+        onCreate={createSession}
+        onSelect={selectSession}
+        onRename={renameSession}
+        onDelete={deleteSession}
+      />
+      {showAgentTopBar ? (
         <AgentTopBar
           layoutMode={layoutMode}
           session={selectedSession}
@@ -427,29 +437,6 @@ export function AgentWorkspace() {
         />
       ) : null}
       <div className="agent-workspace__body">
-        {showSidebar ? (
-          <AgentSessionSidebar
-            sessions={workspace.sessions}
-            selectedId={selectedSessionId ?? ""}
-            imagesById={workspace.imagesById}
-            runSummaryBySession={workspace.runSummaryBySession}
-            onCreate={createSession}
-            onSelect={selectSession}
-            onRename={renameSession}
-            onDelete={deleteSession}
-          />
-        ) : null}
-        {showRail ? (
-          <AgentSessionRail
-            sessions={workspace.sessions}
-            selectedId={selectedSessionId ?? ""}
-            imagesById={workspace.imagesById}
-            runSummaryBySession={workspace.runSummaryBySession}
-            onCreate={createSession}
-            onSelect={selectSession}
-            onOpenDrawer={() => setDrawerOpen(true)}
-          />
-        ) : null}
         <AgentChatPane
           session={selectedSession}
           turns={displayTurns}

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useI18n } from "../../i18n";
+import { SidebarChrome } from "../Sidebar";
 import { PlusIcon, SearchIcon } from "./AgentIcons";
 import { AgentSessionList } from "./AgentSessionList";
 import type { AgentImageHandle, AgentSessionRunSummary, AgentSessionSummary } from "./agentTypes";
@@ -25,16 +26,21 @@ export function AgentSessionSidebar(props: Props) {
   }, [props.sessions, query]);
 
   return (
-    <aside className="agent-sessions" aria-label={t("agent.sessions")}>
-      <button type="button" className="agent-sessions__create" onClick={props.onCreate}>
-        <PlusIcon size={16} />
-        <span>{t("agent.newSession")}</span>
-      </button>
-      <label className="agent-sessions__search">
-        <SearchIcon size={15} />
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("agent.sessionSearch")} />
-      </label>
-      <AgentSessionList {...props} sessions={filtered} />
+    <aside className="sidebar agent-session-sidebar" aria-label={t("agent.sessions")}>
+      <div className="sidebar__scroll">
+        <SidebarChrome />
+        <section className="agent-sessions" aria-label={t("agent.sessions")}>
+          <button type="button" className="agent-sessions__create" onClick={props.onCreate}>
+            <PlusIcon size={16} />
+            <span>{t("agent.newSession")}</span>
+          </button>
+          <label className="agent-sessions__search">
+            <SearchIcon size={15} />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("agent.sessionSearch")} />
+          </label>
+          <AgentSessionList {...props} sessions={filtered} />
+        </section>
+      </div>
     </aside>
   );
 }

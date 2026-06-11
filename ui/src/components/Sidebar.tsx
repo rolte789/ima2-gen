@@ -34,19 +34,7 @@ export function SidebarStack() {
 
   return (
     <>
-      <div className="logo">
-        <div className="logo-mark" aria-hidden="true" />
-        <div className="logo-copy">
-          <div className="logo-title">ima2</div>
-          <div className="logo-title logo-title--gen">gen</div>
-        </div>
-        <div className="logo-actions">
-          <PromptLibraryButton />
-          <ImageModelSelect variant="sidebar" />
-          <SettingsButton />
-        </div>
-      </div>
-      <UIModeSwitch />
+      <SidebarChrome />
       {uiMode === "classic" ? (
         promptStudioDesktop ? (
           <>
@@ -82,6 +70,26 @@ export function SidebarStack() {
           <InFlightList />
         </>
       ) : null}
+    </>
+  );
+}
+
+export function SidebarChrome() {
+  return (
+    <>
+      <div className="logo">
+        <div className="logo-mark" aria-hidden="true" />
+        <div className="logo-copy">
+          <div className="logo-title">ima2</div>
+          <div className="logo-title logo-title--gen">gen</div>
+        </div>
+        <div className="logo-actions">
+          <PromptLibraryButton />
+          <ImageModelSelect variant="sidebar" />
+          <SettingsButton />
+        </div>
+      </div>
+      <UIModeSwitch />
     </>
   );
 }
