@@ -26,9 +26,23 @@ after(() => {
   rmSync(TEST_DIR, { recursive: true, force: true });
 });
 
-type TurnLike = { role: string; status?: string; text: string };
+type TurnLike = { role: string; status?: string; text: string; imageIds?: string[] };
+const TEST_PNG_B64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGOSHzRgAAAAABJRU5ErkJggg==";
 
-async function withApp(fn: (baseUrl: string) => Promise<void>) {
+function sseResponse(events: unknown[]) {
+  const encoder = new TextEncoder();
+  return new Response(new ReadableStream({
+    start(controller) {
+      for (const event of events) controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+      controller.close();
+    },
+  }), { status: 200, headers: { "Content-Type": "text/event-stream; charset=utf-8" } });
+}
+
+async function withApp(
+  fn: (baseUrl: string) => Promise<void>,
+  agentPlanner: { enabled: boolean; timeoutMs?: number } = { enabled: false },
+) {
   const app = express();
   app.use(express.json({ limit: "8mb" }));
   registerAgentRoutes(app, {
@@ -36,7 +50,7 @@ async function withApp(fn: (baseUrl: string) => Promise<void>) {
     config: {
       storage: { generatedDir: join(TEST_DIR, `generated-${Date.now()}`) },
       log: { level: "silent" },
-      agentPlanner: { enabled: false },
+      agentPlanner,
     },
     packageVersion: "test",
   });
@@ -110,6 +124,54 @@ describe("Agent Mode UX feedback contract", () => {
     assert.ok(plan);
     assert.equal(plan.mode, "question");
     assert.ok(plan.assistantText?.includes("영상 생성이 가능"));
+  });
+
+  it("shows the planner chat prelude before media tools finish", async () => {
+    globalThis.fetch = (async (url: RequestInfo | URL, init?: RequestInit) => {
+      const target = String(url);
+      if (target.includes("/api/agent/")) return originalFetch(url, init);
+      const body = JSON.parse(String(init?.body ?? "{}")) as {
+        input?: Array<{ role: string; content: string }>;
+      };
+      const firstPrompt = body.input?.[0]?.content ?? "";
+      if (firstPrompt.includes("generation planner")) {
+        return Response.json({
+          output_text: JSON.stringify({
+            mode: "single",
+            prompts: ["잔잔한 고양이 포스터"],
+            assistantText: "좋아요. 먼저 한 장으로 방향을 잡아볼게요.",
+            reason: "image request",
+          }),
+        });
+      }
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return sseResponse([
+        {
+          type: "response.output_item.done",
+          item: { type: "image_generation_call", result: TEST_PNG_B64, revised_prompt: "잔잔한 고양이 포스터" },
+        },
+        { type: "response.completed", response: { usage: { total_tokens: 3 } } },
+      ]);
+    }) as typeof fetch;
+    await withApp(async (baseUrl) => {
+      const sessionId = await createSession(baseUrl);
+      const res = await fetch(`${baseUrl}/api/agent/sessions/${sessionId}/queue`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: "잔잔한 고양이 포스터 만들어줘", provider: "api" }),
+      });
+      assert.equal(res.status, 202);
+      const prelude = await waitFor(async () => {
+        const turns = await turnsFor(baseUrl, sessionId);
+        return turns.find((turn) => turn.role === "assistant" && turn.text.includes("방향을 잡아볼게요"));
+      }, "planner prelude before generation completes", 700);
+      assert.equal(prelude.status, "complete");
+      const finalTurn = await waitFor(async () => {
+        const turns = await turnsFor(baseUrl, sessionId) as Array<TurnLike & { imageIds?: string[] }>;
+        return turns.find((turn) => turn.role === "assistant" && (turn.imageIds?.length ?? 0) > 0);
+      }, "final assistant turn with generated artifact");
+      assert.ok((finalTurn.imageIds?.length ?? 0) > 0);
+    }, { enabled: true, timeoutMs: 5_000 });
   });
 
   it("surfaces video-path queue failures as an assistant error turn in the chat", async () => {

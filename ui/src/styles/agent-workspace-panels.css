@@ -94,7 +94,10 @@
 
 .agent-message.is-streaming {
   border-color: color-mix(in srgb, var(--green) 48%, var(--border));
-  background: color-mix(in srgb, var(--green) 9%, var(--surface));
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--green) 13%, transparent), transparent 42%),
+    color-mix(in srgb, var(--green) 8%, var(--surface));
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--green) 70%, var(--border));
 }
 
 .agent-message.is-error {
@@ -133,6 +136,29 @@
   overflow-wrap: anywhere;
   font-size: 14px;
   line-height: 1.5;
+}
+
+.agent-message__stream-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-top: 2px;
+}
+
+.agent-message__stream-progress span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--green);
+  animation: agent-typing 1s ease-in-out infinite;
+}
+
+.agent-message__stream-progress span:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.agent-message__stream-progress span:nth-child(3) {
+  animation-delay: 0.28s;
 }
 
 .agent-message__tool-toggle {
@@ -269,6 +295,20 @@
   }
 }
 
+@keyframes agent-typing {
+  0%,
+  70%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+
+  35% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
 .agent-message__images {
   display: flex;
   gap: 8px;
@@ -282,3 +322,10 @@
   color: var(--text-faint);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .agent-status__dot,
+  .agent-message.is-streaming .agent-message__role::after,
+  .agent-message__stream-progress span {
+    animation: none;
+  }
+}

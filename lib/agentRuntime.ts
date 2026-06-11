@@ -110,11 +110,12 @@ export async function runAgentGenerationPlan(
   if (plan.mode === "errors") {
     return runAgentErrorLookup(sessionId, plan);
   }
+  const preludeSent = appendPlannerPreludeTurn(sessionId, plan);
   if (plan.mode === "video") {
     return runAgentVideoGeneration(ctx, sessionId, plan.prompts[0] ?? prompt, {
       ...options,
       videoParams: plan.videoParams ?? options.videoParams ?? null,
-      assistantText: plan.assistantText,
+      assistantText: preludeSent ? null : plan.assistantText,
       requestId: options.requestId ?? `agent_video_${ulid()}`,
       skipUserTurn: true,
     });
@@ -200,12 +201,26 @@ export async function runAgentGenerationPlan(
   const assistantTurn = appendAgentTurn({
     sessionId,
     role: "assistant",
-    text: formatAgentAssistantText(plan, imageIds.length, responseTexts),
+    text: formatAgentAssistantText(plan, imageIds.length, responseTexts, preludeSent),
     imageIds,
     webFindingIds: findingIds,
     status: "complete",
   });
   return { assistantTurn, imageIds, webFindingIds: findingIds };
+}
+
+function appendPlannerPreludeTurn(sessionId: string, plan: AgentGenerationPlan): boolean {
+  const text = plan.assistantText?.trim();
+  if (!text) return false;
+  appendAgentTurn({
+    sessionId,
+    role: "assistant",
+    text,
+    imageIds: [],
+    webFindingIds: [],
+    status: "complete",
+  });
+  return true;
 }
 
 function runAgentErrorLookup(sessionId: string, plan: AgentGenerationPlan) {
@@ -252,11 +267,16 @@ function formatGenerationErrors(errors: readonly AgentGenerationErrorRecord[]): 
   return `Recent generation errors (most recent first):\n${lines.join("\n")}`;
 }
 
-function formatAgentAssistantText(plan: AgentGenerationPlan, imageCount: number, responseTexts: readonly string[]): string {
+function formatAgentAssistantText(
+  plan: AgentGenerationPlan,
+  imageCount: number,
+  responseTexts: readonly string[],
+  omitPlannerText = false,
+): string {
   // Behave like a normal chat agent: prefer the planner's natural-language
   // reply, then any text the image model returned. The mechanical summary is
   // only the fallback when neither produced prose.
-  const plannerText = plan.assistantText?.trim() ?? "";
+  const plannerText = omitPlannerText ? "" : (plan.assistantText?.trim() ?? "");
   const modelText = responseTexts.join("\n\n").trim();
   const prose = [plannerText, modelText].filter(Boolean).join("\n\n");
   if (prose) return prose;

@@ -48,7 +48,7 @@ export function AgentMessageList({ turns, imagesById, currentImageId, onImageSel
   }, [turns.length]);
 
   return (
-    <div ref={listRef} className="agent-message-list">
+    <div ref={listRef} className="agent-message-list" aria-live="polite">
       {turns.length === 0 ? <div className="agent-message-list__empty">{t("agent.emptyChat")}</div> : null}
       {groups.map((group) =>
         group.kind === "tools" ? (

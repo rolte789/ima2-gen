@@ -256,9 +256,9 @@ export function AgentWorkspace() {
     if (summary?.status === "queued") return t("agent.pendingQueued");
     if (summary?.status !== "running") return null;
     const oldestPendingAt = Math.min(...pendingTurns.map((turn) => turn.createdAt ?? 0));
-    const toolStarted = turns.some((turn) =>
-      !isLocalTurn(turn) && turn.role === "tool" && (turn.createdAt ?? 0) >= oldestPendingAt);
-    return toolStarted ? t("agent.pendingGenerating") : t("agent.pendingPlanning");
+    const serverProgressStarted = turns.some((turn) =>
+      !isLocalTurn(turn) && turn.role !== "user" && (turn.createdAt ?? 0) >= oldestPendingAt);
+    return serverProgressStarted ? t("agent.pendingGenerating") : t("agent.pendingPlanning");
   })();
   const displayTurns = pendingStageText
     ? turns.map((turn) => (isLocalPendingTurn(turn) ? { ...turn, text: pendingStageText } : turn))
@@ -299,8 +299,8 @@ export function AgentWorkspace() {
   }, [workspace.imagesById, workspace.sessions.length, addHistoryItem, selectHistory]);
 
   useEffect(() => {
-    // Drop local pending bubbles once the server has replied (assistant/tool
-    // turn newer than the bubble) or the session run settled (idle/error).
+    // Drop local pending bubbles only after the session run settles. Planner
+    // prelude replies may arrive while image/video tools are still running.
     setWorkspace((current) => {
       if (pendingTurnsRef.current > 0) return current;
       let changed = false;
@@ -310,10 +310,7 @@ export function AgentWorkspace() {
         if (pendingTurns.length === 0) continue;
         const summary = current.runSummaryBySession[sessionId];
         const busy = summary?.status === "queued" || summary?.status === "running";
-        const oldestPendingAt = Math.min(...pendingTurns.map((turn) => turn.createdAt ?? 0));
-        const serverReplied = turns.some((turn) =>
-          !isLocalTurn(turn) && turn.role !== "user" && (turn.createdAt ?? 0) >= oldestPendingAt);
-        if (busy && !serverReplied) continue;
+        if (busy) continue;
         turnsBySession[sessionId] = turns.filter((turn) => !isLocalPendingTurn(turn));
         changed = true;
       }

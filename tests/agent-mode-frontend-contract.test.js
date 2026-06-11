@@ -115,6 +115,7 @@ describe("Agent Mode frontend shell contract", () => {
 
   it("shows optimistic chat turns and visible pending state while Agent generation is in flight", () => {
     const workspace = readSource("ui/src/components/agent/AgentWorkspace.tsx");
+    const list = readSource("ui/src/components/agent/AgentMessageList.tsx");
     const message = readSource("ui/src/components/agent/AgentMessage.tsx");
     const panelCss = readSource("ui/src/styles/agent-workspace-panels.css");
     const ko = readSource("ui/src/i18n/ko.json");
@@ -128,11 +129,17 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(workspace, /mergeWorkspaceWithLocalTurns/);
     assert.match(workspace, /replacePendingWithError/);
     assert.match(workspace, /appendTurns\(current, sessionId, \[userTurn, pendingTurn\]\)/);
+    assert.match(workspace, /if \(busy\) continue/);
     assert.match(workspace, /payload\.workspace/);
     assert.match(workspace, /t\("agent\.pending"\)/);
+    assert.match(list, /aria-live="polite"/);
     assert.match(message, /aria-busy/);
+    assert.match(message, /agent-message__stream-progress/);
     assert.match(panelCss, /\.agent-message\.is-streaming/);
+    assert.match(panelCss, /\.agent-message__stream-progress/);
+    assert.match(panelCss, /prefers-reduced-motion: reduce/);
     assert.match(panelCss, /@keyframes agent-spin/);
+    assert.match(panelCss, /@keyframes agent-typing/);
     assert.match(panelCss, /agent-status__dot[\s\S]*animation: agent-pulse/);
     assert.match(en, /"pending": "Generating response\.\.\."/);
     assert.match(ko, /"pending": "응답을 생성하는 중\.\.\."/);
