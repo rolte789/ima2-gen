@@ -171,10 +171,10 @@ describe("Agent Mode runtime contract", () => {
       assert.ok(turns.some((turn) => turn.text.includes("ima2.get_image_context")));
       const assistantImageTurn = turns.find((turn) => turn.role === "assistant" && turn.imageIds?.length);
       assert.ok(assistantImageTurn);
-      const modelTextIndex = assistantImageTurn.text.indexOf("Use a crisp frontal composition.");
-      const artifactTextIndex = assistantImageTurn.text.indexOf("Generated 1 image artifact.");
-      assert.ok(modelTextIndex >= 0);
-      assert.ok(artifactTextIndex > modelTextIndex);
+      // Prose-first contract: when the model returned text, the assistant turn
+      // reads like a normal chat reply — no mechanical artifact summary.
+      assert.ok(assistantImageTurn.text.includes("Use a crisp frontal composition."));
+      assert.ok(!assistantImageTurn.text.includes("Generated 1 image artifact."));
     });
   });
 

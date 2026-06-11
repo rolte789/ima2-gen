@@ -1,4 +1,5 @@
 import { normalizeAgentGenerationPlan } from "./agentGenerationPlanner.js";
+import { readResponsesTextPayload } from "./agentQuestionResponder.js";
 import { formatToolManifestForPrompt } from "./agentToolManifest.js";
 import { getAgentSession } from "./agentStore.js";
 import { errInfo } from "./errInfo.js";
@@ -14,11 +15,6 @@ type AgentPlanRequest = {
   settings: AgentGenerationSettings;
   requestId?: string;
   signal?: AbortSignal | null;
-};
-
-type ResponsesBody = {
-  output_text?: string;
-  output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string | { value?: string } }> }>;
 };
 
 type ChatCompletionsBody = {
@@ -136,12 +132,15 @@ async function requestResponsesPlan(
   if (settings.provider === "api") {
     if (!ctx.apiKey) throw plannerError("API key is required for Agent planner", "API_KEY_REQUIRED", 401);
     url = "https://api.openai.com/v1/responses";
-    headers = { "Content-Type": "application/json", Authorization: `Bearer ${ctx.apiKey}` };
+    headers = { "Content-Type": "application/json", Accept: "text/event-stream", Authorization: `Bearer ${ctx.apiKey}` };
   } else {
     await waitForOAuthReady(ctx);
     url = `${ctx.oauthUrl}/v1/responses`;
-    headers = { "Content-Type": "application/json" };
+    headers = { "Content-Type": "application/json", Accept: "text/event-stream" };
   }
+  // stream:true is required — the bundled OAuth proxy returns an empty
+  // `output` array for non-streaming Responses calls, which used to make the
+  // planner silently fall back to the regex-derived image plan.
   const res = await fetch(url, {
     method: "POST",
     headers,
@@ -153,23 +152,12 @@ async function requestResponsesPlan(
         { role: "user", content: userPrompt },
       ],
       reasoning: { effort: "low" },
-      stream: false,
+      stream: true,
     }),
   });
   if (!res.ok) throw plannerHttpError(settings.provider, res.status);
-  return readResponsesText(await res.json() as ResponsesBody);
-}
-
-function readResponsesText(body: ResponsesBody): string {
-  if (typeof body.output_text === "string" && body.output_text.trim()) return body.output_text;
-  const parts: string[] = [];
-  for (const item of body.output ?? []) {
-    for (const part of item.content ?? []) {
-      if (typeof part.text === "string") parts.push(part.text);
-      else if (part.text && typeof part.text === "object" && typeof part.text.value === "string") parts.push(part.text.value);
-    }
-  }
-  return parts.join("\n").trim();
+  const payload = await readResponsesTextPayload(res);
+  return payload.text;
 }
 
 export function extractJsonObject(raw: string): Record<string, unknown> | null {
