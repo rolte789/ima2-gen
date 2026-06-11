@@ -56,9 +56,11 @@ describe("provider UI contract", () => {
 
     assert.match(agent, /image-model-select__trigger--pill/);
     assert.match(agent, /image-model-select__menu/);
-    assert.match(agent, /OPENAI_IMAGE_MODEL_OPTIONS/);
+    assert.match(agent, /AGENT_LLM_MODEL_OPTIONS/);
+    assert.match(agent, /getAgentLlmModelOption/);
     assert.match(agent, /REASONING_EFFORT_OPTIONS/);
-    assert.match(agent, /provider: "oauth"/);
+    assert.match(agent, /provider: option\.provider/);
+    assert.doesNotMatch(agent, /OPENAI_IMAGE_MODEL_OPTIONS/);
     assert.doesNotMatch(agent, /<select value=\{settings\.provider\}/);
     assert.doesNotMatch(agent, /ProviderCard/);
     assert.doesNotMatch(agent, /getProviderIdentity/);

@@ -43,10 +43,11 @@ describe("Agent Mode right sidebar contract", () => {
     assert.match(quality, /generationStrategy/);
     assert.match(model, /image-model-select__trigger--pill/);
     assert.match(model, /image-model-select__menu/);
-    assert.match(model, /OPENAI_IMAGE_MODEL_OPTIONS/);
+    assert.match(model, /AGENT_LLM_MODEL_OPTIONS/);
+    assert.match(model, /getAgentLlmModelOption/);
     assert.match(model, /REASONING_EFFORT_OPTIONS/);
     assert.match(model, /reasoningEffort/);
-    assert.match(model, /provider: "oauth"/);
+    assert.match(model, /provider: option\.provider/);
     assert.match(model, /role="menuitemradio"/);
     assert.match(serverSettings, /reasoningEffort: "none"/);
     assert.match(uiSettings, /reasoningEffort: "none"/);
@@ -78,15 +79,23 @@ describe("Agent Mode right sidebar contract", () => {
 
   it("keeps Agent model dropdown scoped to LLM model and reasoning", () => {
     const model = readSource("ui/src/components/agent/AgentModelSelector.tsx");
+    const agentGen = readSource("lib/agentImageVideoGen.ts");
+    const grokAdapter = readSource("lib/grokImageAdapter.ts");
+    const grokVideo = readSource("lib/grokVideoAdapter.ts");
     const types = readSource("ui/src/components/agent/agentTypes.ts");
     const css = readSource("ui/src/styles/provider-controls.css");
 
     assert.match(types, /provider: "oauth" \| "api" \| "grok"/);
-    assert.match(model, /OPENAI_IMAGE_MODEL_OPTIONS/);
+    const options = readSource("ui/src/lib/agentModelOptions.ts");
+    assert.match(model, /AGENT_LLM_MODEL_OPTIONS/);
+    assert.match(options, /value: "gpt-5\.4-mini"[\s\S]*?shortLabel: "5\.4m"[\s\S]*?provider: "oauth"/);
+    assert.match(options, /value: "gpt-5\.5"[\s\S]*?shortLabel: "5\.5"[\s\S]*?provider: "oauth"/);
+    assert.match(options, /value: "gpt-5\.4"[\s\S]*?shortLabel: "5\.4"[\s\S]*?provider: "oauth"/);
+    assert.match(options, /value: "grok-4\.3"[\s\S]*?shortLabel: "4\.3"[\s\S]*?provider: "grok"/);
     assert.match(model, /REASONING_EFFORT_OPTIONS/);
     assert.match(model, /image-model-select__trigger--pill/);
     assert.match(model, /image-model-select__menu/);
-    assert.match(model, /provider: "oauth"/);
+    assert.match(model, /provider: option\.provider/);
     assert.doesNotMatch(model, /<select value=\{settings\.provider\}/);
     assert.doesNotMatch(model, /<option value="grok">Grok<\/option>/);
     assert.doesNotMatch(model, /GROK_IMAGE_MODEL_OPTIONS|GEMINI_IMAGE_MODEL_OPTIONS|VIDEO_MODEL_OPTIONS/);
@@ -95,5 +104,11 @@ describe("Agent Mode right sidebar contract", () => {
     assert.doesNotMatch(model, /isGrokImageModel\(settings\.model\)/);
     assert.doesNotMatch(model, /provider === "grok"/);
     assert.doesNotMatch(css, /\.agent-provider-options/);
+    assert.match(agentGen, /AGENT_GROK_PLANNER_MODEL = "grok-4\.3"/);
+    assert.match(agentGen, /rawModel: grokPlannerModel \? undefined : options\.model/);
+    assert.match(agentGen, /plannerModel: grokPlannerModel/);
+    assert.match(grokAdapter, /plannerModel\?: string/);
+    assert.match(grokAdapter, /const plannerModel = options\.plannerModel \|\| planner\.model/);
+    assert.match(grokVideo, /const plannerModel = options\.plannerModel \|\| cfg\.plannerModel/);
   });
 });

@@ -24,6 +24,8 @@ import { errInfo } from "./errInfo.js";
 import { type RuntimeContext } from "./runtimeContext.js";
 import { type AgentRunOptions, forceImagePrompt, isTextOnlyResult, textOnlyError, notFound } from "./agentRuntime.js";
 
+const AGENT_GROK_PLANNER_MODEL = "grok-4.3";
+
 export async function generateAgentImageWithRetry(
   ctx: RuntimeContext,
   sessionId: string,
@@ -62,9 +64,10 @@ async function generateAgentImage(
   options: AgentRunOptions,
 ) {
   const requestId = options.requestId ?? `agent_${ulid()}`;
+  const grokPlannerModel = isAgentGrokPlannerModel(options.model) ? options.model : undefined;
   const providerOptions = resolveProviderOptions(ctx, {
     provider: options.provider ?? "oauth",
-    rawModel: options.model,
+    rawModel: grokPlannerModel ? undefined : options.model,
     rawReasoningEffort: options.reasoningEffort,
     rawSize: options.size ?? "1024x1024",
     rawWebSearchEnabled: webSearchEnabled,
@@ -92,6 +95,7 @@ async function generateAgentImage(
         requestId,
         signal: options.signal ?? undefined,
         references: await loadAgentCurrentImageReferences(ctx, sessionId),
+        plannerModel: grokPlannerModel,
       })
     : await generateViaResponses(
         activeProvider,
@@ -238,6 +242,7 @@ export async function runAgentVideoGeneration(
     aspectRatio: (videoParams.aspectRatio ?? "auto") as "auto" | "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | "3:2" | "2:3",
     requestId,
     signal: options.signal ?? undefined,
+    plannerModel: isAgentGrokPlannerModel(options.model) ? options.model : undefined,
   });
   const video = await persistAgentVideo(ctx, sessionId, prompt, requestId, result);
   const finishedAt = Date.now();
@@ -269,6 +274,10 @@ export async function runAgentVideoGeneration(
     status: "complete",
   });
   return { assistantTurn, imageIds: [video.id], webFindingIds: [] };
+}
+
+function isAgentGrokPlannerModel(model: string | null | undefined): model is typeof AGENT_GROK_PLANNER_MODEL {
+  return model === AGENT_GROK_PLANNER_MODEL;
 }
 
 async function persistAgentVideo(

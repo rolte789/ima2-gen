@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "../../i18n";
-import { OPENAI_IMAGE_MODEL_OPTIONS } from "../../lib/imageModels";
+import { AGENT_LLM_MODEL_OPTIONS, getAgentLlmModelOption } from "../../lib/agentModelOptions";
 import { REASONING_EFFORT_OPTIONS } from "../../lib/reasoning";
 import type { AgentGenerationSettings } from "./agentTypes";
 
@@ -13,7 +13,7 @@ export function AgentModelSelector({ settings, onChange }: Props) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const currentModel = OPENAI_IMAGE_MODEL_OPTIONS.find((option) => option.value === settings.model) ?? OPENAI_IMAGE_MODEL_OPTIONS[0];
+  const currentModel = getAgentLlmModelOption(settings);
   const currentReasoning = REASONING_EFFORT_OPTIONS.find((option) => option.value === settings.reasoningEffort) ?? REASONING_EFFORT_OPTIONS[0];
 
   useEffect(() => {
@@ -54,22 +54,22 @@ export function AgentModelSelector({ settings, onChange }: Props) {
       </button>
       {open ? (
         <div className="image-model-select__menu agent-model-select__menu" role="menu" aria-label={t("sidebar.quickSettingsMenu")}>
-          <div className="image-model-select__section" role="group" aria-label={t("sidebar.imageSectionLabel")}>
+          <div className="image-model-select__section" role="group" aria-label={t("agent.model")}>
             <div className="image-model-select__section-title">{t("agent.model")}</div>
-            {OPENAI_IMAGE_MODEL_OPTIONS.map((option) => (
+            {AGENT_LLM_MODEL_OPTIONS.map((option) => (
               <button
                 key={option.value}
                 type="button"
-                className={`image-model-select__item${option.value === settings.model ? " is-active" : ""}`}
+                className={`image-model-select__item${option.value === currentModel.value ? " is-active" : ""}`}
                 role="menuitemradio"
-                aria-checked={option.value === settings.model}
+                aria-checked={option.value === currentModel.value}
                 onClick={() => {
-                  onChange({ model: option.value, provider: "oauth" });
+                  onChange({ model: option.value, provider: option.provider });
                   setOpen(false);
                 }}
               >
                 <span>{option.shortLabel}</span>
-                <small>{t(option.fullLabelKey)}</small>
+                <small>{option.fullLabel}</small>
               </button>
             ))}
           </div>

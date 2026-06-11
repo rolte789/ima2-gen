@@ -89,7 +89,8 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(sheet, /role="dialog"/);
     assert.match(modelSelector, /image-model-select__trigger--pill/);
     assert.match(modelSelector, /image-model-select__menu/);
-    assert.match(modelSelector, /OPENAI_IMAGE_MODEL_OPTIONS/);
+    assert.match(modelSelector, /AGENT_LLM_MODEL_OPTIONS/);
+    assert.match(modelSelector, /getAgentLlmModelOption/);
     assert.match(modelSelector, /REASONING_EFFORT_OPTIONS/);
     assert.match(modelSelector, /role="menu"/);
     assert.match(composerCss, /\.agent-image-sheet/);
