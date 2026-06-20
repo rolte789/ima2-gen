@@ -1328,5 +1328,11 @@
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "reset": "Reset zoom"
+  },
+  "generationLog": {
+    "title": "Log",
+    "empty": "No generation logs yet",
+    "copied": "Prompt copied",
+    "copy": "Click to copy prompt"
   }
 }

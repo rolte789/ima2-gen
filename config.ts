@@ -235,6 +235,11 @@ export const config = {
     ),
     configFile: join(configDir, "config.json"),
     advertiseFile: pickStr(env.IMA2_ADVERTISE_FILE, fileCfg.storage?.advertiseFile, join(configDir, "server.json")),
+    generationRequestLogFile: pickStr(
+      env.IMA2_GENERATION_REQUEST_LOG_FILE,
+      fileCfg.storage?.generationRequestLogFile,
+      join(configDir, "generation-request-log.json"),
+    ),
     staticMaxAge: pickStr(env.IMA2_STATIC_MAX_AGE, fileCfg.storage?.staticMaxAge, "1y"),
   },
   ids: {

@@ -92,6 +92,7 @@ export {
   type PromptIndexedCandidate,
   type PromptImportPreview,
 } from "./api-library";
+export { getGenerationRequestLog, type GenerationRequestLogEntry } from "./api-log";
 export {
   postNodeGenerate,
   postNodeGenerateStream,

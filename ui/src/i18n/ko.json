@@ -1328,5 +1328,11 @@
     "zoomIn": "확대",
     "zoomOut": "축소",
     "reset": "확대 초기화"
+  },
+  "generationLog": {
+    "title": "로그",
+    "empty": "생성 로그가 없습니다",
+    "copied": "프롬프트 복사됨",
+    "copy": "클릭하여 프롬프트 복사"
   }
 }
