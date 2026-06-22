@@ -1,11 +1,16 @@
+import { config } from "../config.js";
 import {
   claimNextAgentQueueItem,
   completeAgentQueueItem,
   failAgentQueueItem,
   getAgentQueueItem,
+  updateAgentQueueItemPlan,
   type AgentQueueLimits,
 } from "./agentQueueStore.js";
-import { runAgentGenerationPlan } from "./agentRuntime.js";
+import { requestAgentPlanFromModel } from "./agentPlannerModel.js";
+import { hasAgentErrorTurnRecorded, runAgentGenerationPlan } from "./agentRuntime.js";
+import { appendAgentTurn } from "./agentStore.js";
+import type { AgentGenerationPlan, AgentQueueItem } from "./agentTypes.js";
 import { errInfo } from "./errInfo.js";
 import { finishJob, setJobPhase, startJob } from "./inflight.js";
 import { logEvent } from "./logger.js";
@@ -51,9 +56,42 @@ export async function tickAgentQueueWorker(ctx: RuntimeContext) {
   }
 }
 
+// LLM planning runs only for plans the regex deriver produced automatically.
+// Slash commands, manual settings, agy sessions, and already-LLM-planned
+// retries keep their stored plan (audit decision F4/F5).
+function isLlmPlanningEligible(item: AgentQueueItem): boolean {
+  return Boolean(
+    config.agentPlanner.enabled &&
+    (item.plan.source === "auto-default" || item.plan.source === "auto-request") &&
+    item.plan.command == null &&
+    item.options.generationStrategy === "auto" &&
+    item.options.provider !== "agy",
+  );
+}
+
+async function resolveRuntimePlan(ctx: RuntimeContext, item: AgentQueueItem): Promise<AgentGenerationPlan> {
+  if (!isLlmPlanningEligible(item)) return item.plan;
+  try {
+    const plan = await requestAgentPlanFromModel(ctx, {
+      sessionId: item.sessionId,
+      prompt: item.prompt,
+      settings: item.options,
+      requestId: item.requestId,
+    });
+    if (!plan) return item.plan;
+    updateAgentQueueItemPlan(item.id, plan);
+    return plan;
+  } catch (error) {
+    const err = errInfo(error);
+    logEvent("agent_queue", "planner_fallback", { itemId: item.id, code: err.code, message: err.message });
+    return item.plan;
+  }
+}
+
 async function runClaimedQueueItem(ctx: RuntimeContext, itemId: string) {
   const item = getAgentQueueItem(itemId);
   if (!item) return;
+  const plan = await resolveRuntimePlan(ctx, item);
   startJob({
     requestId: item.requestId,
     kind: "agent_queue",
@@ -61,19 +99,19 @@ async function runClaimedQueueItem(ctx: RuntimeContext, itemId: string) {
     meta: {
       sessionId: item.sessionId,
       queueItemId: item.id,
-      variants: item.plan.plannedVariants,
-      parallelism: item.plan.plannedParallelism,
-      requestedVariants: item.plan.requestedVariants,
+      variants: plan.plannedVariants,
+      parallelism: plan.plannedParallelism,
+      requestedVariants: plan.requestedVariants,
     },
   });
   try {
     logEvent("agent_queue", "start", { itemId: item.id, sessionId: item.sessionId });
     setJobPhase(item.requestId, "streaming");
-    const result = await runAgentGenerationPlan(ctx, item.sessionId, item.prompt, item.plan, {
+    const result = await runAgentGenerationPlan(ctx, item.sessionId, item.prompt, plan, {
       ...item.options,
       requestId: item.requestId,
       webSearchEnabled: item.options.webSearchEnabled,
-      parallelism: item.plan.plannedParallelism,
+      parallelism: plan.plannedParallelism,
     }, {
       appendUserTurn: false,
     });
@@ -86,6 +124,20 @@ async function runClaimedQueueItem(ctx: RuntimeContext, itemId: string) {
   } catch (error) {
     const err = errInfo(error);
     failAgentQueueItem(item.id, { code: err.code, message: err.message });
+    // The chat pane must never fail silently — surface the failure as an
+    // assistant error turn unless the runtime already recorded one.
+    if (!hasAgentErrorTurnRecorded(error)) {
+      try {
+        appendAgentTurn({
+          sessionId: item.sessionId,
+          role: "assistant",
+          text: err.code ? `${err.message} [${err.code}]` : err.message,
+          status: "error",
+        });
+      } catch (turnError) {
+        logEvent("agent_queue", "error_turn_failed", { itemId: item.id, message: errInfo(turnError).message });
+      }
+    }
     finishJob(item.requestId, {
       status: "failed",
       errorCode: err.code,

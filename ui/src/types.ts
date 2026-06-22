@@ -101,7 +101,7 @@ export type GenerateItem = {
   nodeId?: string | null;
   clientNodeId?: string | null;
   requestId?: string | null;
-  kind?: "classic" | "edit" | "generate" | "card-news-card" | "card-news-set" | "imported" | null;
+  kind?: "classic" | "edit" | "generate" | "card-news-card" | "card-news-set" | "imported" | "agent" | null;
   setId?: string | null;
   cardId?: string | null;
   cardOrder?: number | null;

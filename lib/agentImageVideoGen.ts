@@ -19,10 +19,12 @@ import {
   getAgentSession,
   importAgentImage,
 } from "./agentStore.js";
-import type { AgentToolCallSummary } from "./agentTypes.js";
+import type { AgentSourceImagePolicy, AgentToolCallSummary } from "./agentTypes.js";
 import { errInfo } from "./errInfo.js";
 import { type RuntimeContext } from "./runtimeContext.js";
 import { type AgentRunOptions, forceImagePrompt, isTextOnlyResult, textOnlyError, notFound } from "./agentRuntime.js";
+
+const AGENT_GROK_PLANNER_MODEL = "grok-4.3";
 
 export async function generateAgentImageWithRetry(
   ctx: RuntimeContext,
@@ -62,9 +64,10 @@ async function generateAgentImage(
   options: AgentRunOptions,
 ) {
   const requestId = options.requestId ?? `agent_${ulid()}`;
+  const grokPlannerModel = isAgentGrokPlannerModel(options.model) ? options.model : undefined;
   const providerOptions = resolveProviderOptions(ctx, {
     provider: options.provider ?? "oauth",
-    rawModel: options.model,
+    rawModel: grokPlannerModel ? undefined : options.model,
     rawReasoningEffort: options.reasoningEffort,
     rawSize: options.size ?? "1024x1024",
     rawWebSearchEnabled: webSearchEnabled,
@@ -91,7 +94,8 @@ async function generateAgentImage(
         size: providerOptions.size,
         requestId,
         signal: options.signal ?? undefined,
-        references: await loadAgentCurrentImageReferences(ctx, sessionId),
+        references: await loadAgentCurrentImageReferences(ctx, sessionId, options.sourceImagePolicy ?? "none"),
+        plannerModel: grokPlannerModel,
       })
     : await generateViaResponses(
         activeProvider,
@@ -121,15 +125,27 @@ async function generateAgentImage(
   return { image, webSearchCalls: response.webSearchCalls || 0, text: responseText, provider: activeProvider };
 }
 
-async function loadAgentCurrentImageReferences(ctx: RuntimeContext, sessionId: string): Promise<GrokReferenceImage[]> {
+async function loadAgentCurrentImageReferences(
+  ctx: RuntimeContext,
+  sessionId: string,
+  policy: AgentSourceImagePolicy,
+): Promise<GrokReferenceImage[]> {
+  if (policy === "none") {
+    logEvent("agent", "grok_ref_policy", { sessionId, policy, attached: false });
+    return [];
+  }
   const session = getAgentSession(sessionId);
   const currentImage = session?.lastImageId
     ? getAgentImages(sessionId).find((image) => image.id === session.lastImageId)
     : null;
-  if (!currentImage?.filename) return [];
+  if (!currentImage?.filename) {
+    logEvent("agent", "grok_ref_policy", { sessionId, policy, attached: false });
+    return [];
+  }
   try {
     const b64 = (await readFile(join(ctx.config.storage.generatedDir, currentImage.filename))).toString("base64");
     const mime = detectImageMimeFromB64(b64);
+    logEvent("agent", "grok_ref_policy", { sessionId, policy, attached: true, filename: currentImage.filename });
     return [{ b64, declaredMime: mime, detectedMime: mime }];
   } catch (error) {
     const err = errInfo(error);
@@ -196,7 +212,7 @@ export async function runAgentVideoGeneration(
   ctx: RuntimeContext,
   sessionId: string,
   prompt: string,
-  options: AgentRunOptions & { skipUserTurn?: boolean } = {},
+  options: AgentRunOptions & { skipUserTurn?: boolean; assistantText?: string | null } = {},
 ) {
   const session = getAgentSession(sessionId);
   if (!session) throw notFound(sessionId);
@@ -221,7 +237,13 @@ export async function runAgentVideoGeneration(
     }
   }
 
-  const videoParams = parseVideoParams(prompt);
+  // LLM-planned params win; the prompt regex remains the fallback extractor.
+  const parsedParams = parseVideoParams(prompt);
+  const videoParams = {
+    duration: options.videoParams?.duration ?? parsedParams.duration,
+    resolution: options.videoParams?.resolution ?? parsedParams.resolution,
+    aspectRatio: options.videoParams?.aspectRatio ?? parsedParams.aspectRatio,
+  };
 
   const result = await generateVideoViaGrok(prompt, ctx, {
     model: "grok-imagine-video",
@@ -232,6 +254,7 @@ export async function runAgentVideoGeneration(
     aspectRatio: (videoParams.aspectRatio ?? "auto") as "auto" | "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | "3:2" | "2:3",
     requestId,
     signal: options.signal ?? undefined,
+    plannerModel: isAgentGrokPlannerModel(options.model) ? options.model : undefined,
   });
   const video = await persistAgentVideo(ctx, sessionId, prompt, requestId, result);
   const finishedAt = Date.now();
@@ -258,11 +281,15 @@ export async function runAgentVideoGeneration(
   const assistantTurn = appendAgentTurn({
     sessionId,
     role: "assistant",
-    text: `Generated 1 video artifact. ${result.revisedPrompt}`,
+    text: options.assistantText?.trim() || `Generated 1 video artifact. ${result.revisedPrompt}`,
     imageIds: [video.id],
     status: "complete",
   });
   return { assistantTurn, imageIds: [video.id], webFindingIds: [] };
+}
+
+function isAgentGrokPlannerModel(model: string | null | undefined): model is typeof AGENT_GROK_PLANNER_MODEL {
+  return model === AGENT_GROK_PLANNER_MODEL;
 }
 
 async function persistAgentVideo(

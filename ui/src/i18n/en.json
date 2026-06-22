@@ -692,8 +692,13 @@
     "statusReady": "Ready",
     "statusGenerating": "Generating",
     "statusReconnecting": "Reconnecting",
-    "pending": "Generating image...",
-    "composerPlaceholder": "Describe the image to create",
+    "pending": "Generating response...",
+    "pendingQueued": "Waiting in queue...",
+    "pendingPlanning": "Planning the response...",
+    "pendingGenerating": "Running tools and generating...",
+    "runError": "Run failed",
+    "errorRole": "Error",
+    "composerPlaceholder": "Ask anything or describe what to create",
     "slashCommands": "Agent slash commands",
     "slashDesc_question": "Ask a question without generating images",
     "slashDesc_variants": "Generate N image variants (1-24)",
@@ -1323,5 +1328,11 @@
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "reset": "Reset zoom"
+  },
+  "generationLog": {
+    "title": "Log",
+    "empty": "No generation logs yet",
+    "copied": "Prompt copied",
+    "copy": "Click to copy prompt"
   }
 }

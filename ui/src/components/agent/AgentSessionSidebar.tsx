@@ -1,19 +1,21 @@
 import { useMemo, useState } from "react";
 import { useI18n } from "../../i18n";
-import { UIModeSwitch } from "../UIModeSwitch";
+import { SidebarChrome } from "../Sidebar";
 import { PlusIcon, SearchIcon } from "./AgentIcons";
 import { AgentSessionList } from "./AgentSessionList";
-import type { AgentImageHandle, AgentSessionRunSummary, AgentSessionSummary } from "./agentTypes";
+import type { AgentGenerationSettings, AgentImageHandle, AgentSessionRunSummary, AgentSessionSummary } from "./agentTypes";
 
 type Props = {
   sessions: AgentSessionSummary[];
   selectedId: string;
   imagesById: Record<string, AgentImageHandle>;
   runSummaryBySession?: Record<string, AgentSessionRunSummary>;
+  settings: AgentGenerationSettings;
   onCreate: () => void;
   onSelect: (id: string) => void;
   onRename: (id: string) => void;
   onDelete: (id: string) => void;
+  onSettingsChange: (patch: Partial<AgentGenerationSettings>) => void;
 };
 
 export function AgentSessionSidebar(props: Props) {
@@ -26,23 +28,21 @@ export function AgentSessionSidebar(props: Props) {
   }, [props.sessions, query]);
 
   return (
-    <aside className="agent-sessions" aria-label={t("agent.sessions")}>
-      <div className="agent-sessions__brand">
-        <div>
-          <span>ima2-gen</span>
-          <strong>{t("agent.title")}</strong>
-        </div>
-        <UIModeSwitch />
+    <aside className="sidebar agent-session-sidebar" aria-label={t("agent.sessions")}>
+      <div className="sidebar__scroll">
+        <SidebarChrome agentSettings={props.settings} onAgentSettingsChange={props.onSettingsChange} />
+        <section className="agent-sessions" aria-label={t("agent.sessions")}>
+          <button type="button" className="agent-sessions__create" onClick={props.onCreate}>
+            <PlusIcon size={16} />
+            <span>{t("agent.newSession")}</span>
+          </button>
+          <label className="agent-sessions__search">
+            <SearchIcon size={15} />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("agent.sessionSearch")} />
+          </label>
+          <AgentSessionList {...props} sessions={filtered} />
+        </section>
       </div>
-      <button type="button" className="agent-sessions__create" onClick={props.onCreate}>
-        <PlusIcon size={16} />
-        <span>{t("agent.newSession")}</span>
-      </button>
-      <label className="agent-sessions__search">
-        <SearchIcon size={15} />
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("agent.sessionSearch")} />
-      </label>
-      <AgentSessionList {...props} sessions={filtered} />
     </aside>
   );
 }

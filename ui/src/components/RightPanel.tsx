@@ -14,7 +14,13 @@ const LazyPromptBuilderPanel = lazy(() =>
   })),
 );
 
-type RightPanelTab = "settings" | "library" | "builder";
+const LazyGenerationRequestLogPanel = lazy(() =>
+  import("./GenerationRequestLogPanel").then((module) => ({
+    default: module.GenerationRequestLogPanel,
+  })),
+);
+
+type RightPanelTab = "settings" | "library" | "builder" | "log";
 
 export function RightPanel() {
   const open = useAppStore((s) => s.rightPanelOpen);
@@ -37,16 +43,20 @@ export function RightPanel() {
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
+  const [logOpen, setLogOpen] = useState(false);
   const builderEnabled = isPromptBuilderEnabled(workspaceProfile) && !isMobile;
   const drawerOpen = isMobile ? open : true;
 
-  const activeTab: RightPanelTab = promptBuilderOpen && builderEnabled
-    ? "builder"
-    : promptLibraryOpen
-      ? "library"
-      : "settings";
+  const activeTab: RightPanelTab = logOpen
+    ? "log"
+    : promptBuilderOpen && builderEnabled
+      ? "builder"
+      : promptLibraryOpen
+        ? "library"
+        : "settings";
 
   const setTab = (tab: RightPanelTab) => {
+    setLogOpen(tab === "log");
     if (tab === "builder") {
       if (!promptBuilderOpen) togglePromptBuilder();
       if (promptLibraryOpen) setPromptLibraryOpen(false);
@@ -120,6 +130,15 @@ export function RightPanel() {
             >
               {t("promptLibrary.title")}
             </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "log"}
+              className={`right-panel-tabs__button${activeTab === "log" ? " active" : ""}`}
+              onClick={() => setTab("log")}
+            >
+              {t("generationLog.title")}
+            </button>
           </div>
           {activeTab === "builder" && builderEnabled ? (
             <Suspense fallback={<div className="prompt-library-panel__loading">{t("common.loading")}</div>}>
@@ -128,6 +147,10 @@ export function RightPanel() {
           ) : activeTab === "library" ? (
             <Suspense fallback={<div className="prompt-library-panel__loading">{t("common.loading")}</div>}>
               <LazyPromptLibraryPanel variant="embedded" />
+            </Suspense>
+          ) : activeTab === "log" ? (
+            <Suspense fallback={<div className="prompt-library-panel__loading">{t("common.loading")}</div>}>
+              <LazyGenerationRequestLogPanel />
             </Suspense>
           ) : (
             <GenerationControlsPanel />

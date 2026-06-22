@@ -95,7 +95,11 @@ function safeUpstreamClientMessage(upstream: UpstreamError | null | undefined, s
   const code = normalizedCode(upstream);
   if (code === "AUTH_API_KEY_INVALID") return "API key is invalid or unavailable.";
   if (code === "MODERATION_REFUSED") return "OpenAI refused the image request for safety reasons.";
-  if (code === "INVALID_REQUEST") return "OpenAI rejected the image request parameters.";
+  if (code === "INVALID_REQUEST") {
+    return upstream?.param
+      ? "OpenAI rejected the image request parameters."
+      : "OpenAI rejected the image request.";
+  }
   if (status === 401 || status === 403) return "OpenAI authentication failed.";
   if (status === 429) return "OpenAI rate limited the image request.";
   return "OpenAI rejected the image request.";

@@ -692,8 +692,13 @@
     "statusReady": "준비됨",
     "statusGenerating": "생성 중",
     "statusReconnecting": "연결 복구 중",
-    "pending": "이미지를 생성하는 중...",
-    "composerPlaceholder": "만들 이미지를 입력하세요",
+    "pending": "응답을 생성하는 중...",
+    "pendingQueued": "대기열에서 기다리는 중...",
+    "pendingPlanning": "응답을 계획하는 중...",
+    "pendingGenerating": "도구 실행·생성 진행 중...",
+    "runError": "실행 중 오류가 발생했어요",
+    "errorRole": "오류",
+    "composerPlaceholder": "무엇이든 물어보거나 만들 것을 설명하세요",
     "slashCommands": "에이전트 슬래시 명령",
     "slashDesc_question": "이미지 생성 없이 질문",
     "slashDesc_variants": "N개 이미지 변형 생성 (1-24)",
@@ -1323,5 +1328,11 @@
     "zoomIn": "확대",
     "zoomOut": "축소",
     "reset": "확대 초기화"
+  },
+  "generationLog": {
+    "title": "로그",
+    "empty": "생성 로그가 없습니다",
+    "copied": "프롬프트 복사됨",
+    "copy": "클릭하여 프롬프트 복사"
   }
 }

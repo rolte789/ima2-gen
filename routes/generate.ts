@@ -6,6 +6,7 @@ import type { Express, Request, Response } from "express";
 import { detectImageMimeFromB64, summarizeReferencePayload, validateAndNormalizeRefs } from "../lib/refs.js";
 import { generateImageThumbnailFromBuffer } from "../lib/imageThumb.js";
 import { classifyUpstreamError } from "../lib/errorClassify.js";
+import { appendGenerationRequestLog } from "../lib/generationRequestLog.js";
 import { normalizeOAuthParams } from "../lib/oauthNormalize.js";
 import { resolveProviderOptions } from "../lib/providerOptions.js";
 import { generateViaResponses } from "../lib/responsesImageAdapter.js";
@@ -532,6 +533,15 @@ export function registerGenerateRoutes(app: Express, ctxRaw: RouteRuntimeContext
         errorCode: finishErrorCode,
         meta: finishMeta,
       });
+      appendGenerationRequestLog(ctx.config.storage.generationRequestLogFile, {
+        id: randomBytes(8).toString("hex"),
+        requestId,
+        createdAt: Date.now(),
+        prompt: typeof req.body?.prompt === "string" ? req.body.prompt : "",
+        requested: parseInt(req.body?.n) || 1,
+        succeeded: finishStatus === "completed" ? ((finishMeta.imageCount as number) ?? 1) : 0,
+        error: finishStatus === "error" ? (finishErrorCode ?? "unknown") : null,
+      }).catch(() => {});
     }
   });
 }

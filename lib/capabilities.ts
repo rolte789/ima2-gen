@@ -1,4 +1,6 @@
 import { config as runtimeConfigDefault } from "../config.js";
+import { AGENT_ALLOWED_TOOLS } from "./agentTypes.js";
+import { AGENT_TOOL_MANIFEST } from "./agentToolManifest.js";
 import { KEY_TO_ENV, WRITABLE_CONFIG_KEYS } from "./configKeys.js";
 import { DEFAULT_IMAGE_QUALITY, VALID_IMAGE_QUALITIES } from "./oauthNormalize.js";
 import type { AppConfig } from "./runtimeContext.js";
@@ -109,7 +111,8 @@ export function buildIma2Capabilities({
     agentMode: {
       available: true,
       route: "/api/agent/sessions",
-      allowedTools: ["ima2.get_image_context", "ima2.web_search", "ima2.generate_image"],
+      allowedTools: [...AGENT_ALLOWED_TOOLS],
+      toolManifest: [...AGENT_TOOL_MANIFEST],
       finalArtifact: "image",
       uiOnly: true,
       cliCommand: null,

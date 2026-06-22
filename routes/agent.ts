@@ -7,6 +7,7 @@ import {
   getAgentGenerationSettings,
   getAgentSession,
   getAgentWorkspacePayload,
+  importAgentImage,
   renameAgentSession,
   setAgentCurrentImage,
   setAgentGenerationSettings,
@@ -16,6 +17,7 @@ import {
 import {
   cancelAgentQueueItem,
   createAgentQueueItem,
+  getAgentGenerationErrors,
   getAgentQueueItem,
   listAgentQueueItems,
   retryAgentQueueItem,
@@ -94,6 +96,10 @@ export function registerAgentRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       if (Object.prototype.hasOwnProperty.call(body, "generationSettings")) {
         setAgentGenerationSettings(req.params.sessionId, body.generationSettings);
       }
+      if (Object.prototype.hasOwnProperty.call(body, "currentImage")) {
+        const image = normalizeCurrentImage(body.currentImage);
+        if (image) importAgentImage(req.params.sessionId, image);
+      }
       if (Object.prototype.hasOwnProperty.call(body, "currentImageId")) {
         const ok = setAgentCurrentImage(req.params.sessionId, body.currentImageId);
         if (!ok) throw imageNotFound(req.params.sessionId);
@@ -149,6 +155,17 @@ export function registerAgentRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
 
   app.get("/api/agent/queue", (_req: Request, res: Response) => {
     res.json({ queue: listAgentQueueItems() });
+  });
+
+  app.get("/api/agent/sessions/:sessionId/errors", (req: Request<{ sessionId: string }>, res: Response) => {
+    try {
+      if (!getAgentSession(req.params.sessionId)) throw notFound(req.params.sessionId);
+      const limitRaw = Number(req.query.limit);
+      const limit = Number.isFinite(limitRaw) ? limitRaw : 10;
+      res.json({ errors: getAgentGenerationErrors(req.params.sessionId, limit) });
+    } catch (error) {
+      sendError(res, error);
+    }
   });
 
   app.get("/api/agent/sessions/:sessionId/queue", (req: Request<{ sessionId: string }>, res: Response) => {

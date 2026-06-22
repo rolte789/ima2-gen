@@ -235,6 +235,11 @@ export const config = {
     ),
     configFile: join(configDir, "config.json"),
     advertiseFile: pickStr(env.IMA2_ADVERTISE_FILE, fileCfg.storage?.advertiseFile, join(configDir, "server.json")),
+    generationRequestLogFile: pickStr(
+      env.IMA2_GENERATION_REQUEST_LOG_FILE,
+      fileCfg.storage?.generationRequestLogFile,
+      join(configDir, "generation-request-log.json"),
+    ),
     staticMaxAge: pickStr(env.IMA2_STATIC_MAX_AGE, fileCfg.storage?.staticMaxAge, "1y"),
   },
   ids: {
@@ -310,6 +315,10 @@ export const config = {
       fileCfg.cardNewsPlanner?.deterministicFallback,
       false,
     ),
+  },
+  agentPlanner: {
+    enabled: pickBool(env.IMA2_AGENT_PLANNER_ENABLED, fileCfg.agentPlanner?.enabled, true),
+    timeoutMs: pickInt(env.IMA2_AGENT_PLANNER_TIMEOUT_MS, fileCfg.agentPlanner?.timeoutMs, 30_000),
   },
   comfy: {
     defaultUrl: pickStr(env.IMA2_COMFY_URL, fileCfg.comfy?.defaultUrl, "http://127.0.0.1:8188"),
