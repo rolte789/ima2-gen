@@ -1,0 +1,35 @@
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm ci
+      - run: npm --prefix ui install --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run typecheck:tests
+      - run: npm run test:inventory
+      - run: npm run build:server
+      - run: npm run build:cli
+      - run: npm --prefix ui run build
+      - run: npm test
+        timeout-minutes: 20
+      - run: npm run lint:pkg
+      - run: npm run test:package-install
+      - run: npm publish --provenance --access public
