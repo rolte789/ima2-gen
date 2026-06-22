@@ -56,7 +56,7 @@ export async function generateViaOAuth(
     ...(options.partialImages ? { partial_images: options.partialImages } : {}),
   });
 
-  const textPrompt = buildUserTextPrompt(prompt, mode, { webSearchEnabled });
+  const textPrompt = buildUserTextPrompt(prompt, mode, { webSearchEnabled, size });
   const referenceInputs = references.map(normalizeReferenceForOAuth);
   const referenceDiagnostics = safeReferenceDiagnostics(referenceInputs);
   const referenceMismatchCount = referenceDiagnostics.filter((ref) => ref.warnings.includes("mime_mismatch")).length;
@@ -160,7 +160,7 @@ export async function generateViaOAuth(
         signal: timeout.signal,
         body: JSON.stringify({
           model,
-          input: [{ role: "user", content: buildUserTextPrompt(prompt, mode, { webSearchEnabled }) }],
+          input: [{ role: "user", content: buildUserTextPrompt(prompt, mode, { webSearchEnabled, size }) }],
           tools: [{ type: "image_generation", quality, size, moderation }],
           tool_choice: "required",
           reasoning: { effort: reasoningEffort },
@@ -263,7 +263,7 @@ export async function generateMultimodeViaOAuth(
       ? `${prompt}${DIRECT_PROMPT_FIDELITY_SUFFIX}`
       : `${prompt}${webSearchEnabled ? RESEARCH_SUFFIX : ""}${AUTO_PROMPT_FIDELITY_SUFFIX}`,
     maxImages,
-    { webSearchEnabled },
+    { webSearchEnabled, size },
   );
   const userContent = referenceInputs.length
     ? [
@@ -390,7 +390,7 @@ export async function editViaOAuth(prompt: string, imageB64: string, quality: st
   const oauthUrl = getOAuthUrl(ctx);
   const model = options.model || ctx.config?.imageModels?.default || "gpt-5.4-mini";
   const webSearchEnabled = resolveWebSearchEnabled(options);
-  const textPrompt = buildEditTextPrompt(prompt, mode, { webSearchEnabled });
+  const textPrompt = buildEditTextPrompt(prompt, mode, { webSearchEnabled, size });
   const imageForRequest = await compressReferenceB64ForOAuth(imageB64, {
     maxB64Bytes: ctx.config?.limits?.maxRefB64Bytes,
     force: true,
