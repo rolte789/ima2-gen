@@ -16,10 +16,25 @@ test("agy command name follows platform conventions", () => {
   assert.equal(agyCommandName("win32"), "agy.cmd");
 });
 
-test("resolveAgyBin honors explicit IMA2_AGY_BIN", () => {
+test("resolveAgyBin honors explicit IMA2_AGY_BIN when file exists", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "ima2-agy-bin-explicit-"));
+  const customBin = join(tempDir, "agy");
+  await writeFile(customBin, "#!/bin/sh\necho ok\n", { mode: 0o755 });
+
+  try {
+    assert.equal(
+      resolveAgyBin({ IMA2_AGY_BIN: customBin, PATH: "" }, "/tmp/missing-home", "linux"),
+      customBin,
+    );
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("resolveAgyBin falls back to PATH when IMA2_AGY_BIN points to missing file", () => {
   assert.equal(
-    resolveAgyBin({ IMA2_AGY_BIN: "/custom/agy", PATH: "" }, "/tmp/missing-home", "linux"),
-    "/custom/agy",
+    resolveAgyBin({ IMA2_AGY_BIN: "/nonexistent/agy", PATH: "/usr/bin" }, "/tmp/missing-home", "linux"),
+    "agy",
   );
 });
 

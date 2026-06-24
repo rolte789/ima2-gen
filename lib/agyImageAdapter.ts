@@ -189,11 +189,15 @@ function spawnAgy(prompt: string, signal?: AbortSignal): Promise<{ stdout: strin
     child.stdout.on("data", (chunk: Buffer) => { if (stdout.length < AGY_MAX_OUTPUT_BYTES) stdout += chunk.toString(); });
     child.stderr.on("data", (chunk: Buffer) => { if (stderr.length < AGY_MAX_OUTPUT_BYTES) stderr += chunk.toString(); });
 
-    child.on("error", (err) => {
+    child.on("error", (err: NodeJS.ErrnoException) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      reject(agyError(`Agy process error: ${err.message}`, 502, "AGY_PROCESS_ERROR"));
+      const bin = resolveAgyBin();
+      const hint = err.code === "ENOENT"
+        ? `. "${bin}" was not found — install agy or set IMA2_AGY_BIN=/absolute/path/to/agy`
+        : "";
+      reject(agyError(`Agy process error: ${err.message}${hint}`, 502, "AGY_PROCESS_ERROR"));
     });
 
     child.on("close", (code) => {

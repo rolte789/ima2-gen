@@ -22,7 +22,13 @@ export function resolveAgyBin(
   home = homedir(),
   platform = process.platform,
 ): string {
-  if (env.IMA2_AGY_BIN) return env.IMA2_AGY_BIN;
+  if (env.IMA2_AGY_BIN) {
+    if (!existsSync(env.IMA2_AGY_BIN)) {
+      console.warn(`[ima2-agy] IMA2_AGY_BIN is set to "${env.IMA2_AGY_BIN}" but the file does not exist. Falling back to PATH lookup.`);
+    } else {
+      return env.IMA2_AGY_BIN;
+    }
+  }
   return agyLocalBinCandidates(home, platform).find((candidate) => existsSync(candidate))
     ?? agyCommandName(platform);
 }
