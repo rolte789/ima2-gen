@@ -116,8 +116,8 @@ function parseAgyOutput(stdout: string): { artifactPath: string; ext: string } {
   );
 }
 
-async function findRecentAgyArtifact(sinceMs: number): Promise<string | null> {
-  const roots = [
+export async function findRecentAgyArtifact(sinceMs: number, rootOverrides?: string[]): Promise<string | null> {
+  const roots = rootOverrides ?? [
     join(homedir(), ".gemini", "antigravity-cli", "brain"),
     join(homedir(), ".gemini"),
   ];
@@ -133,7 +133,7 @@ async function findRecentAgyArtifact(sinceMs: number): Promise<string | null> {
     for (const entry of entries) {
       const p = join(dir, entry.name);
 
-      if (entry.isDirectory()) {
+      if (!entry.isSymbolicLink() && entry.isDirectory()) {
         await walk(p, depth + 1);
         continue;
       }
