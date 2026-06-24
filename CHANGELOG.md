@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Node route validation order — `startJob`/202 response moved after request validation.
 - CI typecheck — unused imports in card-news tests and store split type mismatches.
 - Thumbnail backfill failure reporting (#94).
+- AGY provider detection now finds user-local `agy` installs such as `~/.local/bin/agy` and supports `IMA2_AGY_BIN` for explicit binary paths.
 - AGY Windows pipe handling, Gemini API aspect ratio string values, multimode same-prompt batching.
 - Moderation over-filtering — removed safety tags and added error enrichment.
 

@@ -3,6 +3,7 @@ import { readFile, readdir, rm, stat, writeFile, mkdir } from "node:fs/promises"
 import { extname, dirname, join, resolve } from "node:path";
 import { homedir, tmpdir } from "node:os";
 import { randomBytes } from "node:crypto";
+import { buildAgyPathEnv, resolveAgyBin } from "./agyCli.js";
 import { logEvent } from "./logger.js";
 import { SAFETY_INTENT_POLICY } from "./promptSafetyPolicy.js";
 import { detectImageMimeFromB64 } from "./refs.js";
@@ -117,10 +118,10 @@ function parseAgyOutput(stdout: string): { artifactPath: string; ext: string } {
 
 function spawnAgy(prompt: string, signal?: AbortSignal): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
-    const child = spawn("agy", ["-p", "-"], {
+    const child = spawn(resolveAgyBin(), ["-p", "-"], {
       stdio: ["pipe", "pipe", "pipe"],
       env: {
-        PATH: process.env.PATH,
+        PATH: buildAgyPathEnv(),
         HOME: process.env.HOME,
         USERPROFILE: process.env.USERPROFILE,
         TMPDIR: process.env.TMPDIR,
