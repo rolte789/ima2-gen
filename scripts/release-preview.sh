@@ -55,16 +55,16 @@ echo "Dist-tag:        preview"
 # ─── Collect changelog from commits since last tag ─────
 PREV_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]' | head -1)
 if [ -n "$PREV_TAG" ]; then
-  CHANGELOG=$(git log "$PREV_TAG"..HEAD --pretty=format:"- %s" --no-merges | head -30)
   COMMIT_COUNT=$(git rev-list "$PREV_TAG"..HEAD --count)
 else
-  CHANGELOG=$(git log --oneline -10 --pretty=format:"- %s" --no-merges)
   COMMIT_COUNT="?"
 fi
 
+RELEASE_NOTES=$(node scripts/generate-release-notes.mjs "${PREV_TAG:+$PREV_TAG..HEAD}" 2>/dev/null || git log "${PREV_TAG:---oneline -10}"..HEAD --pretty=format:"- %s" --no-merges | head -30)
+
 echo ""
 echo "📝 Changes since ${PREV_TAG:-'(none)'} ($COMMIT_COUNT commits):"
-echo "$CHANGELOG" | head -10
+echo "$RELEASE_NOTES" | head -15
 echo ""
 
 # ─── Build ─────────────────────────────────────────────
@@ -99,18 +99,10 @@ git push origin "v$VERSION"
 
 # ─── GitHub Prerelease with changelog ──────────────────
 echo "📋 Creating GitHub prerelease..."
-RELEASE_BODY="## Preview Release v$VERSION
-
-**Base**: $RAW_VERSION → preview patch $BASE_VERSION
-**Commits since ${PREV_TAG:-'(none)'}**: $COMMIT_COUNT
-
-### Changes
-$CHANGELOG"
-
 if command -v gh &>/dev/null; then
   gh release create "v$VERSION" \
     --title "v$VERSION (preview)" \
-    --notes "$RELEASE_BODY" \
+    --notes "$RELEASE_NOTES" \
     --prerelease
   echo "✅ GitHub prerelease v$VERSION created!"
 else

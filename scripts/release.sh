@@ -87,16 +87,16 @@ echo "📌 New version: $VERSION"
 # ─── Collect changelog ─────────────────────────────────
 PREV_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]' | head -1)
 if [ -n "$PREV_TAG" ]; then
-  CHANGELOG=$(git log "$PREV_TAG"..HEAD --pretty=format:"- %s" --no-merges | head -50)
   COMMIT_COUNT=$(git rev-list "$PREV_TAG"..HEAD --count)
 else
-  CHANGELOG=$(git log --oneline -20 --pretty=format:"- %s" --no-merges)
   COMMIT_COUNT="?"
 fi
 
+RELEASE_NOTES=$(node scripts/generate-release-notes.mjs "${PREV_TAG:+$PREV_TAG..HEAD}" 2>/dev/null || git log "${PREV_TAG:---oneline -20}"..HEAD --pretty=format:"- %s" --no-merges | head -50)
+
 echo ""
 echo "📝 Changes since ${PREV_TAG:-'(none)'} ($COMMIT_COUNT commits):"
-echo "$CHANGELOG" | head -15
+echo "$RELEASE_NOTES" | head -20
 echo ""
 
 # ─── Commit + Tag ──────────────────────────────────────
@@ -129,18 +129,10 @@ fi
 
 # ─── GitHub Release with changelog ─────────────────────
 echo "📋 Creating GitHub Release..."
-RELEASE_BODY="## Release v$VERSION
-
-**Previous**: ${PREV_TAG:-'(first release)'}
-**Commits**: $COMMIT_COUNT
-
-### Changes
-$CHANGELOG"
-
 if [ -n "$PREV_TAG" ] && command -v gh &>/dev/null; then
     gh release create "v$VERSION" \
         --title "v$VERSION" \
-        --notes "$RELEASE_BODY" \
+        --notes "$RELEASE_NOTES" \
         --latest
     echo "✅ GitHub Release v$VERSION created!"
 else
