@@ -36,3 +36,6 @@ jobs:
         run: |
           echo "registry=https://registry.npmjs.org/" > ~/.npmrc
           npm publish --provenance --access public
+        env:
+          NPM_CONFIG_USERCONFIG: ''
+          NODE_AUTH_TOKEN: ''
