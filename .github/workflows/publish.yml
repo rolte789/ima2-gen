@@ -32,10 +32,7 @@ jobs:
         timeout-minutes: 20
       - run: npm run lint:pkg
       - run: npm run test:package-install
-      - name: Publish with OIDC trusted publishing
-        run: |
-          echo "registry=https://registry.npmjs.org/" > ~/.npmrc
-          npm publish --provenance --access public
+      - name: Publish to npm
+        run: npm publish --provenance --access public
         env:
-          NPM_CONFIG_USERCONFIG: ''
-          NODE_AUTH_TOKEN: ''
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
