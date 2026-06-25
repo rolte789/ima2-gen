@@ -32,7 +32,8 @@ jobs:
         timeout-minutes: 20
       - run: npm run lint:pkg
       - run: npm run test:package-install
-      - name: Publish to npm
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish with OIDC trusted publishing
+        run: |
+          unset NODE_AUTH_TOKEN
+          unset NPM_CONFIG_USERCONFIG
+          npm publish --provenance --access public
