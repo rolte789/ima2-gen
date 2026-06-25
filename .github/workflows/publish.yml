@@ -19,7 +19,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
       - run: npm ci
       - run: npm --prefix ui install --no-audit --no-fund
       - run: npm run typecheck
@@ -33,5 +32,3 @@ jobs:
       - run: npm run lint:pkg
       - run: npm run test:package-install
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
