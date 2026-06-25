@@ -20,7 +20,10 @@ jobs:
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
-      - run: npm install -g npm@latest
+      - name: Upgrade npm for OIDC trusted publishing
+        run: |
+          npm install -g npm@latest
+          echo "node=$(node -v) npm=$(npm -v)"
       - run: npm ci
       - run: npm --prefix ui install --no-audit --no-fund
       - run: npm run typecheck
@@ -33,4 +36,18 @@ jobs:
         timeout-minutes: 20
       - run: npm run lint:pkg
       - run: npm run test:package-install
+      - name: Verify OIDC preconditions
+        run: |
+          echo "npm=$(npm -v)"
+          npm_major=$(npm -v | cut -d. -f1)
+          npm_minor=$(npm -v | cut -d. -f2)
+          if [ "$npm_major" -lt 11 ] || { [ "$npm_major" -eq 11 ] && [ "$npm_minor" -lt 5 ]; }; then
+            echo "::error::npm >= 11.5.1 required for OIDC trusted publishing (got $(npm -v))"
+            exit 1
+          fi
+          if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+            echo "::error::OIDC token endpoint not available — check id-token: write permission"
+            exit 1
+          fi
+          echo "✓ npm version OK, OIDC endpoint available"
       - run: npm publish --provenance --access public
