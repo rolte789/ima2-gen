@@ -635,6 +635,28 @@ Keys saved via PUT are stored in `config.json` and hot-updated in the runtime co
 
 Thumbnails are also generated automatically on server startup for any media files that lack them.
 
+## Agent Mode
+
+Agent Mode is a conversational image workspace (web UI only — no CLI). All routes are under `/api/agent/*` and are backed by `routes/agent.ts` + `lib/agent*.ts`.
+
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/api/agent/tools` | Slash-command and tool metadata |
+| `GET` | `/api/agent/sessions` | List sessions (`?limit=`) |
+| `POST` | `/api/agent/sessions` | Create session (`title`, `currentImage`, `webSearchEnabled`) → `201` |
+| `GET` | `/api/agent/sessions/:sessionId` | Fetch one session |
+| `PATCH` | `/api/agent/sessions/:sessionId` | Update title, `webSearchEnabled`, `generationSettings`, `currentImage`, locks |
+| `DELETE` | `/api/agent/sessions/:sessionId` | Delete session |
+| `POST` | `/api/agent/sessions/:sessionId/compact` | Session compaction |
+| `GET` | `/api/agent/sessions/:sessionId/manifest` | XML manifest export |
+| `POST` | `/api/agent/sessions/:sessionId/turns` | Synchronous turn (`prompt`, provider, quality, size, model, …) |
+| `GET` | `/api/agent/sessions/:sessionId/errors` | Recent errors (`?limit=`, default 10) |
+| `GET` | `/api/agent/sessions/:sessionId/queue` | Per-session queue items |
+| `POST` | `/api/agent/sessions/:sessionId/queue` | Enqueue async turn / slash command → `202` |
+| `GET` | `/api/agent/queue` | Global queue listing |
+| `POST` | `/api/agent/queue/:itemId/cancel` | Cancel queued item |
+| `POST` | `/api/agent/queue/:itemId/retry` | Retry failed item |
+
 ## Endpoint → CLI Mapping
 
 Most server routes under `/api/*` have a CLI wrapper. The exception is **Agent Mode** (`/api/agent/*`), which is server + web-UI-only and has no `ima2` subcommand. The prompt builder HTTP route (`POST /api/prompt-builder/chat`) is wrapped by `ima2 prompt build`. Use this table to find the command that calls a given endpoint. (See README.md "Client" section for full flag lists.)

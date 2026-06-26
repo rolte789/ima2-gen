@@ -10,7 +10,7 @@
 
 `ima2-gen` 是一个本地 AI 工作室，只需免费 ChatGPT 和 SuperGrok 即可生成图像和视频。
 
-全局安装后，通过 ChatGPT 或 Grok OAuth 登录即可开始生成图像和视频。无需 API 密钥，节点分支、multimode 批量、Grok Video、Canvas Mode 全部可用。
+全局安装后，通过 ChatGPT 或 Grok OAuth 登录即可开始生成图像和视频。默认 OAuth 路径无需 API 密钥；也可选用 API 密钥提供商（`api`、`grok-api`、`gemini-api`、`agy`）。
 
 ![显示 prompt 输入区、生成图片、模型标签和结果元数据的 ima2-gen classic 界面](../assets/screenshots/classic-generate-light.png)
 
@@ -45,6 +45,10 @@ ima2 serve
 默认图像生成通过本地 Codex/ChatGPT OAuth 路径执行。
 
 如果 env/config 里有 API key，生成接口可以通过 `provider: "api"` 使用 Responses API 的 `image_generation` tool。
+
+- `provider: "grok-api"` — 通过 `XAI_API_KEY` 直连 xAI Images API
+- `provider: "agy"` — 本地 Antigravity CLI（`IMA2_AGY_BIN`）
+- `provider: "gemini-api"` — `GEMINI_API_KEY` 或 Vertex（`VERTEX_SERVICE_ACCOUNT_JSON`，Vertex 优先）
 
 如果设置页显示 **API key provider available**，意思是检测到了 API key，并且可用于生成、编辑、multimode 和 node 请求。
 
@@ -162,9 +166,13 @@ environment variables > ~/.ima2/config.json > built-in defaults
 | `IMA2_GENERATED_DIR` | `~/.ima2/generated` | 生成图片目录 |
 | `IMA2_IMAGE_MODEL_DEFAULT` | `gpt-5.4-mini` | Server fallback 图像模型 |
 | `IMA2_NO_OAUTH_PROXY` | — | 设为 `1` 时关闭 OAuth proxy 自动启动 |
-| `IMA2_LOG_LEVEL` | `warn` | 普通 `serve` 默认为 `warn`，dev mode 默认为 `debug`；支持 `debug`, `info`, `warn`, `error`, `silent` |
-| `IMA2_INFLIGHT_TERMINAL_TTL_MS` | `30000` | 调试用 recent job 保留时间 |
-| `OPENAI_API_KEY` | — | 辅助功能用 API key，不用于图像生成 |
+| `IMA2_LOG_LEVEL` | `info` | 普通 `serve` 默认为 `info`，dev mode 默认为 `debug`；支持 `debug`, `info`, `warn`, `error`, `silent` |
+| `IMA2_INFLIGHT_TERMINAL_TTL_MS` | `300000` | 调试用 recent job 保留时间 |
+| `OPENAI_API_KEY` | — | `provider: "api"` Responses 图像路径及辅助功能 |
+| `XAI_API_KEY` | — | `provider: "grok-api"` 直连 xAI Images API |
+| `GEMINI_API_KEY` | — | `provider: "gemini-api"` Generative Language API |
+| `VERTEX_SERVICE_ACCOUNT_JSON` | — | Vertex AI 服务账号 JSON（优先于 API 密钥） |
+| `IMA2_AGY_BIN` | PATH 中的 `agy` | `provider: "agy"` 二进制路径 |
 
 ### Logging modes
 

@@ -10,7 +10,7 @@
 
 `ima2-gen` は、無料の ChatGPT と SuperGrok だけで画像と動画を作れるローカル AI スタジオです。
 
-グローバルインストールし、ChatGPT または Grok OAuth でログインすれば、すぐに画像・動画生成を始められます。API キー不要で、ノード分岐、multimode batch、Grok Video、Canvas Mode まで全機能が使えます。
+グローバルインストールし、ChatGPT または Grok OAuth でログインすれば、すぐに画像・動画生成を始められます。デフォルトの OAuth パスは API キー不要です。オプションで API キー系プロバイダー（`api`, `grok-api`, `gemini-api`, `agy`）も利用できます。
 
 ![プロンプト入力、生成画像、モデル表示、結果メタデータが見える ima2-gen classic 画面](../assets/screenshots/classic-generate-light.png)
 
@@ -45,6 +45,10 @@ ima2 serve
 既定の画像生成は、ローカルの Codex/ChatGPT OAuth 経路で実行されます。
 
 API key が env/config に存在する場合、生成エンドポイントで `provider: "api"` を指定すると Responses API の `image_generation` tool を使用できます。
+
+- `provider: "grok-api"` — `XAI_API_KEY` で xAI Images API を直接呼び出し
+- `provider: "agy"` — ローカル Antigravity CLI (`IMA2_AGY_BIN`)
+- `provider: "gemini-api"` — `GEMINI_API_KEY` または Vertex (`VERTEX_SERVICE_ACCOUNT_JSON`、Vertex 優先)
 
 Settings に **API key provider available** と表示される場合、API key が検出され、生成・編集・multimode・node request に使用できるという意味です。
 
@@ -162,9 +166,13 @@ environment variables > ~/.ima2/config.json > built-in defaults
 | `IMA2_GENERATED_DIR` | `~/.ima2/generated` | Generated image directory |
 | `IMA2_IMAGE_MODEL_DEFAULT` | `gpt-5.4-mini` | Server fallback image model |
 | `IMA2_NO_OAUTH_PROXY` | — | `1` で OAuth proxy の自動起動を無効化 |
-| `IMA2_LOG_LEVEL` | `warn` | 通常の `serve` は `warn`、dev mode は `debug`。`debug`, `info`, `warn`, `error`, `silent` をサポート |
-| `IMA2_INFLIGHT_TERMINAL_TTL_MS` | `30000` | デバッグ用の recent job retention |
-| `OPENAI_API_KEY` | — | 補助機能用。画像生成用ではありません |
+| `IMA2_LOG_LEVEL` | `info` | 通常の `serve` は `info`、dev mode は `debug`。`debug`, `info`, `warn`, `error`, `silent` をサポート |
+| `IMA2_INFLIGHT_TERMINAL_TTL_MS` | `300000` | デバッグ用の recent job retention |
+| `OPENAI_API_KEY` | — | `provider: "api"` の Responses 画像パスと補助機能用 |
+| `XAI_API_KEY` | — | `provider: "grok-api"` 直接 xAI Images API |
+| `GEMINI_API_KEY` | — | `provider: "gemini-api"` Generative Language API |
+| `VERTEX_SERVICE_ACCOUNT_JSON` | — | Vertex AI サービスアカウント JSON（API キーより優先） |
+| `IMA2_AGY_BIN` | PATH の `agy` | `provider: "agy"` バイナリパス |
 
 ### Logging modes
 
