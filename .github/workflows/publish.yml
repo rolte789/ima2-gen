@@ -3,6 +3,9 @@ name: Publish to npm
 on:
   release:
     types: [published]
+  push:
+    branches: [preview]
+  workflow_dispatch:
 
 concurrency:
   group: publish-${{ github.ref }}
@@ -50,4 +53,16 @@ jobs:
             exit 1
           fi
           echo "✓ npm version OK, OIDC endpoint available"
-      - run: npm publish --provenance --access public
+      - name: Set preview version (preview branch push only)
+        if: github.event_name != 'release'
+        run: |
+          PREVIEW=$(node -e "const [a,b,c]=require('./package.json').version.split('-')[0].split('.').map(Number); const d=new Date(); const z=n=>String(n).padStart(2,'0'); const tag=\`\${String(d.getUTCFullYear()).slice(2)}\${z(d.getUTCMonth()+1)}\${z(d.getUTCDate())}\`; process.stdout.write(\`\${a}.\${b}.\${c+1}-preview-\${tag}\`)")
+          echo "preview version: $PREVIEW"
+          npm version "$PREVIEW" --no-git-tag-version
+      - name: Publish (latest on release, preview dist-tag on preview push)
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            npm publish --provenance --access public
+          else
+            npm publish --tag preview --provenance --access public
+          fi
