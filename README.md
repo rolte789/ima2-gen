@@ -16,7 +16,7 @@
 
 `ima2-gen` is a local image generation studio for people who want the ChatGPT/Codex image workflow in a small desktop-like web app.
 
-Install globally, sign in with ChatGPT OAuth or Grok OAuth, and start generating images and videos. Iterate with history, references, node branches, multimode batches, Canvas Mode cleanup, and Grok Video generation. No API key required — free ChatGPT OAuth and SuperGrok subscription cover everything.
+Install globally, sign in with ChatGPT OAuth or Grok OAuth, and start generating images and videos. Iterate with history, references, node branches, multimode batches, Canvas Mode cleanup, and Grok Video generation. Default OAuth paths need no API key; optional API-key providers (`api`, `grok-api`, `gemini-api`, `agy`) are also supported.
 
 ![ima2-gen video playback with gallery sidebar showing generated images and videos.](assets/screenshots/classic-generate-light.png)
 
@@ -108,6 +108,7 @@ Image generation can run through the local Codex/ChatGPT OAuth path, a configure
 - `provider: "oauth"` uses the local Codex OAuth proxy.
 - `provider: "api"` calls the OpenAI Responses API with the hosted `image_generation` tool.
 - `provider: "grok"` starts bundled `progrok` on `127.0.0.1:18645`, runs mandatory xAI Web Search plus a planner pass (default: `grok-4.3`, configurable in settings or via `--planner-model`), then calls xAI Images API through the local proxy.
+- `provider: "grok-api"` calls the xAI Images API directly with `XAI_API_KEY` (no bundled progrok OAuth proxy).
 - `provider: "agy"` spawns the Antigravity CLI (`agy -p`) to generate images via Google Gemini's `default_api:generate_image` tool (model: `nano-banana-2`). Output is fixed at 1024×1024 JPEG, max 3 reference images. No web search, quality, or size controls.
 - `provider: "gemini-api"` calls the Google Generative Language API directly. Supports two models: `nano-banana-2` (Gemini 3.1 Flash Image) and `nano-banana-pro` (Gemini 3 Pro Image). Auth is via `GEMINI_API_KEY` env var, web UI key management, or a Vertex AI service account JSON (`VERTEX_SERVICE_ACCOUNT_JSON`). When both an API key and Vertex credentials are configured, Vertex takes priority. Supports variable aspect ratios (1:1 through 21:9) and four resolution tiers (512px, 1K, 2K, 4K); these controls are only honored on the direct API path — the Vertex AI endpoint ignores aspect/size because it does not accept the `response_format` field. Per-model cost differs: `nano-banana-2` (Flash): 512=$0.001, 1K=$0.003, 2K=$0.004, 4K=$0.006; `nano-banana-pro`: 1K=$0.007, 2K=$0.007, 4K=$0.013. No web search or mask controls.
 - API-key generation supports classic generate, edit, mask-guided edit, multimode, and node generation.
@@ -255,6 +256,7 @@ environment variables > ~/.ima2/config.json > built-in defaults
 | `IMA2_LOG_LEVEL` | `info` | Normal serve defaults to `info`; dev mode defaults to `debug`; supports `debug`, `info`, `warn`, `error`, or `silent` |
 | `IMA2_INFLIGHT_TERMINAL_TTL_MS` | `300000` | Recent terminal job retention for debug views |
 | `OPENAI_API_KEY` | — | API key for the `provider: "api"` Responses API image path and auxiliary API-key features |
+| `XAI_API_KEY` | — | API key for `provider: "grok-api"` direct xAI Images API path |
 | `IMA2_API_IMAGE_MODEL_DEFAULT` | `gpt-5.4-mini` | Default image model for `provider: "api"` |
 | `IMA2_API_REASONING_EFFORT` | `low` | Default reasoning effort for `provider: "api"` |
 | `IMA2_API_IMAGE_SIZE` | `1024x1024` | Default size for `provider: "api"` |
@@ -269,6 +271,8 @@ environment variables > ~/.ima2/config.json > built-in defaults
 | `IMA2_OAUTH_MASKED_EDIT_ENABLED` | `false` | Opt-in feature flag for masked-edit requests on the OAuth path (#31, groundwork only) |
 | `GEMINI_API_KEY` | — | API key for `provider: "gemini-api"` direct Generative Language API path |
 | `VERTEX_SERVICE_ACCOUNT_JSON` | — | Google service account JSON for Vertex AI auth with `provider: "gemini-api"`; takes priority over `GEMINI_API_KEY` when both are set |
+| `IMA2_AGY_BIN` | `agy` on PATH | Explicit path to the Antigravity CLI binary for `provider: "agy"` |
+| `IMA2_MAX_PARALLEL` | `24` | Server-wide parallel generation cap |
 
 ### Logging modes
 

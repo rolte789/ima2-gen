@@ -18,7 +18,8 @@ When changing an API, find the endpoint here first. Then check the CLI usage in 
 
 ```mermaid
 graph TD
-    API["server.ts + routes/* /api"] --> STATUS["status<br/>providers health oauth billing"]
+    API["server.ts + routes/* /api"] --> STATUS["status<br/>providers health oauth billing quota keys"]
+    API --> KEYS["keys auth switch agy genlog"]
     API --> IMG["classic image<br/>generate edit history"]
     API --> JOBS["inflight jobs"]
     API --> EVENTS["events multiplex<br/>GET /api/events SSE"]
@@ -31,6 +32,7 @@ graph TD
     API --> PROMPTS["prompt library<br/>crud folders import export"]
     API --> AGENT["agent mode<br/>sessions turns queue"]
     API --> BUILDER["prompt builder<br/>chat assist"]
+    API --> GENLOG["generation request log<br/>GET /api/generation-requests"]
     API --> CARD["cardnews dev-only<br/>templates jobs sets"]
     IMG --> FILES["~/.ima2/generated<br/>sidecar metadata + embedded XMP"]
     NODE --> FILES
@@ -49,6 +51,17 @@ graph TD
 | `GET` | `/api/health` | `{ ok, version, provider, uptimeSec, activeJobs, pid, startedAt, runtime }` | Used by CLI discovery and health checks |
 | `GET` | `/api/oauth/status` | `{ status, models?, runtime }` | Checks whether the OAuth proxy is ready and reports actual proxy URL/port |
 | `GET` | `/api/billing` | `{ oauth, apiKeyValid, apiKeySource, credits?, costs? }` | Probes billing/model state when an API key exists |
+| `GET` | `/api/quota` | `{ codex?, grok? }` | Grok billing quota (`billing.usedUsd` / `billing.limitUsd`); web-UI only |
+| `GET` | `/api/keys/status` | masked key status + `geminiAuthMode` | Settings > API Keys aggregate |
+| `PUT` | `/api/keys/:provider` | `{ apiKey }` | Save `openai` / `xai` / `gemini` key |
+| `DELETE` | `/api/keys/:provider` | none | Remove config-sourced key |
+| `PUT` | `/api/keys/vertex` | `{ serviceAccountJson }` | Save Vertex service account |
+| `DELETE` | `/api/keys/vertex` | none | Remove Vertex credentials |
+| `PUT` | `/api/keys/gemini-auth-mode` | `{ mode }` | Persist `apikey` or `vertex` mode |
+| `POST` | `/api/auth/switch` | `{ provider }` | Start Switch Account device OAuth |
+| `GET` | `/api/auth/switch/:sessionId` | none | Poll Switch Account session |
+| `GET` | `/api/agy/status` | `{ ready, ... }` | AGY CLI provider probe |
+| `GET` | `/api/generation-requests` | `{ items }` | Last 200 generation attempts (#95) |
 | `GET` | `/api/storage/status` | `{ ok, data: { generatedDirLabel, generatedCount, legacyCandidatesScanned, legacySourcesFound, legacyFilesFound, state, messageKind, recoveryDocsPath, doctorCommand, overrides } }` | Summarizes gallery storage and legacy recovery state for UI support banners |
 | `POST` | `/api/storage/open-generated-dir` | `{ ok }` | Opens only the configured generated image folder in the local OS file manager |
 
@@ -121,6 +134,7 @@ Lineage keeps at most four entries with start preserved plus the latest three.
 | `POST` | `/api/history/:filename/restore` | `{ trashId }` | `{ ok }` |
 | `POST` | `/api/history/favorite` | `{ filename, favorite }` | `{ ok, favorite }` |
 | `POST` | `/api/history/import-local` | raw body `image/png` \| `image/jpeg` \| `image/webp`; optional header `X-Ima2-Original-Filename` | `201 { item }` (GenerateItem with `kind: "imported"`) |
+| `POST` | `/api/history/backfill-thumbnails` | none | `{ created, skipped, failed, total }` — recursive thumbnail backfill for gallery/history |
 
 History is reconstructed from image files and sidecar JSON under the configured generated directory. The current implementation uses a process-local history index/cache and applies browser-scoped favorites as an overlay for `/api/history`. `favoritesOnly=1` filters before pagination so older favorites can be reached with cursor paging. `DELETE /api/history/:filename` is a soft-delete into the OS trash via `lib/systemTrash.ts` (`trash` dependency); `lib/assetLifecycle.ts` returns a `trashId` so the UI can offer undo through `POST /api/history/:filename/restore`. `DELETE /api/history/:filename/permanent` skips the trash and removes the file plus any sidecar immediately — used by the gallery's permanent-delete affordance.
 
@@ -407,7 +421,7 @@ Node retry diagnostics include safe context such as `operation`, `clientNodeId`,
 - 2026-05-29: Persisted per-image `elapsed` (numeric seconds) and `reasoningEffort` in sidecar + embedded XMP and exposed both through `/api/history` for Classic, Canvas edit, and Node modes (#79, forward-fix; older items stay blank). Classic/edit `elapsed` responses are now numeric.
 - 2026-05-30: Documented the Agent Mode API (`/api/agent/*` — sessions, turns, durable queue, compact, manifest, tools; backed by `lib/agentStore.ts`, `lib/agentQueueStore.ts`, `lib/agentQueueWorker.ts`, `lib/agentRuntime.ts`) and the Prompt Builder endpoint (`POST /api/prompt-builder/chat`). Re-grounded the API map against current code at ima2-gen 1.1.14.
 - 2026-06-01: Updated the API map for Grok video runtime: generation/edit/extension/frame/analyze, active prompt guidance, `continueFromVideo`, and `videoContinuity` sidecar/SSE contracts.
-- 2026-06-08: Verified `GET /api/events` Events Multiplexing section (lines 157–201) against `routes/events.ts` — replay-gap, `X-Accel-Buffering: no`, 512 cap, `res.end()` cleanup, async 202 dual-emit. Cross-ref `devlog/00_sse-multiplexing-architecture.md`.
+- 2026-06-27: Documented keys/quota/auth-switch/agy/generation-request-log endpoints and provider matrix at ima2-gen 2.0.4; added `POST /api/history/backfill-thumbnails`.
 
 Previous document: `[[02-command-reference]]`
 

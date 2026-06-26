@@ -280,12 +280,12 @@ Windows DNS/fragmentation bypass tool such as SecretDNS is in use.
 | `ima2 prompt edit <id> [--name] [--text] [--folder] [--tags]` | Edit |
 | `ima2 prompt rm <id>` | Delete |
 | `ima2 prompt favorite <id>` | Toggle favorite |
-| `ima2 prompt export <id> [-o <file>]` | Export one prompt to JSON |
+| `ima2 prompt export [-o <file>]` | Export all prompts to JSON |
 | `ima2 prompt folder ls / create <name> / rename <id> <name> / rm <id> [--strategy moveToRoot\|deleteItems]` | Folder CRUD |
 | `ima2 prompt import sources` | List configured import sources |
 | `ima2 prompt import refresh --source <id>` | Re-index a source |
 | `ima2 prompt import curated --source <id> --q <query>` | Curated import (commits prompts) |
-| `ima2 prompt import discovery --q <query> --seeds <a,b,c>` | Discovery import (curator-only on some servers) |
+| `ima2 prompt import discovery --q <query> --seed <repo>...` | Discovery import (curator-only on some servers) |
 | `ima2 prompt import folder <localpath>` | Import a local folder of prompts |
 | `ima2 prompt import json <file\|@file\|-> [--folder <id>]` | Import a JSON export body through `/api/prompts/import` |
 | `ima2 prompt import preview <file\|@file\|-> [--filename <name>]` | Preview local markdown/text candidates without committing |
@@ -318,7 +318,7 @@ Card News requires the server to be started with `IMA2_CARD_NEWS=1` (or `feature
 | `ima2 inflight rm <requestId>` | Force-remove a stuck job |
 | `ima2 storage status` | Storage inspection (richer than `doctor`) |
 | `ima2 storage open` | Open the generated dir in the OS file manager (POST) |
-| `ima2 billing` | API usage / quota; Grok result includes `billing.usedUsd` / `billing.limitUsd` drawn from the xAI billing API |
+| `ima2 billing` | API usage probe via `/api/billing` (OpenAI/API-key credits when configured). Grok quota (`usedUsd`/`limitUsd`) is web-UI only via `GET /api/quota`. |
 | `ima2 providers` | Configured providers |
 | `ima2 oauth status` | OAuth proxy state |
 | `ima2 grok status` | Bundled progrok / xAI image-model probe state |

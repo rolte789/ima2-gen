@@ -516,6 +516,12 @@ Analyze first and last frames from a generated `.mp4` using Grok 4.3 image under
 
 Remote URLs and `data:` inputs are intentionally rejected to avoid server-side URL fetching through `ffmpeg`.
 
+## Generation Request Log
+
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/api/generation-requests` | Returns `{ items: GenerationRequestLogEntry[] }` — the last 200 generation attempts (prompt, requested/succeeded flags, error). Surfaced in the web UI dev panel (`GenerationRequestLogPanel`); no CLI wrapper (#95). |
+
 ## History
 
 | Method | Path | Notes |
@@ -665,7 +671,7 @@ Most server routes under `/api/*` have a CLI wrapper. The exception is **Agent M
 | `GET /api/events` (SSE multiplex) | Web UI only (persistent `EventSource`; no CLI wrapper) |
 | `GET /api/storage/status` / `POST /api/storage/open-generated-dir` | `ima2 storage status` / `ima2 storage open` |
 | `GET /api/billing` / `GET /api/providers` / `GET /api/oauth/status` / `GET /api/grok/status` | `ima2 billing` / `ima2 providers` / `ima2 oauth status` / `ima2 grok status` |
-| `GET /api/quota` | `ima2 billing` (includes Grok `usedUsd`/`limitUsd`) |
+| `GET /api/quota` | Web UI only (Grok quota bar in Settings) |
 | `POST /api/auth/switch` / `GET /api/auth/switch/:sessionId` | Web UI only (Settings > QuotaCard > Switch Account) |
 | `GET /api/health` | `ima2 ping` |
 | `GET /api/capabilities` | `ima2 capabilities` |

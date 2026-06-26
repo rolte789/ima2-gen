@@ -35,7 +35,7 @@ graph TD
 | Item | Current value |
 |---|---|
 | package name | `ima2-gen` |
-| version | `1.1.15` |
+| version | `2.0.4` |
 | type | `module` |
 | bin | `ima2` -> `./bin/ima2.js` |
 | package engine | `node >=20` |
@@ -155,6 +155,18 @@ Every `/api/*` request gets a sanitized `X-Request-Id` header. Static UI files a
 
 Logs intentionally use counts rather than sensitive values: `promptChars`, `refs`, `imageChars`, `durationMs`, and `errorCode`. Do not add raw prompts, style-sheet bodies, data URLs, generated base64, tokens, cookies, or raw upstream response bodies to logs.
 
+## npm Publish (OIDC)
+
+Production releases use GitHub Actions `.github/workflows/publish.yml` with npm **trusted publishing** (OIDC):
+
+| Trigger | npm dist-tag | Notes |
+|---|---|---|
+| GitHub Release `published` | `latest` | Requires `package.json` version to match the release tag (e.g. `v2.0.4`) |
+| Push to `preview` branch | `preview` | Auto-bumps to `X.Y.Z-preview-YYMMDD` in CI |
+| `workflow_dispatch` | `preview` | Manual smoke only |
+
+Local `scripts/release.sh` performs direct `npm publish` with user credentials — prefer the GitHub Release path for production. Preview publishes must use the **registered** `publish.yml` workflow filename (npm trusted-publisher binds per workflow file).
+
 ## Development And Verification
 
 | Task | Command | Expected result |
@@ -200,6 +212,7 @@ Logs intentionally use counts rather than sensitive values: `promptChars`, `refs
 - 2026-05-13: Added `skills/` to the package contract for #62 and documented `IMA2_REASONING_EFFORT` as the OAuth/default reasoning env override exposed by `ima2 defaults`.
 - 2026-05-30: Updated the package version snapshot to `ima2-gen` 1.1.14 (re-grounding pass). Agent Mode (`routes/agent.ts` + `lib/agent*.ts`) and the prompt builder (`routes/promptBuilder.ts`) ship inside the existing `routes/` and `lib/` publish paths; see `[[00-structure-hub]]` and `[[03-server-api]]` for the added runtime surface since 1.1.10.
 - 2026-06-01: Updated the package/runtime note for shipped Grok video support: progrok-backed video generation, edit, extension, frame extraction, analysis, and branch-local continuation are in the runtime scope; the older image-only wording no longer applies.
+- 2026-06-27: Bumped operational baseline to ima2-gen 2.0.4; documented OIDC trusted publishing via `publish.yml` (`latest` on GitHub Release, `preview` on preview branch push).
 
 Previous document: `[[05-node-mode]]`
 
