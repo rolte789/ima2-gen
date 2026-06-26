@@ -7,8 +7,23 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 function occupy(port) {
-  return new Promise((resolve) => {
-    const server = createServer().listen(port, "127.0.0.1", () => resolve(server));
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.once("error", reject);
+    server.listen({ port, host: "127.0.0.1", exclusive: true }, () => resolve(server));
+  });
+}
+
+async function assertPortOccupied(port) {
+  await new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.once("error", (err) => {
+      if (err?.code === "EADDRINUSE") resolve();
+      else reject(err);
+    });
+    probe.listen({ port, host: "127.0.0.1", exclusive: true }, () => {
+      probe.close(() => reject(new Error(`expected port ${port} to be occupied`)));
+    });
   });
 }
 
@@ -28,6 +43,7 @@ test("server falls back when advertised localhost port is occupied", async (t) =
   }
   const preferred = 4700 + Math.floor(Math.random() * 300);
   const blocker = await occupy(preferred);
+  await assertPortOccupied(preferred);
   const home = mkdtempSync(join(tmpdir(), "ima2-server-fallback-"));
   const generated = mkdtempSync(join(tmpdir(), "ima2-server-fallback-generated-"));
   let child;
