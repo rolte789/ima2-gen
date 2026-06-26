@@ -34,6 +34,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AGY Windows pipe handling, Gemini API aspect ratio string values, multimode same-prompt batching.
 - Moderation over-filtering — removed safety tags and added error enrichment.
 
+## [2.0.4] - 2026-06-27
+
+### Added
+
+- **Result metadata inspector** — inspect generation result metadata from the UI (#108).
+- **OAuth size directive** — reinforce non-auto resolutions with explicit LANDSCAPE / PORTRAIT / SQUARE orientation in the text prompt.
+- **Release notes script** — `scripts/generate-release-notes.mjs` auto-categorizes conventional commits for GitHub Releases.
+
+### Changed
+
+- **Preview publish** — merged preview npm publish into the registered `publish.yml` workflow (OIDC trusted publisher); preview dist-tag on `preview` branch push, `latest` on GitHub Release.
+
+### Docs
+
+- `docs/IMAGE_RESOLUTION.md` — OAuth image resolution temporary limitation (~1.57M cap) and future policy undecided.
+
+### CI
+
+- OIDC precondition checks and npm version logging in publish workflow.
+
 ## [2.0.1] - 2026-06-03
 
 ### Added
