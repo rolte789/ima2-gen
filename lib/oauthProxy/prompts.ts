@@ -86,7 +86,20 @@ export const MULTIMODE_NO_SEARCH_DEVELOPER_PROMPT =
 function sizeDirective(options: Record<string, unknown>): string {
   const size = options.size as string | undefined;
   if (!size || size === "auto") return "";
-  return `You MUST generate this image at exactly ${size} resolution.\n\n`;
+  const m = /^(\d+)x(\d+)$/.exec(size.trim().toLowerCase());
+  if (!m) return `You MUST generate this image at exactly ${size} resolution.\n\n`;
+  const w = Number(m[1]);
+  const h = Number(m[2]);
+  // OAuth(Codex) backend honors aspect baked into the request; reinforcing the
+  // orientation (not just WxH) makes portrait/landscape more robust against the
+  // fidelity suffix. Verified by server E2E 2026-06-27. Square pixels are capped
+  // by the backend (~1.57M) but aspect is preserved.
+  const orient = w > h
+    ? " as a WIDE horizontal LANDSCAPE canvas (clearly wider than tall, never square or portrait)"
+    : w < h
+      ? " as a TALL vertical PORTRAIT canvas (clearly taller than wide, never square or landscape)"
+      : " as a SQUARE 1:1 canvas";
+  return `You MUST generate this image at exactly ${size} resolution${orient}.\n\n`;
 }
 
 export function buildUserTextPrompt(userPrompt: string | undefined, mode: string, options: Record<string, unknown> = {}) {
