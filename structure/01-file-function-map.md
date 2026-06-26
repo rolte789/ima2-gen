@@ -60,7 +60,9 @@ routes/
   agy.ts                GET /api/agy/status + Antigravity CLI bridge
   prompts.ts            prompt CRUD/folders/import/export
   promptImport.ts       curated/discovery/folder/preview/commit import routes
-  cardNews.ts           dev-gated /api/cardnews/*
+  generationRequestLog.ts GET /api/generation-requests (#95)
+  agent.ts              /api/agent/* sessions turns queue
+  promptBuilder.ts      POST /api/prompt-builder/chat
   video.ts              POST /api/video/generate SSE
   videoExtended.ts      video edit/extend/frame/analyze helpers
   index.ts              route registration hub
@@ -70,7 +72,7 @@ routes/
 |---|---:|---|
 | `server.ts` | 255 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, route registration, static serving |
 | `config.ts` | 333 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
-| `routes/index.ts` | 44 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, and (when `features.cardNews`) cardNews |
+| `routes/index.ts` | 62 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, and (when `features.cardNews`) cardNews |
 | `routes/capabilities.ts` | 34 | `GET /api/capabilities` — agent-facing runtime defaults; `GET/PATCH /api/config/grok-planner` — Grok planner model query/update |
 | `routes/generate.ts` | 439 | Classic generation API, model validation, reference validation, provider/web-search/reasoning-effort plumbing, cancellation, upstream validation pass-through, sidecar save |
 | `routes/edit.ts` | 281 | Edit API, mask validation, cancellation, OAuth/API edit response save, provider/web-search/reasoning-effort plumbing |
@@ -90,6 +92,8 @@ routes/
 | `routes/prompts.ts` | 379 | Prompt library CRUD, favorites, import/export, and folder management |
 | `routes/promptImport.ts` | 354 | Prompt library preview/commit import API plus PR2 curated search, PR3 GitHub folder browse/preview, and PR4 discovery review endpoints |
 | `routes/cardNews.ts` | 183 | Dev-gated card-news templates, sets, drafts, jobs, regenerate, export (only registered when `config.features.cardNews`) |
+| `routes/generationRequestLog.ts` | 18 | `GET /api/generation-requests` — ring buffer of last 200 generation attempts (#95) |
+| `lib/generationRequestLog.ts` | 89 | In-memory generation request log store |
 | `routes/agent.ts` | 308 | Agent Mode API — sessions, turns, durable queue, compact, manifest, tools (`/api/agent/*`); backed by `lib/agent*.ts`; no CLI wrapper |
 | `routes/promptBuilder.ts` | 37 | `POST /api/prompt-builder/chat` prompt-builder assistant (`lib/promptBuilder/client.ts`); wrapped by `ima2 prompt build` |
 | `routes/events.ts` | 84 | `GET /api/events` — SSE multiplexing endpoint; single persistent stream for all async job progress; ring replay + `replay-gap` + heartbeat |
@@ -204,7 +208,7 @@ routes/
 | Entry | `ui/src/main.tsx` | 10 | React mount |
 | Types | `ui/src/types.ts` | 206 | Provider, quality, size, image model, theme family, embedded metadata, response types, web-search, reasoning effort, multimode |
 | Canvas types | `ui/src/types/canvas.ts` | n/a | Canvas Mode shared types (annotations, versions, masks, brushes) |
-| Store | `ui/src/store/useAppStore.ts` | 3895 | Zustand state for classic, node, sessions, history, in-flight jobs, errors (stacked), storage, themes, custom size, node batch selection, directional edge handles, edge disconnect, node references, node regeneration, prompt library, metadata restore, web-search/reasoning-effort settings, multimode sequence with incremental image/partial/cancel state, canvas annotations and versions, gallery cursor/favorites state, gallery scope (`current-session` / `all`) and gallery default scope (#42) |
+| Store | `ui/src/store/useAppStore.ts` | 507 | Zustand facade; classic/node/video/multimode/inflight/history logic split into `ui/src/store/store*Impl.ts` modules |
 | Persistence registry | `ui/src/store/persistenceRegistry.ts` | 74 | Single source of truth for `ima2.*` localStorage key names — covers gallery scope, gallery default scope, settings, and theme keys; prevents drift between hydration helpers and setters (#43) |
 | Card-news store | `ui/src/store/cardNewsStore.ts` | 416 | Card-news plan, role/image template selection, planner draft, job polling, regenerate actions |
 | Mode/dev gates | `ui/src/lib/devMode.ts` | 10 | `IS_DEV_UI`, `ENABLE_NODE_MODE`, `ENABLE_CARD_NEWS_MODE` build-time flags |
@@ -416,7 +420,7 @@ The `tests/` directory now contains roughly 125 `*.test.js` / `*.test.mjs` / `*.
 - 2026-04-28: Added prompt library (`routes/prompts.js`, `lib/db.js` migrations, prompt UI), image metadata embed/restore (`lib/imageMetadata*.js`, `routes/metadata.js`), card-news cluster (`routes/cardNews.js`, `lib/cardNews*.js`, `ui/src/components/card-news/*`, `ui/src/store/cardNewsStore.ts`), and refreshed line counts/test map for ima2-gen 1.1.5.
 - 2026-04-30: Closed out the TypeScript migration — switched core/route/lib/bin tables from `.js` to `.ts` source paths and updated line counts. Added `routes/multimode.ts`, `routes/annotations.ts`, `routes/canvasVersions.ts`, `routes/comfy.ts`, `lib/canvasVersionStore.ts`, `lib/comfyBridge.ts`, `lib/pngInfo.ts`, `lib/systemTrash.ts`, `bin/lib/sse.ts`, `bin/lib/browser-id.ts`. Documented the CLI feature-parity #45 surface (annotate, canvas-versions, cardnews, comfy, config, history, inflight, metadata, multimode, node, oauth, prompt, providers, session, storage, billing). Added the `ui/src/components/canvas-mode/*` subtree (~3300 lines), mobile shell components, multimode preview, web-search/reasoning controls, and `ui/src/lib/canvas/*`. Bumped `useAppStore.ts` to 3555, `index.css` to 5780, `lib/oauthProxy.ts` to 986, `lib/api.ts` to 992, hooks total to 882, i18n to 1811. Refreshed test map intro to reflect ~114 tests with new canvas-mode/multimode/import/comfy contracts.
 - 2026-05-06: Replaced the monolithic `lib/oauthProxy.ts` row with the `lib/oauthProxy/*` subtree (`generators`, `streams`, `prompts`, `references`, `runtime`, `errors`, `types`, `index`); kept `lib/oauthProxy.ts` as a re-export shim. Added `lib/promptSafetyPolicy.ts`, `lib/responsesImageAdapter.ts`, `lib/providerOptions.ts`, `lib/runtimeContext.ts`, `lib/errInfo.ts`. Added `ui/src/store/persistenceRegistry.ts` as the single source of truth for `ima2.*` localStorage keys (#43) and bumped `ui/src/store/useAppStore.ts` to 3715 lines to cover gallery scope (#42). Refreshed the test-map intro to ~125 entries listing `api-provider-parity`, `oauth-masked-edit`, `gallery-session-scope`, `gallery-shortcuts-visible-domain`, `settings-persistence`, `toast-stack`, `node-generation-lock`, `mobile-generate-entry`, `prompt-import-search-ux`, and the inflight-reload pair (#47).
-- 2026-05-30: Re-grounded the route table against current code at ima2-gen 1.1.14. Added `routes/capabilities.ts` (`GET /api/capabilities`), `routes/agent.ts` (Agent Mode — sessions/turns/durable queue, no CLI), and `routes/promptBuilder.ts` (`POST /api/prompt-builder/chat`); refreshed the `routes/index.ts` registration list and corrected `routes/generate.ts` (439) and `routes/multimode.ts` (458) line counts.
+- 2026-06-27: Added `routes/generationRequestLog.ts` + `lib/generationRequestLog.ts` (#95); refreshed `routes/index.ts` (62 lines) and `useAppStore.ts` facade count (507 + `store*Impl.ts` split) at ima2-gen 2.0.4.
 - 2026-06-01: Updated the map for Grok video runtime: `routes/video.ts`, `routes/videoExtended.ts`, `lib/videoContinuity.ts`, `lib/videoFrameExtract.ts`, `ima2 video continue`, and Grok 4.3 prompt surface inventory.
 
 Previous document: `[[00-structure-hub]]`

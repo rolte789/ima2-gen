@@ -41,6 +41,7 @@ Files in `_plan/` are work-in-progress. They use the format `YYMMDD_<topic>` to 
 | 260514–260516 | CLI parity, agent mode, hardening |
 | 260529–260602 | Video, Agent UI, gallery, Gemini providers |
 | 260602–260608 | Security audit, SSE multiplexing, deployment readiness |
+| 260624–260627 | AGY integration, preview deploy pipeline, docs refresh (2.0.4) |
 
 ## Completed Work (`_fin/`)
 
@@ -58,6 +59,10 @@ When an initiative is fully shipped and merged, its plan folder moves to `_fin/`
 | `260516_agent-mode-codex-rs-workspace` | Agent Mode implementation |
 | `260602_gemini-vertex-api-provider` | Gemini/Vertex provider integration |
 | `260604_500-line-split` | Source file ≤500-line enforcement |
+| `260621_issue95-generation-request-log` | Generation request log (#95) |
+| `260627_preview-deploy-pipeline` | npm preview OIDC publish pipeline |
+
+Snapshot note, 2026-06-27: current release is `ima2-gen@2.0.4`. Active `_plan/` includes `260627_docs-refresh` (structure/docs code-grounding).
 
 ## Cross-References
 

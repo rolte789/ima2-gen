@@ -50,9 +50,9 @@ Settings are a workspace replacement, not a modal overlay. `SettingsButton` live
 | Left panel | `Sidebar.tsx`, `PromptComposer.tsx`, `SettingsButton.tsx` | Focused generation entry plus settings access |
 | Center workspace | `Canvas.tsx`, `NodeCanvas.tsx`, `SettingsWorkspace.tsx`, `ImageNode.tsx`, `card-news/CardNewsWorkspace.tsx` | Classic image display, graph canvas, settings, or dev-only card-news workspace |
 | Agent workspace | `components/agent/*`, `lib/agentApi.ts`, `hooks/useAgentWorkspaceLayout.ts` | Agent Mode conversational image workspace: sessions, turns, durable composer run status, durable queue panel, right-sidebar controls (`/api/agent/*`, no CLI) |
-| Right panel | `RightPanel.tsx`, `SizePicker.tsx`, `CostEstimate.tsx` | Quality, size, format, moderation, count |
-| History | `HistoryStrip.tsx`, `GalleryModal.tsx`, `ResultActions.tsx` | Saved image browsing, favorite, restore, drag-out, and metadata-restore actions |
-| Status | `InFlightList.tsx`, `Toast.tsx`, `BillingBar.tsx`, `AccountSettings.tsx` | Pending jobs, notifications, billing/provider status |
+| Right panel | `RightPanel.tsx`, `SizePicker.tsx`, `CostEstimate.tsx`, `GenerationRequestLogPanel.tsx` | Quality, size, format, moderation, count; dev log tab for `GET /api/generation-requests` (#95) |
+| History | `HistoryStrip.tsx`, `GalleryModal.tsx`, `ResultActions.tsx`, `ResultMetadataModal.tsx` | Saved image browsing, favorite, restore, drag-out, metadata-restore, and per-result metadata inspector (#108) |
+| Status | `InFlightList.tsx`, `Toast.tsx`, `BillingBar.tsx`, `AccountSettings.tsx`, `settings/QuotaCard.tsx` | Pending jobs, notifications, billing/provider status, Grok quota bar + Switch Account |
 | Error UX | `ErrorCard.tsx`, `ui/src/lib/errorCodes.ts`, `errorHandler.ts` | Code-based localized error cards and toast routing |
 | Custom size | `SizePicker.tsx`, `CustomSizeConfirmModal.tsx`, `ui/src/lib/size.ts`, `customSizeSlots.ts` | Keyboard-safe custom size drafts, slot persistence, and generation-time adjustment confirmation |
 | Prompt library | `PromptLibraryPanel.tsx`, `PromptLibraryRow.tsx`, `PromptDetailModal.tsx`, `SavePromptPopover.tsx`, `PromptImportDialog.tsx`, `PromptImportFolderSection.tsx`, `PromptImportDiscoverySection.tsx` | Right-panel/overlay prompt library for browsing, searching, favoriting, inserting, saving, preview-first imports, PR2 curated source search, PR3 GitHub folder file selection, and PR4 reviewed-source discovery |
@@ -80,7 +80,7 @@ The image model preference is stored in `localStorage` as `ima2.imageModel`. Sid
 
 Visible metadata should carry the selected model too. Current result metadata, hydrated history items, and ready node status labels use the server-returned or sidecar-restored `model` so UI debugging matches backend logs. The visible metadata uses compact aliases to preserve elapsed time: model aliases are `5.4m`/`5.4`/`5.5`, and quality aliases are `l`/`m`/`h`. Reasoning effort renders as `R:l`/`R:m`/`R:h`/`R:x` (none hidden) via `formatReasoningLabel` in `ui/src/lib/reasoning.ts`; the `R:` prefix avoids colliding with quality `m`. Per-image `elapsed` and `reasoningEffort` persist across history reload and session restore (#79).
 
-`useAppStore.ts` is now 3715 lines and concentrates most cross-cutting state (classic, node, history, gallery scope, prompt library, metadata restore, multimode sequence, canvas annotations and versions, web-search and reasoning-effort settings, settings, stacked toasts). The card-news store is intentionally separated into `cardNewsStore.ts` (416 lines) so the dev-only feature does not bloat the main bundle path or persistence layer. All `ima2.*` localStorage key names are sourced from `ui/src/store/persistenceRegistry.ts` (74 lines, #43) so hydration helpers, setters, and contract tests stay aligned.
+`useAppStore.ts` is now a **507-line facade** over focused impl modules (`storeGenImpl.ts`, `storeNodeGenImpl.ts`, `storeVideoImpl.ts`, `storeInflightImpl.ts`, etc.). Cross-cutting state (classic, node, history, gallery scope, prompt library, metadata restore, multimode sequence, canvas annotations/versions, web-search and reasoning-effort settings, settings, stacked toasts) lives in those slices. The card-news store remains separated in `cardNewsStore.ts` (416 lines).
 
 ## API Client
 
@@ -99,6 +99,7 @@ Visible metadata should carry the selected model too. Current result metadata, h
 | `postMetadataRead` | `POST /api/metadata/read` | Drag-and-drop metadata restore dialog |
 | Prompt library helpers | `/api/prompts*` | List, create, update, delete, favorite, import, export, folders, prompt import preview/commit, curated sources/search/refresh, GitHub folder list/preview |
 | Session style sheet helpers | `/api/sessions/:id/style-sheet*` | Get/save/enable/extract style sheet from a reference history image |
+| `getGenerationRequestLog` | `GET /api/generation-requests` | Dev log panel (`ui/src/lib/api-log.ts`) |
 | Card-news helpers | `/api/cardnews/*` (dev-only via `cardNewsApi.ts`) | Templates, role templates, sets, draft, generate, jobs, regenerate, export |
 | `postNodeGenerate` | `POST /api/node/generate` | Node-mode generation, implemented in `nodeApi.ts` |
 | `postNodeGenerateStream` | `POST /api/node/generate` with `Accept: text/event-stream` | Node-mode partial preview/error streaming, implemented in `nodeApi.ts` |
