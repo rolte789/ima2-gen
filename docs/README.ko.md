@@ -56,7 +56,7 @@ irm https://lidge-jun.github.io/ima2-gen/install-windows.ps1 | iex
 curl -fsSL https://lidge-jun.github.io/ima2-gen/install-linux.sh | bash
 ```
 
-각 스크립트가 nvm/fnm/brew/winget을 감지하고, 없으면 Node LTS를 자동 설치한 뒤, ima2-gen을 설치합니다.
+각 스크립트가 nvm/fnm/brew/winget을 감지하고, 없으면 Node LTS를 자동 설치한 뒤, ima2-gen을 설치합니다. 잔여 프로세스 정리도 자동으로 처리합니다.
 
 ### 업데이트
 
