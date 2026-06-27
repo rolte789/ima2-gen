@@ -75,12 +75,12 @@ The CLI surface was expanded to near-feature-parity with the server API in #45 (
 | `ima2 defaults <subcommand>` | local or `/api/capabilities` | Inspect/change persistent model and reasoning defaults |
 | `ima2 capabilities` | `/api/capabilities` or local fallback | Print agent-facing capability metadata |
 | `ima2 skill` | local package | Print the packaged Markdown agent skill |
-| `ima2 inflight <subcommand>` | `/api/inflight*` | List/cancel running jobs (alias surface for `ps`/`cancel`) |
-| `ima2 storage <subcommand>` | `/api/storage*` | Storage status and open generated dir |
+| `ima2 inflight <subcommand>` | `/api/inflight*` | List/cancel running jobs (alias surface for `ps`/`cancel`; implemented in `bin/commands/observability.ts`) |
+| `ima2 storage <subcommand>` | `/api/storage*` | Storage status and open generated dir (via `observability.ts`) |
 | `ima2 backfill-thumbs` | `POST /api/history/backfill-thumbnails` | Recursive local thumbnail backfill for gallery/history |
-| `ima2 billing` | `/api/billing` | Show billing/usage summary (OpenAI/API-key probe; not Grok quota) |
-| `ima2 providers` | `/api/providers` | Show available providers and modes |
-| `ima2 oauth <subcommand>` | `/api/oauth*` | OAuth status and helpers |
+| `ima2 billing` | `/api/billing` | Show billing/usage summary (OpenAI/API-key probe; not Grok quota; via `observability.ts`) |
+| `ima2 providers` | `/api/providers` | Show available providers and modes (via `observability.ts`) |
+| `ima2 oauth <subcommand>` | `/api/oauth*` | OAuth status and helpers (via `observability.ts`) |
 | `ima2 ls` | `GET /api/history` | History list (legacy alias of `history list`) |
 | `ima2 show <name>` | `GET /api/history` plus file path | Show or reveal one history item |
 | `ima2 ps` | `GET /api/inflight` | List running classic/node/multimode jobs (legacy alias of `inflight list`) |
@@ -254,6 +254,7 @@ Deferred:
 - 2026-05-11: Implemented the #61 CLI parity slice: provider overrides for generation commands, multimode refs/mode, multimode inflight help, server-side `ls --favorites`, and CLI feature-parity contract tests. `edit --mask` remains deferred to #31.
 - 2026-05-13: Added #62 agent discovery commands: packaged `skills/ima2/SKILL.md`, `ima2 skill`, `ima2 capabilities`, and `ima2 defaults`.
 - 2026-06-27: Expanded `--provider` enum (`grok-api`, `agy`, `gemini-api`), documented `ima2 backfill-thumbs`, and clarified billing vs quota CLI surfaces at ima2-gen 2.0.4.
+- 2026-06-28: WP6 — documented that `inflight`/`storage`/`billing`/`providers`/`oauth` aliases dispatch through `bin/commands/observability.ts`.
 
 Previous document: `[[01-file-function-map]]`
 

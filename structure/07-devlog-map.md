@@ -62,7 +62,7 @@ When an initiative is fully shipped and merged, its plan folder moves to `_fin/`
 | `260621_issue95-generation-request-log` | Generation request log (#95) |
 | `260627_preview-deploy-pipeline` | npm preview OIDC publish pipeline |
 
-Snapshot note, 2026-06-27: current release is `ima2-gen@2.0.4`. Active `_plan/` includes `260627_docs-refresh` (structure/docs code-grounding).
+Snapshot note, 2026-06-28: WP6 docs code-grounding complete — `devlog/_plan/260628_wp6_docs_code_grounding/`; automated line-count refresh + API/CLI contract tests landed on `dev` (`6383fc4`..`183a78a`).
 
 ## Cross-References
 

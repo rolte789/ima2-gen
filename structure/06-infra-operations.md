@@ -64,6 +64,7 @@ README may still mention a different Node baseline. The operational baseline is 
 | `npm run setup` | `node bin/ima2.js setup` | Configure provider |
 | `npm run lint:pkg` | package metadata check | Validate package fields and publish file list |
 | `npm run test:package-install` | temp tarball install smoke | Installs packed package and checks `ima2 doctor`, `/api/health`, and `/api/storage/status` |
+| `npm run docs:refresh-line-counts` | `node scripts/refresh-structure-line-counts.mjs` | Refresh `structure/01-file-function-map.md` lib/bin/route line counts; pass `--check` in CI |
 | `prepack` | `ui:build && build:server && build:cli` | Refresh all committed runtime artifacts (UI, server, CLI) before tarball |
 | `prepublishOnly` | `typecheck && typecheck:tests && test:inventory && ui:build && build:server && build:cli && lint:pkg && test:package-install` | Full pre-publish gate: type checks (incl. `tests/` overlay), test-inventory gate, builds, package metadata lint, and tarball install smoke. Note: `npm test` is no longer in this chain — run it explicitly before publish. |
 
@@ -213,6 +214,7 @@ Local `scripts/release.sh` performs direct `npm publish` with user credentials �
 - 2026-05-30: Updated the package version snapshot to `ima2-gen` 1.1.14 (re-grounding pass). Agent Mode (`routes/agent.ts` + `lib/agent*.ts`) and the prompt builder (`routes/promptBuilder.ts`) ship inside the existing `routes/` and `lib/` publish paths; see `[[00-structure-hub]]` and `[[03-server-api]]` for the added runtime surface since 1.1.10.
 - 2026-06-01: Updated the package/runtime note for shipped Grok video support: progrok-backed video generation, edit, extension, frame extraction, analysis, and branch-local continuation are in the runtime scope; the older image-only wording no longer applies.
 - 2026-06-27: Bumped operational baseline to ima2-gen 2.0.4; documented OIDC trusted publishing via `publish.yml` (`latest` on GitHub Release, `preview` on preview branch push).
+- 2026-06-28: WP6 — added `npm run docs:refresh-line-counts` and documented `tests/{structure-line-counts,api-docs,cli-feature-parity}-contract.test.js` as docs drift gates.
 
 Previous document: `[[05-node-mode]]`
 
