@@ -12,6 +12,8 @@ The map matters because the repository looks small, but runtime responsibility i
 
 Snapshot note, 2026-05-11: TypeScript migration is closed (#24). Source files for `server`, `config`, `routes/*`, `lib/*`, and `bin/*` are all `*.ts`. Paired `*.js` files are committed runtime artifacts produced by `tsc -p tsconfig.build.json` (server/lib/routes), `tsc -p tsconfig.bin.json` (CLI), and `prepack`; do not edit them by hand. Line counts in this document refer to the `.ts` source unless otherwise noted. CLI parity #61 added provider overrides, multimode refs/mode, multimode inflight help, server-side favorites listing, and source-contract tests.
 
+Snapshot note, 2026-06-27 (v2.0.4): refreshed route and bootstrap line counts below from live `wc -l` on `routes/*.ts`, `server.ts`, and `config.ts`. Largest movers since the prior snapshot: `routes/generate.ts` (~547), `routes/multimode.ts` (~564), `routes/nodes.ts` (~530), `routes/video.ts` (~421), `server.ts` (~436).
+
 Before adding a feature, choose the surface first. For CLI work, read `bin/` and `[[02-command-reference]]`. For API work, read `server.ts`, `routes/*.ts`, `lib/*.ts`, and `[[03-server-api]]`. For UI work, read `ui/src/` and `[[04-frontend-architecture]]`. For graph workflow work, also read `[[05-node-mode]]`.
 
 ---
@@ -70,38 +72,38 @@ routes/
 
 | File | Lines | Responsibility |
 |---|---:|---|
-| `server.ts` | 255 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, route registration, static serving |
-| `config.ts` | 333 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
+| `server.ts` | 436 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, route registration, static serving |
+| `config.ts` | 365 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
 | `routes/index.ts` | 62 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, and (when `features.cardNews`) cardNews |
 | `routes/capabilities.ts` | 34 | `GET /api/capabilities` — agent-facing runtime defaults; `GET/PATCH /api/config/grok-planner` — Grok planner model query/update |
-| `routes/generate.ts` | 439 | Classic generation API, model validation, reference validation, provider/web-search/reasoning-effort plumbing, cancellation, upstream validation pass-through, sidecar save |
-| `routes/edit.ts` | 281 | Edit API, mask validation, cancellation, OAuth/API edit response save, provider/web-search/reasoning-effort plumbing |
-| `routes/multimode.ts` | 458 | `POST /api/generate/multimode` SSE orchestrator: multimode inflight state, incremental final-image save/send, partial timeout, cancellation, provider/web-search/reasoning-effort plumbing |
-| `routes/video.ts` | 300 | `POST /api/video/generate` SSE: Grok video T2V/I2V/Ref2V, active prompt guard, continuation lineage, sidecar persistence |
+| `routes/generate.ts` | 547 | Classic generation API, model validation, reference validation, provider/web-search/reasoning-effort plumbing, cancellation, upstream validation pass-through, sidecar save |
+| `routes/edit.ts` | 391 | Edit API, mask validation, cancellation, OAuth/API edit response save, provider/web-search/reasoning-effort plumbing |
+| `routes/multimode.ts` | 564 | `POST /api/generate/multimode` SSE orchestrator: multimode inflight state, incremental final-image save/send, partial timeout, cancellation, provider/web-search/reasoning-effort plumbing |
+| `routes/video.ts` | 421 | `POST /api/video/generate` SSE: Grok video T2V/I2V/Ref2V, active prompt guard, continuation lineage, sidecar persistence |
 | `routes/videoExtended.ts` | 284 | Video edit, extension, frame extraction, and Grok 4.3 first/last-frame analysis |
-| `routes/nodes.ts` | 523 | Node generation API, explicit context/search policy, SSE partial/error streaming, child references, safe retry diagnostics, cancellation, node sidecar save, node fetch |
+| `routes/nodes.ts` | 530 | Node generation API, explicit context/search policy, SSE partial/error streaming, child references, safe retry diagnostics, cancellation, node sidecar save, node fetch |
 | `routes/sessions.ts` | 317 | SQLite-backed session list/load/save/rename/delete, style-sheet get/put/enable/extract, graph save |
-| `routes/history.ts` | 221 | History list, cursor pagination, favorites-only filtering, grouped gallery, soft delete (OS trash), restore, gallery favorite toggle, permanent delete |
-| `routes/imageImport.ts` | 35 | `POST /api/history/import-local` raw image upload (PNG/JPEG/WebP) — Phase 10 drop-import for Canvas |
-| `routes/health.ts` | 118 | Providers, health, OAuth status, inflight list/cancel for classic/node/multimode jobs, billing |
-| `routes/storage.ts` | 39 | Gallery storage status and generated-folder open action |
-| `routes/metadata.ts` | 71 | `/api/metadata/read` for embedded XMP image metadata extraction |
-| `routes/annotations.ts` | 95 | `GET/PUT/DELETE /api/annotations/:filename` for canvas annotation overlays |
-| `routes/canvasVersions.ts` | 64 | `POST/PUT /api/canvas-versions` for canvas version snapshots |
-| `routes/comfy.ts` | 39 | `POST /api/comfy/export-image` ComfyUI bridge export |
-| `routes/prompts.ts` | 379 | Prompt library CRUD, favorites, import/export, and folder management |
-| `routes/promptImport.ts` | 354 | Prompt library preview/commit import API plus PR2 curated search, PR3 GitHub folder browse/preview, and PR4 discovery review endpoints |
-| `routes/cardNews.ts` | 183 | Dev-gated card-news templates, sets, drafts, jobs, regenerate, export (only registered when `config.features.cardNews`) |
+| `routes/history.ts` | 233 | History list, cursor pagination, favorites-only filtering, grouped gallery, soft delete (OS trash), restore, gallery favorite toggle, permanent delete |
+| `routes/imageImport.ts` | 37 | `POST /api/history/import-local` raw image upload (PNG/JPEG/WebP) — Phase 10 drop-import for Canvas |
+| `routes/health.ts` | 124 | Providers, health, OAuth status, inflight list/cancel for classic/node/multimode jobs, billing |
+| `routes/storage.ts` | 47 | Gallery storage status and generated-folder open action |
+| `routes/metadata.ts` | 77 | `/api/metadata/read` for embedded XMP image metadata extraction |
+| `routes/annotations.ts` | 118 | `GET/PUT/DELETE /api/annotations/:filename` for canvas annotation overlays |
+| `routes/canvasVersions.ts` | 69 | `POST/PUT /api/canvas-versions` for canvas version snapshots |
+| `routes/comfy.ts` | 43 | `POST /api/comfy/export-image` ComfyUI bridge export |
+| `routes/prompts.ts` | 428 | Prompt library CRUD, favorites, import/export, and folder management |
+| `routes/promptImport.ts` | 379 | Prompt library preview/commit import API plus PR2 curated search, PR3 GitHub folder browse/preview, and PR4 discovery review endpoints |
+| `routes/cardNews.ts` | 211 | Dev-gated card-news templates, sets, drafts, jobs, regenerate, export (only registered when `config.features.cardNews`) |
 | `routes/generationRequestLog.ts` | 18 | `GET /api/generation-requests` — ring buffer of last 200 generation attempts (#95) |
-| `lib/generationRequestLog.ts` | 89 | In-memory generation request log store |
-| `routes/agent.ts` | 308 | Agent Mode API — sessions, turns, durable queue, compact, manifest, tools (`/api/agent/*`); backed by `lib/agent*.ts`; no CLI wrapper |
+| `lib/generationRequestLog.ts` | 41 | In-memory generation request log store |
+| `routes/agent.ts` | 325 | Agent Mode API — sessions, turns, durable queue, compact, manifest, tools (`/api/agent/*`); backed by `lib/agent*.ts`; no CLI wrapper |
 | `routes/promptBuilder.ts` | 37 | `POST /api/prompt-builder/chat` prompt-builder assistant (`lib/promptBuilder/client.ts`); wrapped by `ima2 prompt build` |
 | `routes/events.ts` | 84 | `GET /api/events` — SSE multiplexing endpoint; single persistent stream for all async job progress; ring replay + `replay-gap` + heartbeat |
-| `lib/eventBus.ts` | 68 | Global pub/sub event bus with ring buffer (2000), monotonic `seq`, `replaySince`, `hasReplayGap` |
+| `lib/eventBus.ts` | 82 | Global pub/sub event bus with ring buffer (2000), monotonic `seq`, `replaySince`, `hasReplayGap` |
 | `lib/ssePublish.ts` | 16 | `publishJobEvent` — terminal `done` suppression after cancel (cancel↔done race guard) |
 | `ui/src/lib/eventChannel.ts` | 124 | Browser singleton `EventSource` for `/api/events`; exponential backoff reconnect; `subscribe(jobId)` routing; connection state callbacks; `armStreamTimeout`; `ensureConnected` |
 | `ui/src/lib/sseStreamError.ts` | 24 | Shared `parseSseErrorPayload` — normalizes flat/nested SSE error shapes |
-| `bin/ima2.ts` | 444 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
+| `bin/ima2.ts` | 450 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
 | `bin/commands/gen.ts` | 214 | CLI image-generation client with references, provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, and output-dir options |
 | `bin/commands/edit.ts` | 150 | CLI image-edit client with provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, and output options |
 | `bin/commands/multimode.ts` | 196 | CLI multimode SSE client with provider override, references, prompt mode, incremental image save, timeout recovery, web-search, reasoning-effort, and session options |
@@ -124,7 +126,7 @@ routes/
 | `bin/commands/ls.ts` | 64 | History list client (legacy alias); supports session and server-side favorites filtering via `favoritesOnly=1` |
 | `bin/commands/ps.ts` | 81 | Inflight job list client, including optional terminal job snapshots; accepts arbitrary `kind` and documents `classic|node|multimode` |
 | `bin/commands/show.ts` | 48 | Single history item display/reveal client |
-| `bin/commands/video.ts` | 442 | Video CLI surface: generate, edit, extend, frame, analyze, and branch-local `continue` |
+| `bin/commands/video.ts` | 452 | Video CLI surface: generate, edit, extend, frame, analyze, and branch-local `continue` |
 | `bin/commands/ping.ts` | 28 | Server health probe client |
 | `bin/lib/client.ts` | 100 | Server discovery, HTTP request wrapper, response normalization |
 | `bin/lib/platform.ts` | 97 | Browser-open and binary-resolution helpers |
@@ -384,7 +386,7 @@ The `tests/` directory now contains roughly 125 `*.test.js` / `*.test.mjs` / `*.
 | `useAppStore.ts` is the central store at 3555 lines | Classic, node, session, history, prompt-library, metadata-restore, multimode, canvas annotations/versions, web-search/reasoning state are together | `04-frontend-architecture`, `05-node-mode` |
 | `cardNewsStore.ts` is a separate dev-only store at 416 lines | Card-news plan/job state is isolated from `useAppStore` | `04-frontend-architecture`, `06-infra-operations` |
 | `lib/oauthProxy.ts` is 986 lines | OAuth Responses streaming is the largest single helper; multimode and reasoning-effort plumbing land here too — split candidates remain | `03-server-api`, `05-node-mode` |
-| `routes/prompts.ts` is 379 lines | Prompt library CRUD + folders + import/export grew beyond a single concern | `03-server-api`, `04-frontend-architecture` |
+| `routes/prompts.ts` is 428 lines | Prompt library CRUD + folders + import/export grew beyond a single concern | `03-server-api`, `04-frontend-architecture` |
 | `lib/promptImport/*` cluster | Prompt source validation and parsing are split from prompt CRUD to keep PR1 import logic isolated | `03-server-api`, `04-frontend-architecture` |
 | `lib/cardNews*.ts` cluster | Dev-only feature isolated behind `config.features.cardNews`; not on the publish path by default | `06-infra-operations`, `07-devlog-map` |
 | `ui/src/components/canvas-mode/` subtree (~3300 lines, 23 files) | Canvas Mode workspace was split out of a single component (#11bc214) into a subtree of focused workspace + tool + hook files | `04-frontend-architecture`, `07-devlog-map` |
@@ -421,6 +423,7 @@ The `tests/` directory now contains roughly 125 `*.test.js` / `*.test.mjs` / `*.
 - 2026-04-30: Closed out the TypeScript migration — switched core/route/lib/bin tables from `.js` to `.ts` source paths and updated line counts. Added `routes/multimode.ts`, `routes/annotations.ts`, `routes/canvasVersions.ts`, `routes/comfy.ts`, `lib/canvasVersionStore.ts`, `lib/comfyBridge.ts`, `lib/pngInfo.ts`, `lib/systemTrash.ts`, `bin/lib/sse.ts`, `bin/lib/browser-id.ts`. Documented the CLI feature-parity #45 surface (annotate, canvas-versions, cardnews, comfy, config, history, inflight, metadata, multimode, node, oauth, prompt, providers, session, storage, billing). Added the `ui/src/components/canvas-mode/*` subtree (~3300 lines), mobile shell components, multimode preview, web-search/reasoning controls, and `ui/src/lib/canvas/*`. Bumped `useAppStore.ts` to 3555, `index.css` to 5780, `lib/oauthProxy.ts` to 986, `lib/api.ts` to 992, hooks total to 882, i18n to 1811. Refreshed test map intro to reflect ~114 tests with new canvas-mode/multimode/import/comfy contracts.
 - 2026-05-06: Replaced the monolithic `lib/oauthProxy.ts` row with the `lib/oauthProxy/*` subtree (`generators`, `streams`, `prompts`, `references`, `runtime`, `errors`, `types`, `index`); kept `lib/oauthProxy.ts` as a re-export shim. Added `lib/promptSafetyPolicy.ts`, `lib/responsesImageAdapter.ts`, `lib/providerOptions.ts`, `lib/runtimeContext.ts`, `lib/errInfo.ts`. Added `ui/src/store/persistenceRegistry.ts` as the single source of truth for `ima2.*` localStorage keys (#43) and bumped `ui/src/store/useAppStore.ts` to 3715 lines to cover gallery scope (#42). Refreshed the test-map intro to ~125 entries listing `api-provider-parity`, `oauth-masked-edit`, `gallery-session-scope`, `gallery-shortcuts-visible-domain`, `settings-persistence`, `toast-stack`, `node-generation-lock`, `mobile-generate-entry`, `prompt-import-search-ux`, and the inflight-reload pair (#47).
 - 2026-06-27: Added `routes/generationRequestLog.ts` + `lib/generationRequestLog.ts` (#95); refreshed `routes/index.ts` (62 lines) and `useAppStore.ts` facade count (507 + `store*Impl.ts` split) at ima2-gen 2.0.4.
+- 2026-06-28: v2.0.4 route/bootstrap line-count refresh from live `wc -l` — `server.ts` 436, `config.ts` 365, `routes/generate.ts` 547, `routes/multimode.ts` 564, `routes/nodes.ts` 530, `routes/video.ts` 421, `routes/agent.ts` 325, `bin/ima2.ts` 450, `bin/commands/video.ts` 452.
 - 2026-06-01: Updated the map for Grok video runtime: `routes/video.ts`, `routes/videoExtended.ts`, `lib/videoContinuity.ts`, `lib/videoFrameExtract.ts`, `ima2 video continue`, and Grok 4.3 prompt surface inventory.
 
 Previous document: `[[00-structure-hub]]`
