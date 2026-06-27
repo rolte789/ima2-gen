@@ -422,6 +422,7 @@ Node retry diagnostics include safe context such as `operation`, `clientNodeId`,
 - 2026-05-30: Documented the Agent Mode API (`/api/agent/*` — sessions, turns, durable queue, compact, manifest, tools; backed by `lib/agentStore.ts`, `lib/agentQueueStore.ts`, `lib/agentQueueWorker.ts`, `lib/agentRuntime.ts`) and the Prompt Builder endpoint (`POST /api/prompt-builder/chat`). Re-grounded the API map against current code at ima2-gen 1.1.14.
 - 2026-06-01: Updated the API map for Grok video runtime: generation/edit/extension/frame/analyze, active prompt guidance, `continueFromVideo`, and `videoContinuity` sidecar/SSE contracts.
 - 2026-06-27: Documented keys/quota/auth-switch/agy/generation-request-log endpoints and provider matrix at ima2-gen 2.0.4; added `POST /api/history/backfill-thumbnails`.
+- 2026-06-28: WP6 — expanded `docs/API.md` with Prompt Library, Prompt Import, and Card News route tables; `tests/api-docs-contract.test.js` enforces full `routes/*.ts` `/api/*` coverage.
 
 Previous document: `[[02-command-reference]]`
 
