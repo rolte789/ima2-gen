@@ -18,6 +18,8 @@ Snapshot note, 2026-05-06: gallery now defaults to the current session with an "
 
 Snapshot note, 2026-05-30: **Agent Mode** shipped a dedicated React workspace under `ui/src/components/agent/` (`ui/src/lib/agentApi.ts`, `ui/src/hooks/useAgentWorkspaceLayout.ts`, `ui/src/lib/agentLayout.ts`, and `ui/src/styles/agent-workspace*.css`). It adds a session list, a turn/conversation view, a durable queue panel with cancel/retry, right-sidebar model/quality/form controls, per-session run state, and slash-command / `/question` handling, talking to the always-on `/api/agent/*` routes. Agent Mode has no CLI surface; it is web-UI only. Active run progress is derived from `queueBySession`/`runSummaryBySession` and displayed in a compact composer-adjacent status bar instead of a synthetic assistant chat bubble, so refreshes and session switches recover the spinner from durable queue state.
 
+Snapshot note, 2026-06-27 (v2.0.4): store facade `useAppStore.ts` is now ~507 lines after splitting state into `store*Impl.ts` modules (`storeGenerationImpl`, `storeGalleryImpl`, `storeInflightImpl`, etc.). Global styles live in `ui/src/index.css` (~105 lines) after CSS modularization into feature-scoped files. New/updated UI surfaces include `GenerationRequestLogPanel` (dev log tab for `GET /api/generation-requests`), `ResultMetadataModal` (per-result metadata inspector), `settings/QuotaCard` (Grok billing bar + Switch Account), storyboard mode toggle in the composer, and video frame copy (First/Mid/Last). Node default `searchMode` is `"on"` when web search is enabled.
+
 ---
 
 ## Render Flow
@@ -149,8 +151,9 @@ Error handling is centralized. API helpers preserve `err.code` where the server 
 
 | File | Current signal | Caution |
 |---|---|---|
-| `ui/src/index.css` | 5780 lines | Large structural changes can easily create CSS drift across classic, node, canvas-mode, prompt-library, prompt-import dialog, gallery, mobile shell, and card-news surfaces |
-| `ui/src/components/*.tsx` | 5263 lines (excluding `card-news/` subtree) | Component class names and CSS are tightly coupled |
+| `ui/src/index.css` | ~105 lines (global tokens/imports; feature CSS colocated) | Large structural changes can easily create CSS drift across classic, node, canvas-mode, prompt-library, prompt-import dialog, gallery, mobile shell, and card-news surfaces |
+| `ui/src/components/*.tsx` | ~17200 lines (excluding `card-news/` subtree) | Component class names and CSS are tightly coupled |
+| `ui/src/store/useAppStore.ts` | ~507 lines (facade over `store*Impl.ts`) | Store shape changes must stay in sync with impl modules and localStorage migration paths |
 | `ui/src/components/card-news/*.tsx` | Dev-only subtree | Do not touch from non-card-news work; gated behind `VITE_IMA2_CARD_NEWS=1` / `VITE_IMA2_DEV=1` |
 | `ui/dist/` | Build output | Do not edit directly |
 | `public/index.html.legacy` | Legacy artifact | Do not use it as the source for new active UI behavior |
@@ -187,6 +190,7 @@ Error handling is centralized. API helpers preserve `err.code` where the server 
 - 2026-05-29: Added the `R:l`/`R:m`/`R:h`/`R:x` reasoning label (`formatReasoningLabel`, none hidden) to Classic/Canvas/Node result metadata, persisted `elapsed`/`reasoningEffort` across reload + session restore, and portaled the sidebar model dropdown to `document.body` (fixed, z-index 160, scroll-close, `max-height`) so it no longer clips (#79).
 - 2026-05-30: Documented the Agent Mode workspace (`ui/src/components/agent/*`, `lib/agentApi.ts`, `hooks/useAgentWorkspaceLayout.ts`, `styles/agent-workspace*.css`) — session list, turn view, durable queue panel, right-sidebar controls, slash commands / `/question` — talking to the always-on `/api/agent/*` routes (no CLI). Re-grounding pass for ima2-gen 1.1.14.
 - 2026-06-01: Recorded the Grok video UI contract: Classic "Continue here", gallery/history video drag, and Node parent-video generation attach the previous video's last frame and carry `videoContinuity` lineage; the video controls panel shows pending continuity context while Canvas shows selected-result lineage metadata.
+- 2026-06-27: v2.0.4 snapshot — refreshed line counts (`useAppStore` ~507 facade, `index.css` ~105, components ~17200), documented `GenerationRequestLogPanel`, `ResultMetadataModal`, `QuotaCard`, storyboard mode, and video frame copy.
 
 Previous document: `[[03-server-api]]`
 
