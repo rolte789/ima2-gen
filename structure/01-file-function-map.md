@@ -12,7 +12,7 @@ The map matters because the repository looks small, but runtime responsibility i
 
 Snapshot note, 2026-05-11: TypeScript migration is closed (#24). Source files for `server`, `config`, `routes/*`, `lib/*`, and `bin/*` are all `*.ts`. Paired `*.js` files are committed runtime artifacts produced by `tsc -p tsconfig.build.json` (server/lib/routes), `tsc -p tsconfig.bin.json` (CLI), and `prepack`; do not edit them by hand. Line counts in this document refer to the `.ts` source unless otherwise noted. CLI parity #61 added provider overrides, multimode refs/mode, multimode inflight help, server-side favorites listing, and source-contract tests.
 
-Snapshot note, 2026-06-28 (v2.0.4): full `lib/*`, `bin/commands/*`, `bin/lib/*`, `routes/*`, and selected `ui/src/lib/*` line counts refreshed via `npm run docs:refresh-line-counts` (`scripts/refresh-structure-line-counts.mjs`). Contract test: `tests/structure-line-counts-contract.test.js`.
+Snapshot note, 2026-06-28 (v2.0.4): full `lib/*`, `bin/commands/*`, `bin/lib/*`, `routes/*`, and selected `ui/src/lib/*` line counts refreshed via `npm run docs:refresh-line-counts` (`scripts/refresh-structure-line-counts.mjs`). Contract tests: `tests/structure-line-counts-contract.test.js`, `tests/api-docs-contract.test.js`.
 
 Before adding a feature, choose the surface first. For CLI work, read `bin/` and `[[02-command-reference]]`. For API work, read `server.ts`, `routes/*.ts`, `lib/*.ts`, and `[[03-server-api]]`. For UI work, read `ui/src/` and `[[04-frontend-architecture]]`. For graph workflow work, also read `[[05-node-mode]]`.
 
@@ -204,6 +204,26 @@ routes/
 | `lib/promptImport/promptIndex.ts` | 327 | File-based curated/reviewed source index/cache, refresh, and search orchestration |
 | `lib/promptImport/rankPromptCandidates.ts` | 66 | Query scoring for curated prompt candidates |
 
+## Agent Mode Lib Cluster
+
+Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and generation orchestration live in `lib/agent*.ts`.
+
+| File | Lines | Responsibility |
+|---|---:|---|
+| `lib/agentTypes.ts` | 173 | Shared Agent Mode types |
+| `lib/agentStore.ts` | 423 | SQLite session/turn persistence |
+| `lib/agentStoreRows.ts` | 137 | Row mapping helpers for agent store |
+| `lib/agentSettings.ts` | 76 | Per-session generation settings |
+| `lib/agentRuntime.ts` | 410 | Turn execution, tool dispatch, generation delegation |
+| `lib/agentQueueStore.ts` | 317 | Durable async queue persistence |
+| `lib/agentQueueWorker.ts` | 149 | Background queue worker |
+| `lib/agentCommandParser.ts` | 75 | Slash-command parsing |
+| `lib/agentToolManifest.ts` | 100 | Tool metadata for `/api/agent/tools` |
+| `lib/agentPlannerModel.ts` | 201 | Planner model selection |
+| `lib/agentGenerationPlanner.ts` | 353 | Generation plan assembly |
+| `lib/agentImageVideoGen.ts` | 338 | Image/video generation caller for agent turns |
+| `lib/agentQuestionResponder.ts` | 274 | `/question` responder |
+
 ## UI File Map
 
 | Area | File | Lines | Responsibility |
@@ -242,13 +262,13 @@ routes/
 | Reasoning | `ui/src/lib/reasoning.ts` | 41 | Reasoning-effort label/option helpers |
 | Web search | `ui/src/lib/webSearch.ts` | 4 | Web-search toggle option helpers |
 | Canvas helpers | `ui/src/lib/canvas/*` | n/a | Canvas Mode primitives: alpha detection, annotation/mask/merge/export rendering, background cleanup masks, background removal, coordinates, eraser, hit test, blank canvas, object keys |
-| Style | `ui/src/index.css` | 5780 | App layout, canvas, components, node-mode, settings, themes, error, node batch, compact node footer, directional node handle, prompt library, prompt import dialog, curated source search, folder browse, card-news, gallery double-rail, mobile shell |
+| Style | `ui/src/index.css` | 105 | Global shell entry; feature styles modularized into `ui/src/styles/*` |
 | Canvas styles | `ui/src/styles/canvas-mode.css`, `canvas-background-cleanup.css` | n/a | Canvas Mode and background-cleanup specific styles |
 | Components | `ui/src/components/*.tsx` | n/a | Sidebar, canvas, modal, node cards, batch bar, panels, controls, settings, themes, error surfaces, prompt library, prompt import dialog, gallery tiles, metadata restore, mobile shell, multimode preview |
-| Canvas Mode subtree | `ui/src/components/canvas-mode/*` | ~3300 | Canvas workspace split: `CanvasModeWorkspace` (498), `CanvasToolbar` (468), `useCanvasBackgroundCleanup` (454), and 20 sibling files |
+| Canvas Mode subtree | `ui/src/components/canvas-mode/*` | ~3404 | Canvas workspace split across 24 focused workspace/tool/hook files |
 | Card-news subtree | `ui/src/components/card-news/*` | n/a | Dev-only card-news workspace shell and editors |
-| Hooks | `ui/src/hooks/*.ts` | 882 | Billing/OAuth status polling, browser-attention badge, canvas annotations, blank-canvas creation, gallery viewer navigation, mobile breakpoint, visual-viewport inset |
-| i18n | `ui/src/i18n/*` | 1811 | English/Korean translations (864 each) and locale runtime |
+| Hooks | `ui/src/hooks/*.ts` | 1218 | Billing/OAuth status polling, browser-attention badge, canvas annotations, blank-canvas creation, gallery viewer navigation, mobile breakpoint, visual-viewport inset |
+| i18n | `ui/src/i18n/*` | 2823 | English/Korean translations (~1411 lines each in `en.json`/`ko.json`) plus locale runtime |
 
 ## Major Components
 
@@ -306,6 +326,9 @@ The `tests/` directory now contains roughly 125 `*.test.js` / `*.test.mjs` / `*.
 
 | Test | Lines | Contract covered |
 |---|---:|---|
+| `tests/structure-line-counts-contract.test.js` | n/a | `structure/01` lib/bin/route line counts match live sources (`docs:refresh-line-counts --check`) |
+| `tests/api-docs-contract.test.js` | n/a | Every `routes/*.ts` `/api/*` path is documented in `docs/API.md` |
+| `tests/cli-feature-parity-contract.test.js` | n/a | CLI provider/web-search parity and `docs/CLI.md` public contract |
 | `tests/health.test.js` | 245 | `/api/health`, advertisement, generate provider payload, terminal inflight |
 | `tests/history-tombstone.test.js` | 159 | History soft delete, restore, pagination, session-title grouping |
 | `tests/history-metadata-fallback.test.js` | 82 | History rebuild from embedded XMP metadata when sidecars are missing |
@@ -384,14 +407,15 @@ The `tests/` directory now contains roughly 125 `*.test.js` / `*.test.mjs` / `*.
 | Signal | Current state | Recommended docs to update |
 |---|---|---|
 | `server.ts` is split | Route files own API surfaces; keep route map current | `03-server-api`, `06-infra-operations` |
-| `ui/src/index.css` is 5780 lines | Layout and component styles are concentrated; canvas-mode, card-news, prompt library, prompt import dialog, gallery rail, mobile shell share the same file | `04-frontend-architecture` |
-| `useAppStore.ts` is the central store at 3555 lines | Classic, node, session, history, prompt-library, metadata-restore, multimode, canvas annotations/versions, web-search/reasoning state are together | `04-frontend-architecture`, `05-node-mode` |
-| `cardNewsStore.ts` is a separate dev-only store at 416 lines | Card-news plan/job state is isolated from `useAppStore` | `04-frontend-architecture`, `06-infra-operations` |
-| `lib/oauthProxy.ts` is 986 lines | OAuth Responses streaming is the largest single helper; multimode and reasoning-effort plumbing land here too — split candidates remain | `03-server-api`, `05-node-mode` |
-| `routes/prompts.ts` is 428 lines | Prompt library CRUD + folders + import/export grew beyond a single concern | `03-server-api`, `04-frontend-architecture` |
+| `ui/src/index.css` is ~105 lines | Global shell only; feature CSS lives in `ui/src/styles/*` | `04-frontend-architecture` |
+| `useAppStore.ts` is a ~508-line facade | State split into `store*Impl.ts` modules; card-news remains in `cardNewsStore.ts` | `04-frontend-architecture`, `05-node-mode` |
+| `cardNewsStore.ts` is a separate dev-only store at 417 lines | Card-news plan/job state is isolated from `useAppStore` | `04-frontend-architecture`, `06-infra-operations` |
+| `lib/oauthProxy/*` subtree | Largest OAuth helper is `generators.ts` (~502 lines); `lib/oauthProxy.ts` is a 4-line re-export shim | `03-server-api`, `05-node-mode` |
+| `routes/prompts.ts` is ~429 lines | Prompt library CRUD + folders + import/export grew beyond a single concern | `03-server-api`, `04-frontend-architecture` |
 | `lib/promptImport/*` cluster | Prompt source validation and parsing are split from prompt CRUD to keep PR1 import logic isolated | `03-server-api`, `04-frontend-architecture` |
 | `lib/cardNews*.ts` cluster | Dev-only feature isolated behind `config.features.cardNews`; not on the publish path by default | `06-infra-operations`, `07-devlog-map` |
-| `ui/src/components/canvas-mode/` subtree (~3300 lines, 23 files) | Canvas Mode workspace was split out of a single component (#11bc214) into a subtree of focused workspace + tool + hook files | `04-frontend-architecture`, `07-devlog-map` |
+| `ui/src/components/canvas-mode/` subtree (~3404 lines, 24 files) | Canvas Mode workspace split into focused workspace + tool + hook files | `04-frontend-architecture`, `07-devlog-map` |
+| `lib/agent*.ts` cluster (~3k lines) | Agent Mode web-UI-only; no CLI; queue + planner + generation delegation | `03-server-api`, `04-frontend-architecture` |
 
 ## Change Checklist
 
@@ -425,7 +449,7 @@ The `tests/` directory now contains roughly 125 `*.test.js` / `*.test.mjs` / `*.
 - 2026-04-30: Closed out the TypeScript migration — switched core/route/lib/bin tables from `.js` to `.ts` source paths and updated line counts. Added `routes/multimode.ts`, `routes/annotations.ts`, `routes/canvasVersions.ts`, `routes/comfy.ts`, `lib/canvasVersionStore.ts`, `lib/comfyBridge.ts`, `lib/pngInfo.ts`, `lib/systemTrash.ts`, `bin/lib/sse.ts`, `bin/lib/browser-id.ts`. Documented the CLI feature-parity #45 surface (annotate, canvas-versions, cardnews, comfy, config, history, inflight, metadata, multimode, node, oauth, prompt, providers, session, storage, billing). Added the `ui/src/components/canvas-mode/*` subtree (~3300 lines), mobile shell components, multimode preview, web-search/reasoning controls, and `ui/src/lib/canvas/*`. Bumped `useAppStore.ts` to 3555, `index.css` to 5780, `lib/oauthProxy.ts` to 986, `lib/api.ts` to 992, hooks total to 882, i18n to 1811. Refreshed test map intro to reflect ~114 tests with new canvas-mode/multimode/import/comfy contracts.
 - 2026-05-06: Replaced the monolithic `lib/oauthProxy.ts` row with the `lib/oauthProxy/*` subtree (`generators`, `streams`, `prompts`, `references`, `runtime`, `errors`, `types`, `index`); kept `lib/oauthProxy.ts` as a re-export shim. Added `lib/promptSafetyPolicy.ts`, `lib/responsesImageAdapter.ts`, `lib/providerOptions.ts`, `lib/runtimeContext.ts`, `lib/errInfo.ts`. Added `ui/src/store/persistenceRegistry.ts` as the single source of truth for `ima2.*` localStorage keys (#43) and bumped `ui/src/store/useAppStore.ts` to 3715 lines to cover gallery scope (#42). Refreshed the test-map intro to ~125 entries listing `api-provider-parity`, `oauth-masked-edit`, `gallery-session-scope`, `gallery-shortcuts-visible-domain`, `settings-persistence`, `toast-stack`, `node-generation-lock`, `mobile-generate-entry`, `prompt-import-search-ux`, and the inflight-reload pair (#47).
 - 2026-06-27: Added `routes/generationRequestLog.ts` + `lib/generationRequestLog.ts` (#95); refreshed `routes/index.ts` (62 lines) and `useAppStore.ts` facade count (507 + `store*Impl.ts` split) at ima2-gen 2.0.4.
-- 2026-06-28: WP6 automated line-count refresh for `lib/*`, `bin/commands/*`, `routes/*`, and `ui/src/lib/*` via `scripts/refresh-structure-line-counts.mjs`; replaced stale `bin/commands/{inflight,storage,billing,providers,oauth}.ts` rows with `observability.ts` + new `doctor`, `grok`, `defaults`, `capabilities`, `skill`, `backfillThumbs` rows; `docs/README.ko.md` one-click install stale-process parity.
+- 2026-06-28: WP6 phase 2 — added `lib/agent*.ts` cluster table, refreshed UI Refactor Signals (`index.css` 105, canvas-mode ~3404), `tests/api-docs-contract.test.js` for full route coverage; expanded `docs/API.md` with Prompt Library, Prompt Import, and Card News sections.
 - 2026-06-01: Updated the map for Grok video runtime: `routes/video.ts`, `routes/videoExtended.ts`, `lib/videoContinuity.ts`, `lib/videoFrameExtract.ts`, `ima2 video continue`, and Grok 4.3 prompt surface inventory.
 
 Previous document: `[[00-structure-hub]]`

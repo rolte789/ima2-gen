@@ -567,6 +567,62 @@ X-Ima2-Tab-Id
 
 Style-sheet extraction can require an API key/openai client. Image generation also supports `provider: "api"` through the shared Responses API image adapter when an API key is configured.
 
+## Prompt Library
+
+Backed by `routes/prompts.ts` and SQLite prompt tables in `lib/db.ts`.
+
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/api/prompts` | List prompts (`folderId`, `q`, `favoritesOnly`, pagination) |
+| `POST` | `/api/prompts` | Create prompt |
+| `GET` | `/api/prompts/:id` | Fetch one prompt |
+| `PATCH` | `/api/prompts/:id` | Update prompt fields |
+| `DELETE` | `/api/prompts/:id` | Delete prompt |
+| `POST` | `/api/prompts/:id/favorite` | Toggle favorite |
+| `POST` | `/api/prompts/import` | Legacy bulk import (JSON body) |
+| `GET` | `/api/prompts/export` | Export prompt library JSON |
+| `GET` | `/api/prompts/folders` | List folders |
+| `POST` | `/api/prompts/folders` | Create folder |
+| `PATCH` | `/api/prompts/folders/:id` | Rename folder |
+| `DELETE` | `/api/prompts/folders/:id` | Delete folder |
+
+## Prompt Import
+
+Preview/commit import flow for local files, GitHub folders, curated sources, and discovery review. Implemented in `routes/promptImport.ts`.
+
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/api/prompts/import/curated-sources` | List curated source registry entries |
+| `GET` | `/api/prompts/import/discovery` | List discovery review queue |
+| `POST` | `/api/prompts/import/discovery-search` | Search GitHub for prompt-pack candidates |
+| `POST` | `/api/prompts/import/discovery-review` | Approve/reject discovery candidate |
+| `POST` | `/api/prompts/import/curated-search` | Search indexed curated sources |
+| `POST` | `/api/prompts/import/curated-refresh` | Refresh curated index cache |
+| `POST` | `/api/prompts/import/folder-files` | List files in a GitHub folder |
+| `POST` | `/api/prompts/import/folder-preview` | Preview selected GitHub folder files |
+| `POST` | `/api/prompts/import/preview` | Preview local/GitHub import candidates |
+| `POST` | `/api/prompts/import/commit` | Commit selected candidates into the prompt library |
+
+## Card News (dev-gated)
+
+Registered only when `config.features.cardNews` is true (`routes/cardNews.ts`). Web UI requires `VITE_IMA2_CARD_NEWS=1` or `VITE_IMA2_DEV=1`; CLI uses `ima2 cardnews …`.
+
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/api/cardnews/image-templates` | List image templates |
+| `GET` | `/api/cardnews/image-templates/:templateId/preview` | Template preview image |
+| `GET` | `/api/cardnews/role-templates` | Built-in role templates |
+| `GET` | `/api/cardnews/sets` | List card-news sets |
+| `GET` | `/api/cardnews/sets/:setId` | Fetch one set |
+| `GET` | `/api/cardnews/sets/:setId/manifest` | Set manifest JSON |
+| `POST` | `/api/cardnews/draft` | Create planner draft |
+| `POST` | `/api/cardnews/generate` | Start card generation job |
+| `POST` | `/api/cardnews/jobs` | Create job record |
+| `GET` | `/api/cardnews/jobs/:jobId` | Poll job status |
+| `POST` | `/api/cardnews/jobs/:jobId/retry` | Retry failed job |
+| `POST` | `/api/cardnews/cards/:cardId/regenerate` | Regenerate one card |
+| `POST` | `/api/cardnews/export` | Export completed set assets |
+
 ## Common Error Codes
 
 | Code | Meaning |
