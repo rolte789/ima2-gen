@@ -26,7 +26,12 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(imageModels, /normalizeVideoModelValue/);
     assert.match(imageModels, /supportsVideoResolutionUI/);
     assert.match(panel, /value: "1080p"/);
-    assert.match(panel, /disabled: !canUse1080p/);
+    assert.match(panel, /canUse1080pIfModelSelected/);
+    assert.match(panel, /disabled: !canUse1080pIfModelSelected/);
+    assert.match(panel, /handleResolutionChange/);
+    assert.match(panel, /next === "1080p"/);
+    assert.match(panel, /selectVideoModel\(GROK_VIDEO_MODEL_15\)/);
+    assert.match(panel, /onChange=\{handleResolutionChange\}/);
     assert.match(panel, /setResolution\("720p"\)/);
     assert.match(persistence, /normalizeVideoModelValue\(p\.model\)/);
     assert.match(persistence, /p\.resolution === "1080p"/);

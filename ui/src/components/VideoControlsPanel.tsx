@@ -38,9 +38,10 @@ export function VideoControlsPanel() {
   const maxDuration = refCount >= 2 ? MAX_REF2V_DURATION_UI : 15;
   const mode = deriveVideoModeUI(refCount);
   const summary = continuitySummary(continuity);
-  const canUse1080p = supportsVideoResolutionUI(videoModelSelected, "1080p", mode);
+  const canUse1080pWithSelectedModel = supportsVideoResolutionUI(videoModelSelected, "1080p", mode);
+  const canUse1080pIfModelSelected = supportsVideoResolutionUI(GROK_VIDEO_MODEL_15, "1080p", mode);
   const resolutionItems = RES_ITEMS.map((item) => (
-    item.value === "1080p" ? { ...item, disabled: !canUse1080p } : item
+    item.value === "1080p" ? { ...item, disabled: !canUse1080pIfModelSelected } : item
   ));
 
   useEffect(() => {
@@ -48,6 +49,16 @@ export function VideoControlsPanel() {
       setResolution("720p");
     }
   }, [mode, resolution, setResolution, videoModelSelected]);
+
+  const handleResolutionChange = (next: VideoResolutionUI) => {
+    if (next === "1080p") {
+      if (!canUse1080pIfModelSelected) return;
+      if (!canUse1080pWithSelectedModel) {
+        selectVideoModel(GROK_VIDEO_MODEL_15);
+      }
+    }
+    setResolution(next);
+  };
 
   const [plannerConfig, setPlannerConfig] = useState<PlannerConfig | null>(null);
   useEffect(() => {
@@ -123,10 +134,10 @@ export function VideoControlsPanel() {
       </div>
       <OptionGroup<VideoResolutionUI>
         title={t("video.resolutionTitle")}
-        help={!canUse1080p ? t("video.resolution1080Help") : undefined}
+        help={!canUse1080pIfModelSelected ? t("video.resolution1080Help") : undefined}
         items={resolutionItems}
         value={resolution}
-        onChange={setResolution}
+        onChange={handleResolutionChange}
       />
       <OptionGroup<string>
         title={t("video.aspectTitle")}
