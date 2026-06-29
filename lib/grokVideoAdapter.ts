@@ -7,7 +7,13 @@ import { aspectToCanvas, generateWhiteCanvasB64 } from "./grokVideoCanvas.js";
 import { downloadVideo } from "./grokVideoDownload.js";
 import { buildGrokVideoPlannerSystemPrompt, formatDurationPacingGuidance } from "./grokVideoPlannerPrompt.js";
 import type { VideoAspectRatio, VideoMode, VideoResolution } from "./imageModels.js";
-import { MAX_REF2V_REFERENCES } from "./imageModels.js";
+import {
+  GROK_VIDEO_MODEL_15,
+  GROK_VIDEO_MODEL_15_PREVIEW_ALIAS,
+  GROK_VIDEO_MODEL_BASE,
+  MAX_REF2V_REFERENCES,
+  validateVideoResolutionForRequest,
+} from "./imageModels.js";
 import { formatVideoContinuityForPlanner, type VideoContinuityLineage } from "./videoContinuity.js";
 
 export { downloadVideo } from "./grokVideoDownload.js";
@@ -90,6 +96,10 @@ interface VideoConfig {
 }
 
 const STALE_PROGRESS_MS = 180_000;
+
+function canonicalVideoModel(model: string): string {
+  return model === GROK_VIDEO_MODEL_15_PREVIEW_ALIAS ? GROK_VIDEO_MODEL_15 : model;
+}
 
 function videoConfig(ctx: RouteRuntimeContext): VideoConfig {
   const g = (ctx.config as any).grokProvider || {};
@@ -210,11 +220,11 @@ export function buildGrokVideoPlannerPayload(
             type: "object",
             properties: {
               prompt: { type: "string", description: "Final video-generation prompt to send to xAI Videos API." },
-              model: { type: "string", enum: ["grok-imagine-video"] },
+              model: { type: "string", enum: [GROK_VIDEO_MODEL_BASE, GROK_VIDEO_MODEL_15] },
               mode: { type: "string", enum: ["text-to-video", "image-to-video", "reference-to-video"] },
               duration: { type: "number" },
               aspect_ratio: { type: "string" },
-              resolution: { type: "string", enum: ["480p", "720p"] },
+              resolution: { type: "string", enum: ["480p", "720p", "1080p"] },
             },
             required: ["prompt"],
           },
@@ -250,10 +260,11 @@ export async function planGrokVideo(prompt: string, ctx: RouteRuntimeContext, op
   const resolution = options.resolution || "480p";
   const aspectRatio = options.aspectRatio || "auto";
   const plannerModel = options.plannerModel || cfg.plannerModel;
+  const model = canonicalVideoModel(options.model || cfg.model);
   const search = await searchGrokVisualContext(prompt, ctx, { signal: options.signal, requestId: options.requestId, directApiKey: options.directApiKey, plannerModel });
   const referenceImageUrls = (options.referenceImages ?? []).map((img) => sourceImageUrl(img, undefined));
   const payload = buildGrokVideoPlannerPayload(prompt, {
-    model: cfg.model,
+    model,
     mode,
     duration,
     resolution,
@@ -289,6 +300,7 @@ export async function planGrokVideo(prompt: string, ctx: RouteRuntimeContext, op
 }
 
 export function buildVideoGenerationPayload(plan: GrokVideoPlan, opts: { model: string; sourceImageUrl?: string; referenceImageUrls?: string[] }): Record<string, unknown> {
+  const model = canonicalVideoModel(opts.model);
   if (plan.mode === "image-to-video" && !opts.sourceImageUrl) {
     throw grokError("image-to-video requires a source image", 400, "GROK_VIDEO_INVALID_MODE");
   }
@@ -298,7 +310,11 @@ export function buildVideoGenerationPayload(plan: GrokVideoPlan, opts: { model: 
     if (refs.length > MAX_REF2V_REFERENCES) throw grokError(`reference-to-video allows at most ${MAX_REF2V_REFERENCES} reference images`, 400, "GROK_VIDEO_REF_TOO_MANY");
     if (opts.sourceImageUrl) throw grokError("reference-to-video cannot be combined with a single source image", 400, "GROK_VIDEO_INVALID_MODE");
   }
-  const payload: Record<string, unknown> = { model: opts.model, prompt: plan.prompt, duration: plan.duration, resolution: plan.resolution };
+  const resolutionCheck = validateVideoResolutionForRequest(model, plan.resolution, plan.mode);
+  if (!("ok" in resolutionCheck)) {
+    throw grokError(resolutionCheck.error, resolutionCheck.status, resolutionCheck.code);
+  }
+  const payload: Record<string, unknown> = { model, prompt: plan.prompt, duration: plan.duration, resolution: plan.resolution };
   if (plan.aspectRatio && plan.aspectRatio !== "auto") payload.aspect_ratio = plan.aspectRatio;
   if (plan.mode === "image-to-video") payload.image = { url: opts.sourceImageUrl };
   if (plan.mode === "reference-to-video") payload.reference_images = refs.map((url) => ({ url }));
@@ -398,7 +414,7 @@ export async function pollVideoUntilDone(ctx: RouteRuntimeContext, requestId: st
 
 export async function generateVideoViaGrok(prompt: string, ctx: RouteRuntimeContext, options: GrokVideoOptions = {}): Promise<GrokVideoGenerateResult> {
   const cfg = videoConfig(ctx);
-  const model = options.model || cfg.model;
+  const model = canonicalVideoModel(options.model || cfg.model);
   const srcUrl = options.sourceImage ? sourceImageUrl(options.sourceImage, options.sourceMime) : undefined;
   const refUrls = (options.referenceImages ?? []).map((img) => sourceImageUrl(img, undefined));
   options.onEvent?.({ phase: "planning" });
@@ -418,7 +434,7 @@ export async function generateVideoViaGrok(prompt: string, ctx: RouteRuntimeCont
 
   // grokv1.5 doesn't support T2V — inject a white canvas as source image to use I2V path
   let effectivePayload = payload;
-  if (model === "grok-imagine-video-1.5-preview" && !srcUrl && refUrls.length === 0) {
+  if (model === GROK_VIDEO_MODEL_15 && !srcUrl && refUrls.length === 0) {
     const { width, height } = aspectToCanvas(plan.aspectRatio, plan.resolution);
     const whiteCanvas = await generateWhiteCanvasB64(width, height);
     const canvasSrcUrl = `data:image/png;base64,${whiteCanvas}`;
@@ -433,8 +449,8 @@ export async function generateVideoViaGrok(prompt: string, ctx: RouteRuntimeCont
     xaiVideoRequestId = await startVideoRequest(ctx, effectivePayload, options);
   } catch (e: any) {
     // Fallback: if 1.5-preview still fails, retry with base model
-    if (model !== "grok-imagine-video" && e?.status === 400) {
-      effectiveModel = "grok-imagine-video";
+    if (model !== GROK_VIDEO_MODEL_BASE && e?.status === 400) {
+      effectiveModel = GROK_VIDEO_MODEL_BASE;
       const fallbackPayload = buildVideoGenerationPayload(plan, { model: effectiveModel, sourceImageUrl: srcUrl, referenceImageUrls: refUrls });
       xaiVideoRequestId = await startVideoRequest(ctx, fallbackPayload, options);
       logEvent("grok", "video:fallback", { requestId: options.requestId, from: model, to: effectiveModel });

@@ -33,6 +33,7 @@ import {
   deriveVideoMode,
   clampVideoDuration,
   MAX_REF2V_REFERENCES,
+  validateVideoResolutionForRequest,
   type VideoMode,
 } from "../lib/imageModels.js";
 import { errInfo } from "../lib/errInfo.js";
@@ -252,6 +253,8 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       const incomingProviderUrl = typeof req.body?.providerUrl === "string" && req.body.providerUrl.startsWith("http") ? req.body.providerUrl : null;
       const mode: VideoMode = incomingProviderUrl ? "image-to-video" : deriveVideoMode(resolved.length);
       const duration = clampVideoDuration(durationCheck.duration, mode);
+      const resolutionModeCheck = validateVideoResolutionForRequest(modelCheck.model, resolutionCheck.resolution, mode);
+      if (isNormalizeError(resolutionModeCheck)) return fail(resolutionModeCheck.status, resolutionModeCheck.code, resolutionModeCheck.error);
       const referenceImages = mode === "reference-to-video" ? resolved.map((r) => r.b64) : undefined;
       const sourceB64 = incomingProviderUrl || (mode === "image-to-video" ? resolved[0]?.b64 : undefined);
       const sourceFilename = resolved[0]?.filename ?? null;
