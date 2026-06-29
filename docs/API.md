@@ -362,7 +362,7 @@ Generate a video via the Grok video provider. Returns Server-Sent Events on the 
 }
 ```
 
-**Models**: `grok-imagine-video` (default), `grok-imagine-video-1.5-preview`.
+**Models**: `grok-imagine-video` (default), `grok-imagine-video-1.5`. The legacy `grok-imagine-video-1.5-preview` string is accepted as a compatibility alias and normalized before the upstream request.
 
 **Mode** is auto-detected from reference inputs:
 
@@ -372,6 +372,8 @@ Generate a video via the Grok video provider. Returns Server-Sent Events on the 
 | 1 image (`sourceImage` or `sourceFilename`) | image-to-video | 1–15s |
 | 2–7 images (`referenceImages` / `referenceFilenames`) | reference-to-video | 1–10s |
 
+1080p is accepted only for `grok-imagine-video-1.5` image-to-video with one image/frame source, including `continueFromVideo` after the server extracts the parent video's last frame. 1.5 does not add Ref2V, V2V edit, or extension support.
+
 **Parameters**:
 
 | Field | Type | Default | Notes |
@@ -380,7 +382,7 @@ Generate a video via the Grok video provider. Returns Server-Sent Events on the 
 | `provider` | string | `"grok"` | `"grok"` or `"grok-api"` |
 | `model` | string | `grok-imagine-video` | Video model |
 | `duration` | integer | `5` | 1–15 seconds (clamped to 10 for reference-to-video) |
-| `resolution` | string | `"480p"` | `480p` or `720p` |
+| `resolution` | string | `"480p"` | `480p`, `720p`, or `1080p` (`1080p` is 1.5 I2V-only) |
 | `aspectRatio` | string | `"auto"` | 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, auto |
 | `sourceImage` | string | — | Base64 image for image-to-video |
 | `sourceFilename` | string | — | Existing generated file for image-to-video |
@@ -459,7 +461,7 @@ Grok prompt surfaces used by video APIs:
 | `VIDEO_PROVIDER_UNSUPPORTED` | Provider is not `"grok"` |
 | `PROMPT_REQUIRED` | Empty or missing prompt |
 | `INVALID_GROK_VIDEO_MODEL` | Model not in valid set |
-| `INVALID_VIDEO_RESOLUTION` | Resolution not 480p or 720p |
+| `INVALID_VIDEO_RESOLUTION` | Resolution is not 480p/720p/1080p, or 1080p was requested outside `grok-imagine-video-1.5` image-to-video |
 | `INVALID_VIDEO_ASPECT_RATIO` | Aspect ratio not in valid set |
 | `INVALID_VIDEO_DURATION` | Duration not 1–15 integer |
 | `GROK_VIDEO_REF_TOO_MANY` | More than 7 reference images |
@@ -493,7 +495,7 @@ Extend a video from its last frame. This is a blocking JSON endpoint that starts
 }
 ```
 
-`duration` must be an integer from 2 to 10 seconds. Edit and extension support `grok-imagine-video` only; `grok-imagine-video-1.5-preview` is not accepted for these endpoints.
+`duration` must be an integer from 2 to 10 seconds. Edit and extension support `grok-imagine-video` only; `grok-imagine-video-1.5` and its preview alias are not accepted for these endpoints.
 
 ### `GET /api/video/frame`
 

@@ -107,7 +107,7 @@ API key が env/config に存在する場合、生成エンドポイントで `p
 
 Settings に **API key provider available** と表示される場合、API key が検出され、生成・編集・multimode・node request に使用できるという意味です。
 
-Grok 動画は `grok-imagine-video`（既定）または `grok-imagine-video-1.5-preview` を使用します。参照数に応じて T2V(0)、I2V(1)、Ref2V(2–7、最大10秒)が自動選択されます。1.5 preview は Ref2V 非対応のため 2 枚以上では既定モデルに切り替わります。duration(1–15s)、resolution(480p/720p)、aspect ratio を設定できます。
+Grok 動画は `grok-imagine-video`（既定）または正式名 `grok-imagine-video-1.5` を使用します。従来の `grok-imagine-video-1.5-preview` は互換 alias として受け付けます。参照数に応じて T2V(0)、I2V(1)、Ref2V(2-7、最大10秒)が自動選択され、1080p は `grok-imagine-video-1.5` の単一画像/フレーム I2V でのみ有効です。1.5 は Ref2V、V2V edit、extension を追加サポートしないため、それらは既定モデルのみです。duration(1-15s)、resolution(480p/720p/対応時 1080p)、aspect ratio を設定できます。
 
 設定画面の QuotaCard に Grok billing `$used/$limit` バーと **Switch Account** ボタン（`POST /api/auth/switch`）が表示されます。
 

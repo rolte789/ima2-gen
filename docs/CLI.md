@@ -126,9 +126,9 @@ Video generate flags:
 | Flag | Meaning |
 |---|---|
 | `--duration <1..15>` | Duration in seconds (default: 5) |
-| `--resolution <480p\|720p>` | Video resolution (default: 480p) |
+| `--resolution <480p\|720p\|1080p>` | Video resolution (default: 480p). 1080p requires `--model grok-imagine-video-1.5` and exactly one source `--ref` |
 | `--aspect-ratio <ratio\|auto>` | 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, auto (default: auto) |
-| `--model <name>` | `grok-imagine-video` or `grok-imagine-video-1.5-preview` |
+| `--model <name>` | `grok-imagine-video` or `grok-imagine-video-1.5`; `grok-imagine-video-1.5-preview` is accepted as a compatibility alias |
 | `--planner-model <name>` | Grok planner override (default: `grok-4.3`; also in settings UI and `IMA2_GROK_PLANNER_MODEL`) |
 | `--storyboard` | Enable storyboard mode — maintains character/scene continuity across sequential clips |
 | `--ref <file>` | Attach source/reference image (repeatable, max 7) |
@@ -161,7 +161,7 @@ Video continue flags:
 |---|---|
 | `--video <generated-file>` | Parent generated `.mp4`; server extracts its last frame |
 | `--duration <1..15>` | New clip duration (default: 5) |
-| `--resolution <480p\|720p>` | New clip resolution (default: 720p) |
+| `--resolution <480p\|720p\|1080p>` | New clip resolution (default: 720p). 1080p requires `--model grok-imagine-video-1.5` |
 | `--aspect-ratio <ratio\|auto>` | New clip aspect ratio |
 | `--model <name>` | Optional video generation model |
 
@@ -175,13 +175,14 @@ Video mode is auto-detected from `--ref` count:
 | 1 | image-to-video |
 | 2–7 | reference-to-video (max 10s duration) |
 
-`grok-imagine-video-1.5-preview` supports image-to-video, but not `reference_images` reference-to-video. Prompt-only 1.5 text-to-video uses an internal white-canvas image-to-video anchor. For 2+ refs, use `grok-imagine-video`; if ima2 auto-retries from 1.5-preview to the base model, read `video.effectiveModel` and `video.modelFallback` from CLI `--json`, or `effectiveModel` and `modelFallback` from SSE. Video edit and extension are also base-model only.
+`grok-imagine-video-1.5` supports image-to-video and 1080p for a single image/frame source. The old `grok-imagine-video-1.5-preview` name is accepted as an alias and normalized before the upstream request. 1.5 does not support `reference_images` reference-to-video, V2V edit, or video extension. Prompt-only 1.5 text-to-video still uses the existing internal white-canvas image-to-video anchor at 480p/720p; 1080p is rejected unless there is a real image/frame source. For 2+ refs, use `grok-imagine-video`; if ima2 auto-retries a 1.5 Ref2V request to the base model, read `video.effectiveModel` and `video.modelFallback` from CLI `--json`, or `effectiveModel` and `modelFallback` from SSE.
 
 SSE events: `planning` → `submitted` → `progress` (0–100%) → `done` or `error`.
 
 ```bash
 ima2 video "a cat playing piano"
 ima2 video "animate this" --ref photo.png --duration 10
+ima2 video "animate this in high detail" --ref photo.png --model grok-imagine-video-1.5 --resolution 1080p
 ima2 video "cinematic" --resolution 720p --aspect-ratio 16:9 -o out.mp4
 ima2 video "style transfer" --ref a.png --ref b.png --ref c.png --model grok-imagine-video
 ima2 video edit "make the lighting warm sunset" --video 1780226256355_50252101.mp4 -o edited.mp4

@@ -20,6 +20,8 @@ Snapshot note, 2026-05-30: **Agent Mode** shipped a dedicated React workspace un
 
 Snapshot note, 2026-06-27 (v2.0.4): store facade `useAppStore.ts` is now ~507 lines after splitting state into `store*Impl.ts` modules (`storeGenerationImpl`, `storeGalleryImpl`, `storeInflightImpl`, etc.). Global styles live in `ui/src/index.css` (~105 lines) after CSS modularization into feature-scoped files. New/updated UI surfaces include `GenerationRequestLogPanel` (dev log tab for `GET /api/generation-requests`), `ResultMetadataModal` (per-result metadata inspector), `settings/QuotaCard` (Grok billing bar + Switch Account), storyboard mode toggle in the composer, and video frame copy (First/Mid/Last). Node default `searchMode` is `"on"` when web search is enabled.
 
+Snapshot note, 2026-06-29: Grok Video 1.5 uses canonical `grok-imagine-video-1.5` in UI state; persisted `grok-imagine-video-1.5-preview` values are migrated on load. `VideoControlsPanel` exposes `1080p` only for 1.5 image-to-video with one active image/frame source and clamps unsupported stored or transient 1080p selections back to 720p. Effective I2V detection covers direct references, provider URL references, node parent-video frame sources, and continue-from-video frame anchors so the UI matches the server-side `INVALID_VIDEO_RESOLUTION` contract.
+
 ---
 
 ## Render Flow
@@ -191,6 +193,7 @@ Error handling is centralized. API helpers preserve `err.code` where the server 
 - 2026-05-30: Documented the Agent Mode workspace (`ui/src/components/agent/*`, `lib/agentApi.ts`, `hooks/useAgentWorkspaceLayout.ts`, `styles/agent-workspace*.css`) — session list, turn view, durable queue panel, right-sidebar controls, slash commands / `/question` — talking to the always-on `/api/agent/*` routes (no CLI). Re-grounding pass for ima2-gen 1.1.14.
 - 2026-06-01: Recorded the Grok video UI contract: Classic "Continue here", gallery/history video drag, and Node parent-video generation attach the previous video's last frame and carry `videoContinuity` lineage; the video controls panel shows pending continuity context while Canvas shows selected-result lineage metadata.
 - 2026-06-27: v2.0.4 snapshot — refreshed line counts (`useAppStore` ~507 facade, `index.css` ~105, components ~17200), documented `GenerationRequestLogPanel`, `ResultMetadataModal`, `QuotaCard`, storyboard mode, and video frame copy.
+- 2026-06-29: Added the Grok Video 1.5 `1080p` UI contract: canonical model migration, conditional `VideoControlsPanel` enablement, 720p auto-clamp for unsupported states, and expanded active-source detection for provider URL and parent-video frame anchors.
 
 Previous document: `[[03-server-api]]`
 

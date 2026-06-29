@@ -304,16 +304,16 @@ ima2 video "cinematic" --ref a.png --ref b.png      # reference-to-video (max 7)
 | 1 | image-to-video | 15s |
 | 2-7 | reference-to-video | 10s |
 
-`grok-imagine-video-1.5-preview` supports image-to-video but does not support `reference_images` Ref2V. For 2+ references, use `grok-imagine-video` and keep duration at 10s or less. Prompt-only 1.5 text-to-video is implemented as an internal white-canvas image-to-video anchor so the 1.5 endpoint receives an image input. ima2 may auto-retry a rejected 1.5 Ref2V request with the base model; read `effectiveModel` and `modelFallback` from the final result before naming or reporting the output.
+`grok-imagine-video-1.5` supports image-to-video and 1080p only when there is a single image/frame source. The old `grok-imagine-video-1.5-preview` string is accepted as a compatibility alias. 1.5 does not support `reference_images` Ref2V, V2V edit, or extension. For 2+ references, use `grok-imagine-video` and keep duration at 10s or less. Prompt-only 1.5 text-to-video is implemented as an internal white-canvas image-to-video anchor at 480p/720p; 1080p requires a real image/frame source. ima2 may auto-retry a rejected 1.5 Ref2V request with the base model; read `effectiveModel` and `modelFallback` from the final result before naming or reporting the output.
 
 ### Parameters
 
 | Flag | Values | Default |
 |------|--------|---------|
 | `--duration` | 1–15 (seconds) | 5 |
-| `--resolution` | 480p, 720p | 480p |
+| `--resolution` | 480p, 720p, 1080p (1.5 I2V-only) | 480p |
 | `--aspect-ratio` | auto, 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3 | auto |
-| `--model` | grok-imagine-video, grok-imagine-video-1.5-preview | grok-imagine-video |
+| `--model` | grok-imagine-video, grok-imagine-video-1.5 (preview alias accepted) | grok-imagine-video |
 | `--topic` | any string | (none) |
 | `--session` | session ID | (none) |
 | `-o, --out` | output file path | saved under configured generated dir |
@@ -505,7 +505,7 @@ ima2 gen "Using this scene as reference, create a 3x3 storyboard grid (9 panels,
 
 ```bash
 ima2 video "This is a 9-panel storyboard. Animate the full sequence as one continuous 15-second clip following panels left-to-right, top-to-bottom. Panel 1: ... Panel 9: ... Sound: [describe music, SFX, dialogue]. Camera: [describe movement per beat]." \
-  --ref storyboard.png --duration 15 --resolution 720p --model grok-imagine-video-1.5-preview
+  --ref storyboard.png --duration 15 --resolution 720p --model grok-imagine-video-1.5
 ```
 
 **i2v prompt rules for storyboard input**:
@@ -613,8 +613,8 @@ done
 
 - Max 15 seconds per clip (extend adds 2-10s more)
 - Reference-to-video (2+ refs): max 10 seconds, max 7 refs, `grok-imagine-video` effective model
-- Max 720p resolution (no upscale API available)
-- Video edit/extend: grok-imagine-video only (1.5-preview not supported)
+- 1080p resolution is available only for `grok-imagine-video-1.5` image-to-video with a single image/frame source
+- Video edit/extend: grok-imagine-video only (1.5 is not supported)
 - Video edit input: max 8.7 seconds
 - Video extend input: 2-15 seconds; extension duration: 2-10 seconds
 

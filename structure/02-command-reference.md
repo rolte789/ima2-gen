@@ -132,6 +132,11 @@ from `extend`: `continue` persists `videoContinuity` lineage metadata and starts
 a fresh generated clip from the last frame; `extend` calls xAI's native
 extension endpoint.
 
+Video model contract, 2026-06-29: `grok-imagine-video-1.5` is the canonical
+1.5 model name; `grok-imagine-video-1.5-preview` is accepted as an alias. `1080p`
+is valid only for 1.5 image-to-video with one image/frame source. Prompt-only
+T2V, Ref2V/multi-ref, edit, and extension remain base-model or 480p/720p paths.
+
 ## `edit` Options
 
 | Option | Default | Description |
