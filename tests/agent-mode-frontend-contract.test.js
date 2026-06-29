@@ -25,6 +25,7 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(imageModels, /GROK_VIDEO_MODEL_15_PREVIEW_ALIAS/);
     assert.match(imageModels, /normalizeVideoModelValue/);
     assert.match(imageModels, /supportsVideoResolutionUI/);
+    assert.match(imageModels, /mode === "text-to-video" \|\| mode === "image-to-video"/);
     assert.match(panel, /value: "1080p"/);
     assert.match(panel, /canUse1080pIfModelSelected/);
     assert.match(panel, /disabled: !canUse1080pIfModelSelected/);

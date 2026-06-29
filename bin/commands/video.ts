@@ -25,7 +25,9 @@ function canonicalVideoModel(model: string): string {
 }
 
 function validateCliVideoResolution(model: string, resolution: string, mode: VideoMode): void {
-  const check = validateVideoResolutionForRequest(canonicalVideoModel(model), resolution as VideoResolution, mode);
+  const check = validateVideoResolutionForRequest(canonicalVideoModel(model), resolution as VideoResolution, mode, {
+    allowTextCanvasShim: true,
+  });
   if (!("ok" in check)) die(2, check.error);
 }
 
@@ -113,7 +115,7 @@ const HELP = `
 
   Options (generate mode):
         --duration <1..15>              Duration in seconds. Default: 5. Prompt motion should naturally fill this length
-        --resolution <480p|720p|1080p>  Default: 480p. 1080p requires --model grok-imagine-video-1.5 and exactly one --ref
+        --resolution <480p|720p|1080p>  Default: 480p. 1080p requires --model grok-imagine-video-1.5; prompt-only uses a white-canvas I2V shim
         --aspect-ratio <ratio|auto>     1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, auto. Default: auto
         --model <name>                  grok-imagine-video, grok-imagine-video-1.5 (preview alias accepted)
         --planner-model <name>          Planner model override (e.g. grok-4.3, gpt-5.5)

@@ -126,7 +126,7 @@ Video generate flags:
 | Flag | Meaning |
 |---|---|
 | `--duration <1..15>` | Duration in seconds (default: 5) |
-| `--resolution <480p\|720p\|1080p>` | Video resolution (default: 480p). 1080p requires `--model grok-imagine-video-1.5` and exactly one source `--ref` |
+| `--resolution <480p\|720p\|1080p>` | Video resolution (default: 480p). 1080p requires `--model grok-imagine-video-1.5`; prompt-only 1.5 uses the internal white-canvas I2V shim |
 | `--aspect-ratio <ratio\|auto>` | 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, auto (default: auto) |
 | `--model <name>` | `grok-imagine-video` or `grok-imagine-video-1.5`; `grok-imagine-video-1.5-preview` is accepted as a compatibility alias |
 | `--planner-model <name>` | Grok planner override (default: `grok-4.3`; also in settings UI and `IMA2_GROK_PLANNER_MODEL`) |
@@ -175,7 +175,7 @@ Video mode is auto-detected from `--ref` count:
 | 1 | image-to-video |
 | 2–7 | reference-to-video (max 10s duration) |
 
-`grok-imagine-video-1.5` supports image-to-video and 1080p for a single image/frame source. The old `grok-imagine-video-1.5-preview` name is accepted as an alias and normalized before the upstream request. 1.5 does not support `reference_images` reference-to-video, V2V edit, or video extension. Prompt-only 1.5 text-to-video still uses the existing internal white-canvas image-to-video anchor at 480p/720p; 1080p is rejected unless there is a real image/frame source. For 2+ refs, use `grok-imagine-video`; if ima2 auto-retries a 1.5 Ref2V request to the base model, read `video.effectiveModel` and `video.modelFallback` from CLI `--json`, or `effectiveModel` and `modelFallback` from SSE.
+`grok-imagine-video-1.5` supports 1080p for prompt-only text-to-video and single image/frame image-to-video. Prompt-only 1.5 text-to-video is submitted through the internal white-canvas image-to-video shim because upstream 1.5 rejects raw T2V. The old `grok-imagine-video-1.5-preview` name is accepted as an alias and normalized before the upstream request. 1.5 does not support `reference_images` reference-to-video, V2V edit, or video extension. For 2+ refs, use `grok-imagine-video`; if ima2 auto-retries a 1.5 Ref2V request to the base model, read `video.effectiveModel` and `video.modelFallback` from CLI `--json`, or `effectiveModel` and `modelFallback` from SSE.
 
 SSE events: `planning` → `submitted` → `progress` (0–100%) → `done` or `error`.
 

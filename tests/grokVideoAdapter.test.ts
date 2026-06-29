@@ -396,7 +396,7 @@ describe("Grok video adapter", () => {
     assert.deepEqual(payload.image, { url: "data:image/png;base64,AAAA" });
   });
 
-  it("rejects 1080p outside canonical 1.5 image-to-video", () => {
+  it("rejects raw 1080p payloads outside canonical 1.5 image-to-video", () => {
     const t2v: GrokVideoPlan = { prompt: "p", mode: "text-to-video", duration: 5, resolution: "1080p", aspectRatio: "auto", webSearchCalls: 0 };
     const i2v: GrokVideoPlan = { ...t2v, mode: "image-to-video" };
     const ref2v: GrokVideoPlan = { ...t2v, mode: "reference-to-video" };
@@ -405,15 +405,22 @@ describe("Grok video adapter", () => {
     assert.throws(() => buildVideoGenerationPayload(ref2v, { model: "grok-imagine-video-1.5", referenceImageUrls: ["A", "B"] }), (e: any) => e.code === "INVALID_VIDEO_RESOLUTION");
   });
 
-  it("sends 1.5-preview T2V through an injected canvas I2V payload", async () => {
+  it("sends 1.5-preview 1080p T2V through an injected canvas I2V payload", async () => {
     let startBody: any = null;
     installFetch({ pollSequence: [DONE_POLL], captureStart: (b) => (startBody = b) });
-    const result = await generateVideoViaGrok("make a freeform clip", ctx(), { model: "grok-imagine-video-1.5-preview", plannedPrompt: "A freeform cinematic clip.", duration: 5 });
+    const result = await generateVideoViaGrok("make a freeform clip", ctx(), {
+      model: "grok-imagine-video-1.5-preview",
+      plannedPrompt: "A freeform cinematic clip.",
+      duration: 5,
+      resolution: "1080p",
+      aspectRatio: "16:9",
+    });
     assert.equal(result.mode, "text-to-video");
     assert.equal(startBody.model, "grok-imagine-video-1.5");
+    assert.equal(startBody.resolution, "1080p");
     assert.ok(startBody.image?.url?.startsWith("data:image/png;base64,"));
     const canvas = Buffer.from(startBody.image.url.replace(/^data:image\/png;base64,/, ""), "base64");
-    assert.deepEqual(parsePngInfo(canvas), { width: 853, height: 480, bitDepth: 8, colorType: 2 });
+    assert.deepEqual(parsePngInfo(canvas), { width: 1920, height: 1080, bitDepth: 8, colorType: 2 });
     assert.match(startBody.prompt, /not a start frame/);
   });
 });

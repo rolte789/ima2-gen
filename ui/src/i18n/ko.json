@@ -935,7 +935,7 @@
     "seriesTopicPlaceholder": "예: 한국 여행 브이로그",
     "durationTitle": "길이",
     "resolutionTitle": "해상도",
-    "resolution1080Help": "1080p는 Grok V1.5와 단일 이미지/프레임 소스가 있을 때만 사용할 수 있습니다.",
+    "resolution1080Help": "1080p는 Grok V1.5의 프롬프트 전용 또는 단일 이미지/프레임 영상에서 사용합니다. 참조 2장 이상에서는 사용할 수 없습니다.",
     "aspectTitle": "비율"
   },
   "sidebar": {

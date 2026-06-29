@@ -245,7 +245,7 @@ export async function runAgentVideoGeneration(
     resolution: options.videoParams?.resolution ?? parsedParams.resolution,
     aspectRatio: options.videoParams?.aspectRatio ?? parsedParams.aspectRatio,
   };
-  const videoModel = videoParams.resolution === "1080p" && mode === "image-to-video"
+  const videoModel = videoParams.resolution === "1080p"
     ? GROK_VIDEO_MODEL_15
     : GROK_VIDEO_MODEL_BASE;
 

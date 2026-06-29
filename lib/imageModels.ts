@@ -163,14 +163,27 @@ export function normalizeVideoResolution(raw: unknown) {
   return { resolution: raw as VideoResolution };
 }
 
-export function validateVideoResolutionForRequest(model: string, resolution: VideoResolution, mode: VideoMode) {
+export function usesGrokVideo15TextCanvasShim(model: string, mode: VideoMode): boolean {
+  const canonicalModel = model === GROK_VIDEO_MODEL_15_PREVIEW_ALIAS ? GROK_VIDEO_MODEL_15 : model;
+  return canonicalModel === GROK_VIDEO_MODEL_15 && mode === "text-to-video";
+}
+
+export function validateVideoResolutionForRequest(
+  model: string,
+  resolution: VideoResolution,
+  mode: VideoMode,
+  options: { allowTextCanvasShim?: boolean } = {},
+) {
   if (resolution !== "1080p") return { ok: true as const };
   const canonicalModel = model === GROK_VIDEO_MODEL_15_PREVIEW_ALIAS ? GROK_VIDEO_MODEL_15 : model;
   if (canonicalModel === GROK_VIDEO_MODEL_15 && mode === "image-to-video") {
     return { ok: true as const };
   }
+  if (options.allowTextCanvasShim && usesGrokVideo15TextCanvasShim(canonicalModel, mode)) {
+    return { ok: true as const };
+  }
   return {
-    error: "1080p video resolution is supported only for grok-imagine-video-1.5 image-to-video requests",
+    error: "1080p video resolution requires grok-imagine-video-1.5 text-to-video with the canvas shim or image-to-video",
     code: "INVALID_VIDEO_RESOLUTION" as const,
     status: 400 as const,
   };

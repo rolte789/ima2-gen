@@ -250,6 +250,41 @@ test("/api/video/generate accepts Grok Video 1.5 image-to-video 1080p", async ()
   }
 });
 
+test("/api/video/generate accepts Grok Video 1.5 prompt-only 1080p via canvas shim", async () => {
+  let startBody: any = null;
+  const proxy = makeProxy({ captureStart: (body) => { startBody = body; } });
+  const proxyUrl = await listen(proxy);
+  const proxyPort = Number(new URL(proxyUrl).port);
+  const generatedDir = await mkdtemp(join(tmpdir(), "ima2-video-route-1080-t2v-"));
+  const { server, url } = await videoApp(generatedDir, proxyPort);
+  try {
+    const res = await fetch(`${url}/api/video/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "make a freeform clip",
+        provider: "grok",
+        model: "grok-imagine-video-1.5-preview",
+        duration: 5,
+        resolution: "1080p",
+        requestId: "req_video_1080p_t2v",
+      }),
+    });
+    const done = parseSse(await res.text()).find((e) => e.event === "done");
+    assert.ok(done, "has done");
+    assert.equal(startBody.model, "grok-imagine-video-1.5");
+    assert.equal(startBody.resolution, "1080p");
+    assert.ok(startBody.image?.url?.startsWith("data:image/png;base64,"));
+    assert.match(startBody.prompt, /not a start frame/);
+    assert.equal(done.data.video.resolution, "1080p");
+    assert.equal(done.data.video.requestedModel, "grok-imagine-video-1.5");
+  } finally {
+    await new Promise((r) => server.close(r));
+    await new Promise((r) => proxy.close(r));
+    await rm(generatedDir, { recursive: true, force: true });
+  }
+});
+
 test("saveGeneratedVideoArtifact removes mp4 when sidecar write fails", async () => {
   const generatedDir = await mkdtemp(join(tmpdir(), "ima2-video-sidecar-fail-"));
   const filename = "broken.mp4";

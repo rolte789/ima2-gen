@@ -428,13 +428,12 @@ export async function generateVideoViaGrok(prompt: string, ctx: RouteRuntimeCont
         webSearchCalls: options.webSearchCalls ?? 1,
       }
     : await planGrokVideo(prompt, ctx, options);
-  const payload = buildVideoGenerationPayload(plan, { model, sourceImageUrl: srcUrl, referenceImageUrls: refUrls });
   let xaiVideoRequestId: string;
   let effectiveModel = model;
 
   // grokv1.5 doesn't support T2V — inject a white canvas as source image to use I2V path
-  let effectivePayload = payload;
-  if (model === GROK_VIDEO_MODEL_15 && !srcUrl && refUrls.length === 0) {
+  let effectivePayload: Record<string, unknown>;
+  if (model === GROK_VIDEO_MODEL_15 && plan.mode === "text-to-video" && !srcUrl && refUrls.length === 0) {
     const { width, height } = aspectToCanvas(plan.aspectRatio, plan.resolution);
     const whiteCanvas = await generateWhiteCanvasB64(width, height);
     const canvasSrcUrl = `data:image/png;base64,${whiteCanvas}`;
@@ -443,6 +442,8 @@ export async function generateVideoViaGrok(prompt: string, ctx: RouteRuntimeCont
       { model, sourceImageUrl: canvasSrcUrl, referenceImageUrls: [] },
     );
     logEvent("grok", "video:1.5-t2v-canvas", { requestId: options.requestId, width, height });
+  } else {
+    effectivePayload = buildVideoGenerationPayload(plan, { model, sourceImageUrl: srcUrl, referenceImageUrls: refUrls });
   }
 
   try {

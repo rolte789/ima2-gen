@@ -76,7 +76,7 @@ export function buildIma2Capabilities({
         supported: ["grok-imagine-video", "grok-imagine-video-1.5"],
         aliases: { "grok-imagine-video-1.5-preview": "grok-imagine-video-1.5" },
         resolutions: ["480p", "720p", "1080p"],
-        resolutionNotes: { "1080p": "grok-imagine-video-1.5 image-to-video only" },
+        resolutionNotes: { "1080p": "grok-imagine-video-1.5 text-to-video canvas shim or image-to-video; reference-to-video unsupported" },
         aspectRatios: ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "auto"],
         durationRange: [1, 15],
         maxReferences: 7,

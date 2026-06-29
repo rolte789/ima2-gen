@@ -102,5 +102,5 @@ export function clampVideoDurationUI(duration: number, mode: string): number {
 
 export function supportsVideoResolutionUI(model: string | false, resolution: string, mode: string): boolean {
   if (resolution !== "1080p") return true;
-  return model === GROK_VIDEO_MODEL_15 && mode === "image-to-video";
+  return model === GROK_VIDEO_MODEL_15 && (mode === "text-to-video" || mode === "image-to-video");
 }

@@ -347,6 +347,87 @@ describe("Agent Mode runtime contract", () => {
     assert.equal(sidecar.video.effectiveModel, "grok-imagine-video-1.5");
   });
 
+  it("routes Agent prompt-only 1080p video through Grok Video 1.5 canvas shim", async () => {
+    const generatedDir = join(TEST_DIR, `generated-video-t2v-${Date.now()}`);
+    mkdirSync(generatedDir, { recursive: true });
+    const session = createAgentSession({ title: "agent 1080p t2v" });
+    const starts: any[] = [];
+    globalThis.fetch = async (url, init) => {
+      const href = String(url);
+      if (href.includes("/v1/responses")) {
+        return Response.json({ output: [{ type: "message", content: [{ type: "text", text: "video context" }] }] });
+      }
+      if (href.includes("/v1/chat/completions")) {
+        return Response.json({
+          choices: [{
+            message: {
+              tool_calls: [{
+                type: "function",
+                function: { name: "generate_video", arguments: JSON.stringify({ prompt: "Agent 1080p T2V prompt." }) },
+              }],
+            },
+          }],
+        });
+      }
+      if (href.includes("/v1/videos/generations")) {
+        starts.push(JSON.parse(String(init?.body || "{}")));
+        return Response.json({ request_id: "vid-agent-1080-t2v" });
+      }
+      if (href.includes("/v1/videos/vid-agent-1080-t2v")) {
+        return Response.json({
+          status: "done",
+          progress: 100,
+          video: { url: "https://vidgen.example/agent-1080-t2v.mp4", duration: 5, respect_moderation: true },
+          usage: { cost_in_usd_ticks: 1000000000 },
+        });
+      }
+      if (href.includes("vidgen.example")) {
+        return new Response(fakeMp4Bytes(), { headers: { "Content-Type": "video/mp4" } });
+      }
+      throw new Error(`unexpected fetch: ${href}`);
+    };
+
+    await runAgentVideoGeneration(
+      {
+        rootDir: process.cwd(),
+        packageVersion: "test",
+        config: {
+          ...config,
+          storage: { ...config.storage, generatedDir },
+          grokProvider: {
+            ...config.grokProvider,
+            proxyHost: "127.0.0.1",
+            proxyPort: 18645,
+            videoPollIntervalMs: 1,
+            videoStartTimeoutMs: 5000,
+            videoTimeoutMs: 30000,
+            videoDownloadTimeoutMs: 5000,
+            plannerTimeoutMs: 5000,
+          },
+        },
+      } as any,
+      session.id,
+      "make a new 1080p video",
+      {
+        skipUserTurn: true,
+        videoParams: { duration: 5, resolution: "1080p", aspectRatio: "16:9" },
+        requestId: "agent_video_1080p_t2v",
+      },
+    );
+
+    assert.equal(starts.length, 1);
+    assert.equal(starts[0].model, "grok-imagine-video-1.5");
+    assert.equal(starts[0].resolution, "1080p");
+    assert.ok(starts[0].image?.url?.startsWith("data:image/png;base64,"));
+    assert.match(starts[0].prompt, /not a start frame/);
+    const sidecarName = readdirSync(generatedDir).find((name) => name.endsWith("_agent.mp4.json"));
+    assert.ok(sidecarName);
+    const sidecar = JSON.parse(readFileSync(join(generatedDir, sidecarName), "utf8"));
+    assert.equal(sidecar.video.mode, "text-to-video");
+    assert.equal(sidecar.video.resolution, "1080p");
+    assert.equal(sidecar.video.requestedModel, "grok-imagine-video-1.5");
+  });
+
   it("persists selected Agent image focus and rejects cross-session image ids", async () => {
     const finalImage = await pngB64();
     globalThis.fetch = async (url, init) => {

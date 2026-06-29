@@ -11,14 +11,14 @@ interface PlannerConfig { model: string; options: string[]; }
 const RES_ITEMS = [
   { value: "480p" as const, label: "480p" },
   { value: "720p" as const, label: "720p" },
-  { value: "1080p" as const, label: "1080p", sub: "1.5 I2V" },
+  { value: "1080p" as const, label: "1080p", sub: "1.5 HD" },
 ];
 const ASPECT_ITEMS = ["auto", "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3"].map((v) => ({ value: v, label: v }));
 const DURATIONS = [3, 5, 8, 10, 12, 15];
 
 const VIDEO_MODELS: Array<{ value: string; label: string; sub: string }> = [
   { value: GROK_VIDEO_MODEL_BASE, label: "Grok V", sub: "Fast" },
-  { value: GROK_VIDEO_MODEL_15, label: "Grok V1.5", sub: "I2V" },
+  { value: GROK_VIDEO_MODEL_15, label: "Grok V1.5", sub: "HD" },
 ];
 
 export function VideoControlsPanel() {

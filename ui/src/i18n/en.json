@@ -935,7 +935,7 @@
     "seriesTopicPlaceholder": "e.g. Korean travel vlog",
     "durationTitle": "Length",
     "resolutionTitle": "Resolution",
-    "resolution1080Help": "1080p requires Grok V1.5 with a single image/frame source.",
+    "resolution1080Help": "1080p uses Grok V1.5 for prompt-only or single image/frame video. It is not available with 2+ references.",
     "aspectTitle": "Aspect ratio"
   },
   "sidebar": {

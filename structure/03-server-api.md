@@ -123,7 +123,7 @@ server validates the generated `.mp4`, extracts its last frame, reads the parent
 sidecar, and treats that sidecar lineage as authoritative over any client hint.
 Lineage keeps at most four entries with start preserved plus the latest three.
 
-`grok-imagine-video-1.5` is the canonical Grok Video 1.5 model name. Incoming `grok-imagine-video-1.5-preview` values are accepted only as a compatibility alias and are normalized before upstream calls. `resolution: "1080p"` is accepted only when the effective request is 1.5 image-to-video with one image or extracted frame source; base-model requests, prompt-only T2V, Ref2V/multi-image, video edit, and extension requests reject it with `INVALID_VIDEO_RESOLUTION`.
+`grok-imagine-video-1.5` is the canonical Grok Video 1.5 model name. Incoming `grok-imagine-video-1.5-preview` values are accepted only as a compatibility alias and are normalized before upstream calls. `resolution: "1080p"` is accepted when the effective request is 1.5 prompt-only T2V or image-to-video with one image/extracted frame source; prompt-only 1.5 T2V is converted to the existing white-canvas I2V shim before the upstream request. Base-model requests, Ref2V/multi-image, video edit, and extension requests reject it with `INVALID_VIDEO_RESOLUTION`.
 
 ## History And Asset Lifecycle
 

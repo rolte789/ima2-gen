@@ -99,11 +99,6 @@ describe("ima2 video CLI contracts", () => {
     assert.equal(badTimeout.code, 2);
     assert.match(badTimeout.stderr, /--timeout must be an integer/);
 
-    const bad1080pMode = await runCLI(["video", "clip", "--resolution", "1080p", "--model", "grok-imagine-video-1.5", "--server", "http://127.0.0.1:9"]);
-    assert.equal(bad1080pMode.code, 2);
-    assert.match(bad1080pMode.stderr, /1080p video resolution is supported only/);
-    assert.doesNotMatch(bad1080pMode.stderr, /server unreachable/);
-
     const zeroTimeout = await runCLI(["video", "edit", "p", "--video", "https://example.com/v.mp4", "--timeout", "0"]);
     assert.equal(zeroTimeout.code, 2);
     assert.match(zeroTimeout.stderr, /--timeout must be at least 1/);
@@ -116,6 +111,34 @@ describe("ima2 video CLI contracts", () => {
     assert.equal(noContinuePrompt.code, 2);
     assert.match(noContinuePrompt.stderr, /Active video prompt required/);
     assert.match(noContinuePrompt.stderr, /stable ending frame/);
+  });
+
+  it("allows prompt-only Grok Video 1.5 1080p so the server can apply the canvas shim", async () => {
+    let body = "";
+    const server = makeServer((req, res) => {
+      if (req.url?.startsWith("/api/video/generate")) {
+        req.on("data", (d) => (body += d));
+        req.on("end", () => {
+          res.writeHead(200, { "Content-Type": "text/event-stream" });
+          res.end('event: done\ndata: {"requestId":"r","filename":"out.mp4","url":"/generated/out.mp4","mediaType":"video"}\n\n');
+        });
+        return;
+      }
+      if (req.url?.startsWith("/generated/out.mp4")) {
+        res.writeHead(200, { "Content-Type": "video/mp4" });
+        res.end("mp4");
+        return;
+      }
+      res.writeHead(404).end();
+    });
+    const base = await listen(server);
+    const result = await runCLI(["video", "clip", "--resolution", "1080p", "--model", "grok-imagine-video-1.5", "--server", base, "--json"]);
+    assert.equal(result.code, 0);
+    const parsed = JSON.parse(body);
+    assert.equal(parsed.model, "grok-imagine-video-1.5");
+    assert.equal(parsed.resolution, "1080p");
+    assert.equal(parsed.sourceImage, undefined);
+    assert.equal(parsed.referenceImages, undefined);
   });
 
   it("sends continueFromVideo for video continue", async () => {
