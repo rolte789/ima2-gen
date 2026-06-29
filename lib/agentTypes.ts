@@ -76,7 +76,7 @@ export interface AgentQueueItem {
 
 export interface AgentVideoParams {
   duration?: number;
-  resolution?: "480p" | "720p";
+  resolution?: "480p" | "720p" | "1080p";
   aspectRatio?: string;
 }
 

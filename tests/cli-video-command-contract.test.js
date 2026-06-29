@@ -71,7 +71,9 @@ describe("ima2 video CLI contracts", () => {
     assert.match(stdout, /--duration <1\.\.15>[\s\S]*Duration in seconds\. Default: 5\. Prompt motion should naturally fill this length/);
     assert.match(stdout, /--duration <2\.\.10>[\s\S]*Extension duration only\. Default: 6/);
     assert.match(stdout, /--topic <text>/);
-    assert.match(stdout, /grok-imagine-video-1\.5-preview/);
+    assert.match(stdout, /--resolution <480p\|720p\|1080p>/);
+    assert.match(stdout, /grok-imagine-video-1\.5/);
+    assert.match(stdout, /preview alias accepted/);
   });
 
   it("rejects invalid generate and extend durations before network calls", async () => {
@@ -96,6 +98,11 @@ describe("ima2 video CLI contracts", () => {
     const badTimeout = await runCLI(["video", "clip", "--timeout", "1abc"]);
     assert.equal(badTimeout.code, 2);
     assert.match(badTimeout.stderr, /--timeout must be an integer/);
+
+    const bad1080pMode = await runCLI(["video", "clip", "--resolution", "1080p", "--model", "grok-imagine-video-1.5", "--server", "http://127.0.0.1:9"]);
+    assert.equal(bad1080pMode.code, 2);
+    assert.match(bad1080pMode.stderr, /1080p video resolution is supported only/);
+    assert.doesNotMatch(bad1080pMode.stderr, /server unreachable/);
 
     const zeroTimeout = await runCLI(["video", "edit", "p", "--video", "https://example.com/v.mp4", "--timeout", "0"]);
     assert.equal(zeroTimeout.code, 2);

@@ -61,7 +61,7 @@ export const AGENT_TOOL_MANIFEST: readonly AgentToolManifestEntry[] = [
       properties: {
         prompt: { type: "string", description: "Video prompt describing visual flow and motion." },
         duration: { type: "integer", minimum: 1, maximum: 15, description: "Video duration in seconds. Default 5." },
-        resolution: { type: "string", enum: ["480p", "720p"], description: "Output resolution. Default 480p." },
+        resolution: { type: "string", enum: ["480p", "720p", "1080p"], description: "Output resolution. Default 480p. 1080p requires a source image and Grok Video 1.5 I2V." },
         aspectRatio: {
           type: "string",
           enum: ["auto", "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3"],

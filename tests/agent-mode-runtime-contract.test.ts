@@ -2,7 +2,7 @@ import { after, afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
 import sharp from "sharp";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -12,6 +12,9 @@ process.env.IMA2_DB_PATH = join(TEST_DIR, "sessions.db");
 
 const { registerAgentRoutes } = await import("../routes/agent.ts");
 const { isRuntimeRestartableError } = await import("../lib/agentRuntime.ts");
+const { runAgentVideoGeneration } = await import("../lib/agentImageVideoGen.ts");
+const { createAgentSession } = await import("../lib/agentStore.ts");
+const { config } = await import("../config.ts");
 const db = await import("../lib/db.ts");
 const originalFetch = globalThis.fetch;
 
@@ -46,6 +49,10 @@ async function pngB64() {
     },
   }).png().toBuffer();
   return buffer.toString("base64");
+}
+
+function fakeMp4Bytes() {
+  return Buffer.from([0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0, 0, 0, 0]);
 }
 
 async function withApp(fn: (baseUrl: string, generatedDir: string) => Promise<void>) {
@@ -245,6 +252,99 @@ describe("Agent Mode runtime contract", () => {
       assert.equal(calls.find((call) => call.url.endsWith("/v1/images/generations"))?.body.model === "grok-4.3", false);
       assert.match(calls.find((call) => call.url.endsWith("/v1/chat/completions"))?.body.messages[1].content[0].text, /English only/);
     });
+  });
+
+  it("routes Agent 1080p I2V video through Grok Video 1.5 and records sidecar metadata", async () => {
+    const generatedDir = join(TEST_DIR, `generated-video-${Date.now()}`);
+    mkdirSync(generatedDir, { recursive: true });
+    writeFileSync(join(generatedDir, "seed.png"), Buffer.from(await pngB64(), "base64"));
+    const session = createAgentSession({
+      title: "agent 1080p video",
+      currentImage: {
+        id: "img_video_seed",
+        filename: "seed.png",
+        url: "/generated/seed.png",
+        prompt: "seed image",
+      },
+    });
+    const starts: any[] = [];
+    globalThis.fetch = async (url, init) => {
+      const href = String(url);
+      if (href.includes("/v1/responses")) {
+        return Response.json({ output: [{ type: "message", content: [{ type: "text", text: "video context" }] }] });
+      }
+      if (href.includes("/v1/chat/completions")) {
+        return Response.json({
+          choices: [{
+            message: {
+              tool_calls: [{
+                type: "function",
+                function: { name: "generate_video", arguments: JSON.stringify({ prompt: "Agent 1080p I2V prompt." }) },
+              }],
+            },
+          }],
+        });
+      }
+      if (href.includes("/v1/videos/generations")) {
+        starts.push(JSON.parse(String(init?.body || "{}")));
+        return Response.json({ request_id: "vid-agent-1080" });
+      }
+      if (href.includes("/v1/videos/vid-agent-1080")) {
+        return Response.json({
+          status: "done",
+          progress: 100,
+          video: { url: "https://vidgen.example/agent-1080.mp4", duration: 5, respect_moderation: true },
+          usage: { cost_in_usd_ticks: 1000000000 },
+        });
+      }
+      if (href.includes("vidgen.example")) {
+        return new Response(fakeMp4Bytes(), { headers: { "Content-Type": "video/mp4" } });
+      }
+      throw new Error(`unexpected fetch: ${href}`);
+    };
+
+    await runAgentVideoGeneration(
+      {
+        rootDir: process.cwd(),
+        packageVersion: "test",
+        config: {
+          ...config,
+          storage: { ...config.storage, generatedDir },
+          grokProvider: {
+            ...config.grokProvider,
+            proxyHost: "127.0.0.1",
+            proxyPort: 18645,
+            videoPollIntervalMs: 1,
+            videoStartTimeoutMs: 5000,
+            videoTimeoutMs: 30000,
+            videoDownloadTimeoutMs: 5000,
+            plannerTimeoutMs: 5000,
+          },
+        },
+      } as any,
+      session.id,
+      "animate the seed image in 1080p",
+      {
+        skipUserTurn: true,
+        videoParams: { duration: 5, resolution: "1080p", aspectRatio: "16:9" },
+        requestId: "agent_video_1080p",
+      },
+    );
+
+    assert.equal(starts.length, 1);
+    assert.equal(starts[0].model, "grok-imagine-video-1.5");
+    assert.equal(starts[0].resolution, "1080p");
+    assert.ok(starts[0].image?.url?.startsWith("data:image/"));
+    const sidecarName = readdirSync(generatedDir).find((name) => name.endsWith("_agent.mp4.json"));
+    assert.ok(sidecarName);
+    const sidecar = JSON.parse(readFileSync(join(generatedDir, sidecarName), "utf8"));
+    assert.equal(sidecar.model, "grok-imagine-video-1.5");
+    assert.equal(sidecar.requestedModel, "grok-imagine-video-1.5");
+    assert.equal(sidecar.effectiveModel, "grok-imagine-video-1.5");
+    assert.equal(sidecar.modelFallback, null);
+    assert.equal(sidecar.video.resolution, "1080p");
+    assert.equal(sidecar.video.requestedModel, "grok-imagine-video-1.5");
+    assert.equal(sidecar.video.effectiveModel, "grok-imagine-video-1.5");
   });
 
   it("persists selected Agent image focus and rejects cross-session image ids", async () => {

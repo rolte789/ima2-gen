@@ -275,7 +275,7 @@ export function cleanVideoParams(value: unknown): AgentVideoParams | null {
   const params: AgentVideoParams = {};
   const duration = typeof input.duration === "number" ? input.duration : Number(input.duration);
   if (Number.isFinite(duration)) params.duration = Math.max(1, Math.min(15, Math.round(duration)));
-  if (input.resolution === "480p" || input.resolution === "720p") params.resolution = input.resolution;
+  if (input.resolution === "480p" || input.resolution === "720p" || input.resolution === "1080p") params.resolution = input.resolution;
   if (typeof input.aspectRatio === "string" && /^(auto|16:9|9:16|4:3|3:4|3:2|2:3|1:1)$/.test(input.aspectRatio)) {
     params.aspectRatio = input.aspectRatio;
   }
@@ -329,12 +329,12 @@ function isVideoIntent(prompt: string): boolean {
 
 export interface VideoParamsFromPrompt {
   duration?: number;
-  resolution?: "480p" | "720p";
+  resolution?: "480p" | "720p" | "1080p";
   aspectRatio?: string;
 }
 
 const DURATION_PATTERN = /(\d{1,2})\s*(?:s|sec|seconds?|초)/i;
-const RESOLUTION_PATTERN = /(720p|480p)/i;
+const RESOLUTION_PATTERN = /(1080p|720p|480p)/i;
 const ASPECT_PATTERN = /(16:9|9:16|4:3|3:4|3:2|2:3|1:1)/;
 
 export function parseVideoParams(prompt: string): VideoParamsFromPrompt {
@@ -345,7 +345,7 @@ export function parseVideoParams(prompt: string): VideoParamsFromPrompt {
     if (d >= 1 && d <= 15) params.duration = d;
   }
   const resMatch = RESOLUTION_PATTERN.exec(prompt);
-  if (resMatch) params.resolution = resMatch[1].toLowerCase() as "480p" | "720p";
+  if (resMatch) params.resolution = resMatch[1].toLowerCase() as "480p" | "720p" | "1080p";
   const aspMatch = ASPECT_PATTERN.exec(prompt);
   if (aspMatch) params.aspectRatio = aspMatch[1];
   return params;

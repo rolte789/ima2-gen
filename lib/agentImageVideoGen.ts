@@ -11,7 +11,8 @@ import { resolveProviderOptions } from "./providerOptions.js";
 import { generateViaResponses } from "./responsesImageAdapter.js";
 import { generateViaGrok, type GrokReferenceImage } from "./grokImageAdapter.js";
 import { generateViaAgy } from "./agyImageAdapter.js";
-import { generateVideoViaGrok } from "./grokVideoAdapter.js";
+import { generateVideoViaGrok, type GrokVideoGenerateResult } from "./grokVideoAdapter.js";
+import { GROK_VIDEO_MODEL_15, GROK_VIDEO_MODEL_BASE } from "./imageModels.js";
 import { parseVideoParams } from "./agentGenerationPlanner.js";
 import {
   appendAgentTurn,
@@ -244,9 +245,12 @@ export async function runAgentVideoGeneration(
     resolution: options.videoParams?.resolution ?? parsedParams.resolution,
     aspectRatio: options.videoParams?.aspectRatio ?? parsedParams.aspectRatio,
   };
+  const videoModel = videoParams.resolution === "1080p" && mode === "image-to-video"
+    ? GROK_VIDEO_MODEL_15
+    : GROK_VIDEO_MODEL_BASE;
 
   const result = await generateVideoViaGrok(prompt, ctx, {
-    model: "grok-imagine-video",
+    model: videoModel,
     mode,
     sourceImage,
     duration: videoParams.duration ?? 5,
@@ -297,7 +301,21 @@ async function persistAgentVideo(
   sessionId: string,
   prompt: string,
   requestId: string,
-  result: { videoBuffer: Buffer; revisedPrompt: string; usage: Record<string, number> | null; webSearchCalls: number },
+  result: Pick<
+    GrokVideoGenerateResult,
+    | "videoBuffer"
+    | "revisedPrompt"
+    | "usage"
+    | "webSearchCalls"
+    | "requestedModel"
+    | "effectiveModel"
+    | "modelFallback"
+    | "duration"
+    | "resolution"
+    | "aspectRatio"
+    | "mode"
+    | "xaiVideoRequestId"
+  >,
 ) {
   await mkdir(ctx.config.storage.generatedDir, { recursive: true });
   const rand = randomBytes(ctx.config.ids.generatedHexBytes).toString("hex");
@@ -311,10 +329,23 @@ async function persistAgentVideo(
     userPrompt: prompt,
     revisedPrompt: result.revisedPrompt,
     provider: "grok",
-    model: "grok-imagine-video",
+    model: result.effectiveModel,
+    requestedModel: result.requestedModel,
+    effectiveModel: result.effectiveModel,
+    modelFallback: result.modelFallback,
     createdAt: Date.now(),
     usage: result.usage,
     webSearchCalls: result.webSearchCalls,
+    video: {
+      duration: result.duration,
+      resolution: result.resolution,
+      aspectRatio: result.aspectRatio,
+      mode: result.mode,
+      xaiVideoRequestId: result.xaiVideoRequestId,
+      requestedModel: result.requestedModel,
+      effectiveModel: result.effectiveModel,
+      modelFallback: result.modelFallback,
+    },
   };
   const filePath = join(ctx.config.storage.generatedDir, filename);
   await writeFile(filePath, result.videoBuffer);

@@ -113,7 +113,7 @@ describe("Agent Mode LLM planner contract", () => {
   });
 
   it("clamps and rejects malformed video params", () => {
-    assert.deepEqual(cleanVideoParams({ duration: 99, resolution: "1080p", aspectRatio: "21:9" }), { duration: 15 });
+    assert.deepEqual(cleanVideoParams({ duration: 99, resolution: "1080p", aspectRatio: "21:9" }), { duration: 15, resolution: "1080p" });
     assert.deepEqual(cleanVideoParams({ duration: 0.4, resolution: "480p" }), { duration: 1, resolution: "480p" });
     assert.equal(cleanVideoParams({ resolution: "8k" }), null);
     assert.equal(cleanVideoParams("nope"), null);
@@ -186,7 +186,7 @@ describe("Agent Mode LLM planner contract", () => {
       return jsonResponse({
         choices: [{
           message: {
-            content: '{"mode":"video","prompts":["cat surfing"],"videoParams":{"duration":10,"resolution":"720p","aspectRatio":"16:9"},"reason":"video request"}',
+            content: '{"mode":"video","prompts":["cat surfing"],"videoParams":{"duration":10,"resolution":"1080p","aspectRatio":"16:9"},"reason":"video request"}',
           },
         }],
       });
@@ -199,7 +199,7 @@ describe("Agent Mode LLM planner contract", () => {
     assert.ok(plan);
     assert.equal(plan.mode, "video");
     assert.equal(plan.source, "llm-planner");
-    assert.deepEqual(plan.videoParams, { duration: 10, resolution: "720p", aspectRatio: "16:9" });
+    assert.deepEqual(plan.videoParams, { duration: 10, resolution: "1080p", aspectRatio: "16:9" });
     assert.equal(calls.length, 1);
     assert.ok(calls[0].url.endsWith("/v1/chat/completions"));
     assert.match((calls[0].body.messages as Array<{ content: string }>)[0].content, /Tool execution contract:/);
