@@ -477,7 +477,7 @@ export function registerGenerateRoutes(app, ctxRaw) {
                 createdAt: Date.now(),
                 prompt: typeof req.body?.prompt === "string" ? req.body.prompt : "",
                 requested: parseInt(req.body?.n) || 1,
-                succeeded: finishStatus === "completed" ? ((finishMeta.imageCount) ?? 1) : 0,
+                succeeded: finishStatus === "completed" ? (finishMeta.imageCount ?? 1) : 0,
                 error: finishStatus === "error" ? (finishErrorCode ?? "unknown") : null,
             }).catch(() => { });
         }
