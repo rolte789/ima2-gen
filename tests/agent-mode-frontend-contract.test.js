@@ -11,6 +11,27 @@ function readSource(path) {
 }
 
 describe("Agent Mode frontend shell contract", () => {
+  it("keeps video 1080p contracts in sync across Agent and Video controls", () => {
+    const agentTypes = readSource("ui/src/components/agent/agentTypes.ts");
+    const videoTypes = readSource("ui/src/types.ts");
+    const imageModels = readSource("ui/src/lib/imageModels.ts");
+    const panel = readSource("ui/src/components/VideoControlsPanel.tsx");
+    const persistence = readSource("ui/src/store/storePersistence.ts");
+
+    assert.match(agentTypes, /resolution\?: "480p" \| "720p" \| "1080p"/);
+    assert.match(videoTypes, /VideoResolutionUI = "480p" \| "720p" \| "1080p"/);
+    assert.match(videoTypes, /"grok-imagine-video-1\.5"/);
+    assert.match(imageModels, /GROK_VIDEO_MODEL_15 = "grok-imagine-video-1\.5"/);
+    assert.match(imageModels, /GROK_VIDEO_MODEL_15_PREVIEW_ALIAS/);
+    assert.match(imageModels, /normalizeVideoModelValue/);
+    assert.match(imageModels, /supportsVideoResolutionUI/);
+    assert.match(panel, /value: "1080p"/);
+    assert.match(panel, /disabled: !canUse1080p/);
+    assert.match(panel, /setResolution\("720p"\)/);
+    assert.match(persistence, /normalizeVideoModelValue\(p\.model\)/);
+    assert.match(persistence, /p\.resolution === "1080p"/);
+  });
+
   it("exposes Agent mode as a default-on product gate", () => {
     const devMode = readSource("ui/src/lib/devMode.ts");
     const types = readSource("ui/src/types.ts");

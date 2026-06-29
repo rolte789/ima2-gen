@@ -70,13 +70,22 @@ export function getImageModelShortLabel(value: string | null | undefined, provid
 }
 
 // ── Grok video model (separate kind from image models) ───────────────────
+export const GROK_VIDEO_MODEL_BASE = "grok-imagine-video";
+export const GROK_VIDEO_MODEL_15 = "grok-imagine-video-1.5";
+export const GROK_VIDEO_MODEL_15_PREVIEW_ALIAS = "grok-imagine-video-1.5-preview";
+
 export const VIDEO_MODEL_OPTIONS: Array<{ value: VideoModel; shortLabel: string; fullLabelKey: string }> = [
-  { value: "grok-imagine-video", shortLabel: "grokv", fullLabelKey: "settings.videoModel.grokImagine" },
-  { value: "grok-imagine-video-1.5-preview", shortLabel: "grokv1.5", fullLabelKey: "settings.videoModel.grokImagine15" },
+  { value: GROK_VIDEO_MODEL_BASE, shortLabel: "grokv", fullLabelKey: "settings.videoModel.grokImagine" },
+  { value: GROK_VIDEO_MODEL_15, shortLabel: "grokv1.5", fullLabelKey: "settings.videoModel.grokImagine15" },
 ];
 
 export function isVideoModelValue(v: unknown): v is VideoModel {
-  return v === "grok-imagine-video" || v === "grok-imagine-video-1.5-preview";
+  return v === GROK_VIDEO_MODEL_BASE || v === GROK_VIDEO_MODEL_15 || v === GROK_VIDEO_MODEL_15_PREVIEW_ALIAS;
+}
+
+export function normalizeVideoModelValue(v: unknown): VideoModel | false {
+  if (!isVideoModelValue(v)) return false;
+  return v === GROK_VIDEO_MODEL_15_PREVIEW_ALIAS ? GROK_VIDEO_MODEL_15 : v;
 }
 
 export const MAX_REF2V_DURATION_UI = 10;
@@ -89,4 +98,9 @@ export function deriveVideoModeUI(refCount: number): "text-to-video" | "image-to
 
 export function clampVideoDurationUI(duration: number, mode: string): number {
   return mode === "reference-to-video" ? Math.min(duration, MAX_REF2V_DURATION_UI) : duration;
+}
+
+export function supportsVideoResolutionUI(model: string | false, resolution: string, mode: string): boolean {
+  if (resolution !== "1080p") return true;
+  return model === GROK_VIDEO_MODEL_15 && mode === "image-to-video";
 }

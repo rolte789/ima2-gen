@@ -51,7 +51,7 @@ export type AgentToolCallSummary = {
 
 export type AgentVideoParams = {
   duration?: number;
-  resolution?: "480p" | "720p";
+  resolution?: "480p" | "720p" | "1080p";
   aspectRatio?: string;
 };
 

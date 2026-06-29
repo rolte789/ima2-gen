@@ -20,8 +20,8 @@ export type OpenAIImageModel = "gpt-5.5" | "gpt-5.4" | "gpt-5.4-mini";
 export type GrokImageModel = "grok-imagine-image" | "grok-imagine-image-quality";
 export type GeminiImageModel = "nano-banana-2" | "nano-banana-pro";
 export type ImageModel = OpenAIImageModel | GrokImageModel | GeminiImageModel;
-export type VideoModel = "grok-imagine-video" | "grok-imagine-video-1.5-preview";
-export type VideoResolutionUI = "480p" | "720p";
+export type VideoModel = "grok-imagine-video" | "grok-imagine-video-1.5" | "grok-imagine-video-1.5-preview";
+export type VideoResolutionUI = "480p" | "720p" | "1080p";
 export type UnsupportedImageModel = "gpt-5.3-codex-spark";
 export type Count = number;
 

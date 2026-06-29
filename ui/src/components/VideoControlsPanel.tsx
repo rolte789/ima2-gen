@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAppStore } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import { OptionGroup } from "./OptionGroup";
-import { deriveVideoModeUI, MAX_REF2V_DURATION_UI } from "../lib/imageModels";
+import { deriveVideoModeUI, GROK_VIDEO_MODEL_15, GROK_VIDEO_MODEL_BASE, MAX_REF2V_DURATION_UI, supportsVideoResolutionUI } from "../lib/imageModels";
 import { ACTIVE_VIDEO_PROMPT_GUIDANCE, continuitySummary } from "../lib/videoContinuity";
 import type { VideoResolutionUI } from "../types";
 
@@ -11,13 +11,14 @@ interface PlannerConfig { model: string; options: string[]; }
 const RES_ITEMS = [
   { value: "480p" as const, label: "480p" },
   { value: "720p" as const, label: "720p" },
+  { value: "1080p" as const, label: "1080p", sub: "1.5 I2V" },
 ];
 const ASPECT_ITEMS = ["auto", "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3"].map((v) => ({ value: v, label: v }));
 const DURATIONS = [3, 5, 8, 10, 12, 15];
 
 const VIDEO_MODELS: Array<{ value: string; label: string; sub: string }> = [
-  { value: "grok-imagine-video", label: "Grok V", sub: "Fast" },
-  { value: "grok-imagine-video-1.5-preview", label: "Grok V1.5", sub: "Preview" },
+  { value: GROK_VIDEO_MODEL_BASE, label: "Grok V", sub: "Fast" },
+  { value: GROK_VIDEO_MODEL_15, label: "Grok V1.5", sub: "I2V" },
 ];
 
 export function VideoControlsPanel() {
@@ -37,6 +38,16 @@ export function VideoControlsPanel() {
   const maxDuration = refCount >= 2 ? MAX_REF2V_DURATION_UI : 15;
   const mode = deriveVideoModeUI(refCount);
   const summary = continuitySummary(continuity);
+  const canUse1080p = supportsVideoResolutionUI(videoModelSelected, "1080p", mode);
+  const resolutionItems = RES_ITEMS.map((item) => (
+    item.value === "1080p" ? { ...item, disabled: !canUse1080p } : item
+  ));
+
+  useEffect(() => {
+    if (!supportsVideoResolutionUI(videoModelSelected, resolution, mode)) {
+      setResolution("720p");
+    }
+  }, [mode, resolution, setResolution, videoModelSelected]);
 
   const [plannerConfig, setPlannerConfig] = useState<PlannerConfig | null>(null);
   useEffect(() => {
@@ -112,7 +123,8 @@ export function VideoControlsPanel() {
       </div>
       <OptionGroup<VideoResolutionUI>
         title={t("video.resolutionTitle")}
-        items={RES_ITEMS}
+        help={!canUse1080p ? t("video.resolution1080Help") : undefined}
+        items={resolutionItems}
         value={resolution}
         onChange={setResolution}
       />
