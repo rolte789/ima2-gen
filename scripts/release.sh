@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# release.sh — build + version bump + npm publish + GitHub Release
+# release.sh — build + version bump + GitHub Release (OIDC trusted publishing)
+# The npm publish itself happens in GitHub Actions (.github/workflows/publish.yml)
+# via npm trusted publishing when the GitHub Release is created. This script
+# never runs `npm publish` and needs no npm credentials.
 # Auto-detects npm latest and bumps patch only (minor/major via explicit arg).
 # Usage:
 #   ./scripts/release.sh          → patch bump (1.0.2 → 1.0.3)
@@ -15,12 +18,17 @@ echo "========================="
 
 cd "$(dirname "$0")/.."
 
-# ─── Preflight: npm auth ───────────────────────────────
-if ! NPM_USER=$(npm whoami 2>/dev/null); then
-  echo "❌ Not logged in to npm. Run: npm login"
+# ─── Preflight: gh CLI auth (required — the GitHub Release triggers the
+#     OIDC publish workflow; without it nothing reaches npm) ─────────────
+if ! command -v gh &>/dev/null; then
+  echo "❌ gh CLI not found. Install it: https://cli.github.com"
   exit 1
 fi
-echo "🔐 npm user: $NPM_USER"
+if ! gh auth status &>/dev/null; then
+  echo "❌ gh CLI not authenticated. Run: gh auth login"
+  exit 1
+fi
+echo "🔐 gh CLI authenticated"
 
 if ! git diff --cached --quiet; then
   echo "❌ Refusing release: staged changes exist"
@@ -115,11 +123,8 @@ else
   git tag "v$VERSION"
 fi
 
-# ─── npm publish (BEFORE pushing tag — so failed publish leaves no dangling remote tag) ──
-echo "🚀 Publishing to npm..."
-npm publish --access public
-
-# ─── Push commit + tag ────────────────────────────────
+# ─── Push commit + tag (OIDC order: commit → tag → push → gh release create;
+#     the Release event triggers the trusted-publishing workflow) ─────────
 git push origin main
 if [ -z "$(git ls-remote --tags origin "v$VERSION" 2>/dev/null)" ]; then
   git push origin "v$VERSION"
@@ -127,19 +132,18 @@ else
   echo "ℹ️  Remote tag v$VERSION already exists, skipping push"
 fi
 
-# ─── GitHub Release with changelog ─────────────────────
-echo "📋 Creating GitHub Release..."
-if [ -n "$PREV_TAG" ] && command -v gh &>/dev/null; then
-    gh release create "v$VERSION" \
-        --title "v$VERSION" \
-        --notes "$RELEASE_NOTES" \
-        --latest
-    echo "✅ GitHub Release v$VERSION created!"
-else
-    echo "⚠️  Skipped GitHub Release (gh CLI not found or no previous tag)"
-fi
+# ─── GitHub Release with changelog (REQUIRED — this is the publish trigger) ──
+echo "📋 Creating GitHub Release (triggers OIDC npm publish)..."
+gh release create "v$VERSION" \
+    --title "v$VERSION" \
+    --notes "${RELEASE_NOTES:-Release v$VERSION}" \
+    --latest
+echo "✅ GitHub Release v$VERSION created!"
 
 echo ""
-echo "✅ $PKG_NAME@$VERSION published!"
+echo "✅ $PKG_NAME@$VERSION release triggered!"
+echo "   npm publish runs in GitHub Actions (publish.yml, OIDC trusted publishing)."
+echo "   Watch it:  gh run list --workflow=publish.yml --limit 1"
+echo "              gh run watch"
 echo "   Install: npm install -g $PKG_NAME"
 echo "   Release: https://github.com/lidge-jun/ima2-gen/releases/tag/v$VERSION"

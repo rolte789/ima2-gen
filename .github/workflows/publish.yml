@@ -53,6 +53,16 @@ jobs:
             exit 1
           fi
           echo "✓ npm version OK, OIDC endpoint available"
+      - name: Verify release tag matches package version (release only)
+        if: github.event_name == 'release'
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          TAG="${{ github.event.release.tag_name }}"
+          if [ "$TAG" != "v$PKG_VERSION" ]; then
+            echo "::error::Release tag $TAG does not match package.json version v$PKG_VERSION — refusing to publish latest"
+            exit 1
+          fi
+          echo "✓ tag $TAG matches package.json version"
       - name: Set preview version (preview branch push only)
         if: github.event_name != 'release'
         run: |

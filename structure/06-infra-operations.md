@@ -68,7 +68,7 @@ README may still mention a different Node baseline. The operational baseline is 
 | `prepack` | `ui:build && build:server && build:cli` | Refresh all committed runtime artifacts (UI, server, CLI) before tarball |
 | `prepublishOnly` | `typecheck && typecheck:tests && test:inventory && ui:build && build:server && build:cli && lint:pkg && test:package-install` | Full pre-publish gate: type checks (incl. `tests/` overlay), test-inventory gate, builds, package metadata lint, and tarball install smoke. Note: `npm test` is no longer in this chain — run it explicitly before publish. |
 
-`release:*` scripts include npm publish and git push. Agents must not run them unless the user explicitly asks.
+`release:*` scripts delegate to `scripts/release.sh`, which pushes to origin and creates a GitHub Release (the OIDC publish trigger). Agents must not run them unless the user explicitly asks.
 
 ## Config And Data Locations
 
@@ -166,7 +166,7 @@ Production releases use GitHub Actions `.github/workflows/publish.yml` with npm 
 | Push to `preview` branch | `preview` | Auto-bumps to `X.Y.Z-preview-YYMMDD` in CI |
 | `workflow_dispatch` | `preview` | Manual smoke only |
 
-Local `scripts/release.sh` performs direct `npm publish` with user credentials — prefer the GitHub Release path for production. Preview publishes must use the **registered** `publish.yml` workflow filename (npm trusted-publisher binds per workflow file).
+Local `scripts/release.sh` is a release **trigger** only: it bumps the version, builds, commits, tags, pushes, and runs `gh release create` — the Release event then runs `publish.yml`, which performs the actual `npm publish` via OIDC. No local npm credentials are used anywhere; `gh` CLI auth is the required preflight. The release path also refuses to publish when the Release tag does not match `package.json` version. Preview publishes must use the **registered** `publish.yml` workflow filename (npm trusted-publisher binds per workflow file).
 
 ## Development And Verification
 
@@ -188,7 +188,7 @@ Local `scripts/release.sh` performs direct `npm publish` with user credentials �
 - [ ] Run `npm pack --dry-run --json` or rely on `tests/package-smoke.test.js` to confirm README, recovery docs, storage routes, doctor files, `skills/ima2/SKILL.md`, and `ui/dist/index.html` are included in the publish manifest.
 - [ ] Run `npm run test:package-install` before publish when you want a full tarball install smoke. This is opt-in because it performs a real temp `npm install`.
 - [ ] Check README and `structure/` docs for Node baseline, provider wording, and CLI table drift.
-- [ ] Do not run release scripts automatically; they include push/publish behavior.
+- [ ] Do not run release scripts automatically; they push to origin and create a GitHub Release that triggers the npm publish workflow.
 
 ## Change Checklist
 
@@ -215,6 +215,7 @@ Local `scripts/release.sh` performs direct `npm publish` with user credentials �
 - 2026-06-01: Updated the package/runtime note for shipped Grok video support: progrok-backed video generation, edit, extension, frame extraction, analysis, and branch-local continuation are in the runtime scope; the older image-only wording no longer applies.
 - 2026-06-27: Bumped operational baseline to ima2-gen 2.0.4; documented OIDC trusted publishing via `publish.yml` (`latest` on GitHub Release, `preview` on preview branch push).
 - 2026-06-28: WP6 — added `npm run docs:refresh-line-counts` and documented `tests/{structure-line-counts,api-docs,cli-feature-parity}-contract.test.js` as docs drift gates.
+- 2026-07-07: OIDC-only release flow — `scripts/release.sh` and `release:*` no longer run credentialed `npm publish`; the GitHub Release (via `gh release create`) is the sole production publish trigger, and `publish.yml` gained a release-tag/package-version guard. GPT-5.6 model rollout (`gpt-5.6-sol/terra/luna` + `max` reasoning) landed in the same cycle.
 
 Previous document: `[[05-node-mode]]`
 

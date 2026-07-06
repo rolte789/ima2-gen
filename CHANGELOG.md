@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **GPT-5.6 rollout** — `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna` accepted as OAuth image models across server validators, prompt builder, CLI, and UI pickers; reasoning ladder gains `max` after `xhigh`. Defaults unchanged (`gpt-5.4-mini`).
+- **Release tag guard** — `publish.yml` release path refuses to publish when the GitHub Release tag does not match `package.json` version.
+- **Release flow is OIDC-only** — local `scripts/release.sh` and `release:*` scripts no longer run credentialed `npm publish`; they end at `gh release create`, which triggers the trusted-publishing workflow (`publish.yml`). `gh` CLI auth is now a required preflight; npm login is not needed locally.
 - **SSE multiplexing** — shared `GET /api/events` endpoint with ring-buffer replay and `Last-Event-ID` reconnect support (`lib/eventBus.ts`, `routes/events.ts`).
 - **Async POST generation mode** — multimode, node, and video routes accept async POST and dual-emit progress on both per-request SSE and the shared event bus.
 - **Frontend event channel** — singleton `EventSource` client (`ui/src/lib/eventChannel.ts`) replaces per-request SSE streams for UI generation flows.
