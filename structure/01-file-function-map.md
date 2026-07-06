@@ -251,7 +251,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | Cost | `ui/src/lib/cost.ts` | 91 | Quality/size cost estimation |
 | Error codes | `ui/src/lib/errorCodes.ts` | 178 | Stable error code → translation key mapping |
 | Error handler | `ui/src/lib/errorHandler.ts` | 24 | Routes errors to toast or persistent `ErrorCard` |
-| Image models | `ui/src/lib/imageModels.ts` | 107 | UI-side image model labels |
+| Image models | `ui/src/lib/imageModels.ts` | 110 | UI-side image model labels |
 | Video source count | `ui/src/lib/videoSourceCount.ts` | 52 | Effective video source counter for 1080p UI enablement; treats provider URL and node parent still/video sources as single I2V anchors |
 | Storage | `ui/src/lib/storage.ts` | 26 | localStorage helpers |
 | Gallery utils | `ui/src/lib/galleryUtils.ts` | 18 | Gallery navigation helpers |
@@ -260,7 +260,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | DOM events | `ui/src/lib/domEvents.ts` | 12 | Shared DOM event helpers (escape close, etc.) |
 | Graph helpers | `ui/src/lib/graph.ts` | 9 | Shared node-graph traversal helpers |
 | Horizontal wheel | `ui/src/lib/horizontalWheel.ts` | 20 | Horizontal-scroll wheel mapping helper |
-| Reasoning | `ui/src/lib/reasoning.ts` | 41 | Reasoning-effort label/option helpers |
+| Reasoning | `ui/src/lib/reasoning.ts` | 43 | Reasoning-effort label/option helpers |
 | Web search | `ui/src/lib/webSearch.ts` | 4 | Web-search toggle option helpers |
 | Canvas helpers | `ui/src/lib/canvas/*` | n/a | Canvas Mode primitives: alpha detection, annotation/mask/merge/export rendering, background cleanup masks, background removal, coordinates, eraser, hit test, blank canvas, object keys |
 | Style | `ui/src/index.css` | 105 | Global shell entry; feature styles modularized into `ui/src/styles/*` |

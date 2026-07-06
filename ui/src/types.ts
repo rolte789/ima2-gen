@@ -16,7 +16,7 @@ export type Provider = "oauth" | "api" | "grok" | "grok-api" | "agy" | "gemini-a
 export type Quality = "low" | "medium" | "high";
 export type Format = "png" | "jpeg" | "webp";
 export type Moderation = "low" | "auto";
-export type OpenAIImageModel = "gpt-5.5" | "gpt-5.4" | "gpt-5.4-mini";
+export type OpenAIImageModel = "gpt-5.5" | "gpt-5.4" | "gpt-5.4-mini" | "gpt-5.6-sol" | "gpt-5.6-terra" | "gpt-5.6-luna";
 export type GrokImageModel = "grok-imagine-image" | "grok-imagine-image-quality";
 export type GeminiImageModel = "nano-banana-2" | "nano-banana-pro";
 export type ImageModel = OpenAIImageModel | GrokImageModel | GeminiImageModel;
@@ -87,7 +87,7 @@ export type GenerateItem = {
   composerPrompt?: string | null;
   composerInsertedPrompts?: ComposerInsertedPromptSnapshot[] | null;
   elapsed?: number;
-  reasoningEffort?: "none" | "low" | "medium" | "high" | "xhigh";
+  reasoningEffort?: "none" | "low" | "medium" | "high" | "xhigh" | "max";
   provider?: string;
   quality?: string;
   size?: string;
@@ -165,7 +165,7 @@ export type EmbeddedGenerationMetadata = {
 export type GenerateSingleResponse = {
   image: string;
   elapsed: number;
-  reasoningEffort?: "none" | "low" | "medium" | "high" | "xhigh";
+  reasoningEffort?: "none" | "low" | "medium" | "high" | "xhigh" | "max";
   filename: string;
   requestId?: string | null;
   usage?: GenerateItem["usage"];
@@ -183,7 +183,7 @@ export type GenerateSingleResponse = {
 export type GenerateMultiResponse = {
   images: Array<{ image: string; filename: string; providerUrl?: string | null; createdAt?: number }>;
   elapsed: number;
-  reasoningEffort?: "none" | "low" | "medium" | "high" | "xhigh";
+  reasoningEffort?: "none" | "low" | "medium" | "high" | "xhigh" | "max";
   count: number;
   requestId?: string | null;
   usage?: GenerateItem["usage"];
@@ -211,7 +211,7 @@ export type GenerateRequest = {
   provider: Provider;
   n: number;
   model?: ImageModel;
-  reasoningEffort?: "none" | "low" | "medium" | "high" | "xhigh";
+  reasoningEffort?: "none" | "low" | "medium" | "high" | "xhigh" | "max";
   image?: string;
   mask?: string;
   references?: string[];

@@ -54,7 +54,7 @@ Agents should start from the packaged skill and capability commands instead of g
 | `ima2 node generate` | Node-mode generate (SSE; supports `--no-stream`) |
 | `ima2 node show <nodeId>` | Read node metadata |
 
-Generation flags include `--provider <auto|oauth|api|grok|grok-api|agy|gemini-api>`, `--reasoning-effort {none\|low\|medium\|high\|xhigh}`, `--web-search` / `--no-web-search`, `--model`, `--mode`, `--moderation`, `--ref <file>` (repeatable, up to 5 where supported), `-q low|medium|high`, `-n <count>`, `-o <file>`.
+Generation flags include `--provider <auto|oauth|api|grok|grok-api|agy|gemini-api>`, `--reasoning-effort {none\|low\|medium\|high\|xhigh\|max}`, `--web-search` / `--no-web-search`, `--model`, `--mode`, `--moderation`, `--ref <file>` (repeatable, up to 5 where supported), `-q low|medium|high`, `-n <count>`, `-o <file>`.
 
 Provider override semantics:
 

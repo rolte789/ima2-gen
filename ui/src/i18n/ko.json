@@ -1038,6 +1038,9 @@
       "gpt54Mini": "GPT-5.4 Mini",
       "gpt54": "GPT-5.4",
       "gpt55": "GPT-5.5",
+      "gpt56Sol": "GPT-5.6 Sol",
+      "gpt56Terra": "GPT-5.6 Terra",
+      "gpt56Luna": "GPT-5.6 Luna",
       "grokImagine": "Grok Imagine",
       "grokImagineQuality": "Grok Imagine Quality",
       "nanoBanana2": "Nano Banana 2",
@@ -1089,7 +1092,8 @@
       "low": "Low — 가장 빠름, 추론 최소",
       "medium": "Medium — 기본 균형값",
       "high": "High — 더 깊은 리서치와 통합",
-      "xhigh": "Xhigh — 최대 추론, 가장 느림"
+      "xhigh": "Xhigh — 확장 추론, 느림",
+      "max": "Max — 최대 추론, 가장 느림"
     },
     "webSearch": {
       "title": "웹서치",

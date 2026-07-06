@@ -260,14 +260,14 @@ export const config = {
   },
   imageModels: {
     default: pickStr(env.IMA2_IMAGE_MODEL_DEFAULT, fileCfg.imageModels?.default, "gpt-5.4-mini"),
-    valid: new Set(["gpt-5.5", "gpt-5.4", "gpt-5.4-mini"]),
+    valid: new Set(["gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"]),
     unsupported: new Set(["gpt-5.3-codex-spark"]),
     reasoningEffort: pickStr(
       env.IMA2_REASONING_EFFORT,
       fileCfg.imageModels?.reasoningEffort,
       "medium",
     ),
-    validReasoningEfforts: new Set(["none", "low", "medium", "high", "xhigh"]),
+    validReasoningEfforts: new Set(["none", "low", "medium", "high", "xhigh", "max"]),
   },
   apiProvider: {
     defaultImageModel: pickStr(
