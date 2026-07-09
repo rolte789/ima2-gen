@@ -81,7 +81,8 @@
     "ulid": "^3.0.2"
   },
   "bundleDependencies": [
-    "progrok"
+    "progrok",
+    "openai-oauth"
   ],
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
