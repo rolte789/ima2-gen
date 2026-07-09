@@ -151,22 +151,22 @@ describe("Grok video adapter", () => {
     });
     const system = String(payload.messages[0].content);
     const userText = String((payload.messages[1].content as any[])[0].text);
-    assert.match(system, /Dialogue\/audio intent/);
-    assert.match(system, /Ending frame \/ continuity handoff/);
+    assert.match(system, /MULTI-CHARACTER DIALOGUE/);
+    assert.match(system, /ENDING FRAME \/ CONTINUATION CUT PLANNING/);
     assert.match(system, /no background music/);
     assert.match(system, /sound effects only/);
     assert.match(system, /Duration pacing is mandatory/);
     assert.match(userText, /Duration pacing \(10s total\)/);
-    assert.match(userText, /production-level cinematic sequence/);
-    assert.match(userText, /opening composition -> connected motion or emotion change -> clear action or camera development -> stable ending frame/);
+    assert.match(userText, /complete visual arc/);
+    assert.match(userText, /Beat structure for/);
   });
 
   it("formats duration pacing without forbidding useful timing detail", () => {
     const guidance = formatDurationPacingGuidance(15, "text-to-video");
     assert.match(guidance, /15s total/);
     assert.match(guidance, /naturally across the entire duration/);
-    assert.match(guidance, /production-level cinematic sequence/);
-    assert.match(guidance, /precise timing would improve the result/);
+    assert.match(guidance, /Beat structure for 11-15s/);
+    assert.match(guidance, /anticipation/);
     assert.doesNotMatch(guidance, /Do not use second-by-second/);
     assert.doesNotMatch(guidance, /0\.0-2\.0s/);
   });
@@ -174,7 +174,7 @@ describe("Grok video adapter", () => {
   it("keeps the planner system prompt duration-scaled instead of word-count capped", () => {
     const system = buildGrokVideoPlannerSystemPrompt();
     assert.match(system, /Duration pacing is mandatory/);
-    assert.match(system, /scale detail to the requested duration/);
+    assert.match(system, /Scale detail to duration/);
     assert.doesNotMatch(system, /30-80 words/);
   });
 
@@ -421,6 +421,6 @@ describe("Grok video adapter", () => {
     assert.ok(startBody.image?.url?.startsWith("data:image/png;base64,"));
     const canvas = Buffer.from(startBody.image.url.replace(/^data:image\/png;base64,/, ""), "base64");
     assert.deepEqual(parsePngInfo(canvas), { width: 1920, height: 1080, bitDepth: 8, colorType: 2 });
-    assert.match(startBody.prompt, /not a start frame/);
+    assert.match(startBody.prompt, /blank white canvas.*technical placeholder/);
   });
 });
