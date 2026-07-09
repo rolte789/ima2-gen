@@ -1,6 +1,6 @@
 {
   "name": "ima2-gen",
-  "version": "2.0.8",
+  "version": "2.0.9",
   "description": "Local OAuth image generation studio with classic and node workflows",
   "type": "module",
   "bin": {
