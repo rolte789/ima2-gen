@@ -42,13 +42,13 @@ describe("CLI packaged skill contract", () => {
     assert.doesNotMatch(skill, /jq -r '\.url'/);
     assert.match(skill, /Structured Video Prompt Template/);
     assert.match(skill, /duration pacing/);
-    assert.match(skill, /production-level sequence/);
-    assert.match(skill, /Expected Motion/);
+    assert.match(skill, /beat structure scales with length/);
+    assert.match(skill, /Motivated movement/);
     assert.match(skill, /Dialogue/);
-    assert.match(skill, /Ending Frame/);
+    assert.match(skill, /Settling final frame/);
     assert.match(skill, /no background music/);
-    assert.match(skill, /Sound Effects/);
-    assert.match(skill, /Continuity Handoff/);
+    assert.match(skill, /specific SFX/);
+    assert.match(skill, /self-explanatory for continuation/);
     assert.match(skill, /Video edit\/extend: grok-imagine-video only/);
   });
 

@@ -172,9 +172,9 @@ const grokImagePlanner = buildGrokPlannerPayload(
 const grokVideoPlanner = buildGrokVideoPlannerSystemPrompt();
 for (const prompt of [grokImagePlanner, grokVideoPlanner]) {
   assert.ok(prompt.includes(SAFETY_INTENT_POLICY), "grok planner should include safety intent policy");
-  assert.ok(prompt.includes("adult two-piece swimwear"), "grok planner should classify bikini as benign adult swimwear");
+  assert.ok(prompt.includes("bikini means a two-piece swimsuit"), "grok planner should preserve benign bikini intent");
   assert.ok(prompt.includes("negative safety constraints"), "grok planner should not append negative safety constraints");
-  assert.ok(prompt.includes("do not rewrite it as a benign allowed prompt"), "grok planner should not launder unsafe prompts");
+  assert.ok(prompt.includes("instead of rewriting it as allowed"), "grok planner should not launder unsafe prompts");
 }
 
 for (const source of [grokImageAdapterSrc, grokVideoPlannerSrc, agyAdapterSrc]) {

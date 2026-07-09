@@ -275,7 +275,7 @@ test("/api/video/generate accepts Grok Video 1.5 prompt-only 1080p via canvas sh
     assert.equal(startBody.model, "grok-imagine-video-1.5");
     assert.equal(startBody.resolution, "1080p");
     assert.ok(startBody.image?.url?.startsWith("data:image/png;base64,"));
-    assert.match(startBody.prompt, /not a start frame/);
+    assert.match(startBody.prompt, /blank white canvas.*technical placeholder/);
     assert.equal(done.data.video.resolution, "1080p");
     assert.equal(done.data.video.requestedModel, "grok-imagine-video-1.5");
   } finally {
