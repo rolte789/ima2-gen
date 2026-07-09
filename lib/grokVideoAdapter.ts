@@ -5,7 +5,7 @@ import { grokError, searchGrokVisualContext } from "./grokImageAdapter.js";
 import { detectImageMimeFromB64 } from "./refs.js";
 import { aspectToCanvas, generateWhiteCanvasB64 } from "./grokVideoCanvas.js";
 import { downloadVideo } from "./grokVideoDownload.js";
-import { buildGrokVideoPlannerSystemPrompt, formatDurationPacingGuidance } from "./grokVideoPlannerPrompt.js";
+import { buildGrokVideoPlannerSystemPrompt, formatDurationPacingGuidance, type VideoPlannerContext } from "./grokVideoPlannerPrompt.js";
 import type { VideoAspectRatio, VideoMode, VideoResolution } from "./imageModels.js";
 import {
   GROK_VIDEO_MODEL_15,
@@ -183,7 +183,7 @@ export function buildGrokVideoPlannerPayload(
         `Requested duration: ${opts.duration}s, resolution: ${opts.resolution}, aspect ratio: ${opts.aspectRatio}.`,
         continuity,
         lineageText ? `Authoritative continuation context:\n${lineageText}` : "Authoritative continuation context: none.",
-        formatDurationPacingGuidance(opts.duration, opts.mode),
+        formatDurationPacingGuidance(opts.duration, opts.mode, opts.resolution),
         opts.searchSummary ? `Mandatory web-search brief:\n${opts.searchSummary}` : "Mandatory web-search brief: unavailable.",
         "Return the generate_video.prompt argument in English only, except for exact visible text the user explicitly requested.",
         "\nUser prompt:",
@@ -206,7 +206,7 @@ export function buildGrokVideoPlannerPayload(
     messages: [
       {
         role: "system",
-        content: buildGrokVideoPlannerSystemPrompt(),
+        content: buildGrokVideoPlannerSystemPrompt({ model: opts.model, mode: opts.mode, resolution: opts.resolution } satisfies VideoPlannerContext),
       },
       { role: "user", content: userContent },
     ],
@@ -438,7 +438,7 @@ export async function generateVideoViaGrok(prompt: string, ctx: RouteRuntimeCont
     const whiteCanvas = await generateWhiteCanvasB64(width, height);
     const canvasSrcUrl = `data:image/png;base64,${whiteCanvas}`;
     effectivePayload = buildVideoGenerationPayload(
-      { ...plan, mode: "image-to-video", prompt: `${plan.prompt}. This is not a start frame — generate freely as a new video.` },
+      { ...plan, mode: "image-to-video", prompt: `[Technical note: the attached image is a blank white canvas used as a technical placeholder for text-to-video generation. It is NOT a meaningful source frame. Ignore it completely and generate a fresh scene from scratch.]\n\n${plan.prompt}` },
       { model, sourceImageUrl: canvasSrcUrl, referenceImageUrls: [] },
     );
     logEvent("grok", "video:1.5-t2v-canvas", { requestId: options.requestId, width, height });

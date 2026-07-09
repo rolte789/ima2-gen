@@ -12,6 +12,10 @@ skill. The generic skill can describe the OpenAI API, but this skill knows ima2'
 local server, GPT OAuth/API provider split, history, in-flight jobs, packaged defaults,
 and CLI command surface.
 
+**Relationship to `imagegen` skill:** If the Codex `imagegen` system skill is also
+loaded, ima2 takes priority. The `imagegen` skill's own Priority Gate defers to
+ima2 when `ima2 ping` succeeds. Do not use both in the same generation task.
+
 ## First Commands
 
 Start by discovering the local package and running server state:
@@ -52,6 +56,13 @@ Use direct mode when the prompt should be passed with minimal rewriting:
 ```bash
 ima2 gen "exact prompt text" --mode direct
 ```
+
+**`--mode` explained:**
+- `auto` (default): the server may augment, restructure, or enrich the prompt
+  before sending it to the image model. Good for casual or short prompts.
+- `direct`: the prompt is passed as-is with minimal server-side rewriting. Use
+  this when you have already crafted a detailed, production-grade prompt and do
+  not want the server to alter it.
 
 Use request-level overrides only for that one call:
 
@@ -112,6 +123,137 @@ directly, for example:
 Text rendering is improved, but it is still not a typesetting engine. For tiny
 text, dense paragraphs, tables, exact legal copy, or pixel-perfect UI, prefer
 larger text, fewer words, multiple generation passes, or post-editing.
+
+## Agent Image Prompt Protocol
+
+When an AI agent authors image prompts, the prompt MUST be **exhaustively
+detailed**. Vague one-liners produce generic, unusable output. Write every
+prompt as if you are briefing a senior photographer or illustrator who cannot
+ask follow-up questions. When using `--mode auto`, the server augments short
+prompts, but a detailed prompt still produces far better results than relying
+on auto-augmentation alone. For production assets, prefer `--mode direct` with
+a fully-specified prompt.
+
+### Required Spec Fields
+
+Every agent-authored prompt MUST include all applicable fields. Omit a field
+only when it genuinely does not apply (e.g. no text in the image).
+
+```text
+Use case: <slug: photorealistic-natural | product-mockup | ui-mockup | infographic-diagram | scientific-educational | ads-marketing | productivity-visual | logo-brand | illustration-story | stylized-concept | historical-scene>
+Asset type: <where the asset will be used: hero, OG image, card, avatar, icon, texture, game sprite, etc.>
+Primary request: <one clear sentence describing the desired image>
+Scene/backdrop: <specific environment — not "nice background">
+Subject: <main subject with identifying details: material, color, shape, posture, expression>
+Style/medium: <exact style: editorial photography, flat illustration, 3D render, watercolor, etc.>
+Composition/framing: <camera angle, crop, subject placement, negative space intent>
+Lighting/mood: <light source, direction, color temperature, mood, time of day>
+Color palette: <specific hex codes or named palette — not "modern colors">
+Materials/textures: <surface details: matte plastic, brushed steel, linen, weathered wood, etc.>
+Text (verbatim): "<exact text to render>" with font style, size, color, placement
+Constraints: <must-keep invariants>
+Avoid: <explicit negative constraints>
+```
+
+### Specificity Rules
+
+| Bad (vague) | Good (specific) |
+|---|---|
+| "a nice hero image" | "wide landscape product shot of a matte black thermos on a wet granite countertop, soft morning window light from the left, shallow depth of field, warm neutral tones, negative space on the right for headline overlay" |
+| "modern background" | "soft radial gradient from #f8f9fa center to #e9ecef edges, subtle paper grain texture at 3% opacity, no objects, no patterns" |
+| "Korean food photo" | "overhead flat-lay of budae-jjigae in a black stone pot, surrounded by small banchan dishes on a dark wood table, steam visible, warm tungsten lighting, editorial food photography style" |
+| "logo on white" | "centered geometric mark: two interlocking triangles forming a hexagonal negative space, flat #1a1a2e on #ffffff, no gradients, strong silhouette at 32px, generous padding" |
+| "a dashboard screenshot" | "realistic SaaS dashboard UI: top nav with avatar, left sidebar with 6 nav items, main area showing a line chart (3 series, 12 months) and a 4-column data table with 8 rows, light theme, Inter font, compact density" |
+
+### Quality and Size Selection
+
+| Asset Purpose | Quality | Size | Notes |
+|---|---|---|---|
+| Quick draft / iteration | `low` | `1024x1024` | Fastest; square |
+| Final hero / product shot | `high` | `1536x1024` landscape, `1024x1536` portrait | Or target aspect ratio |
+| OG / social card | `high` | `1200x640` | Nearest 16px multiple of 1200x630 |
+| Mobile hero | `high` | `1024x1536` | Portrait |
+| Print / 4K | `high` | `3840x2160` or `2160x3840` | Max gpt-image-2 supports |
+| Texture / tile | `medium` | `1024x1024` | Square, seamless edges |
+| Icon / avatar | `medium` | `512x512` or `256x256` | Small canvas |
+| Game environment concept | `high` | `1792x1024` or `2048x1152` | Wide cinematic |
+| Storyboard (for i2v) | `high` | `1024x1024` | 3x3 grid, square |
+
+### Korean Text in Images
+
+When generating images with Korean text:
+- Write the exact Korean string in quotes: `"오늘의 추천"`, not "some Korean text"
+- Specify font style explicitly: `고딕체 (Gothic/Sans-serif)` or `명조체 (Myeongjo/Serif)`
+- Specify placement (top-center, bottom-left) and approximate size relative to the canvas
+- For mixed Korean + English, specify which script appears where and in what hierarchy
+- After generation, always inspect the result with `view_image` — garbled or
+  substituted Hangul is common and must be caught before use
+- For critical Korean text, generate 2-4 candidates (`-n 4`) and pick the cleanest render
+
+### Multi-Candidate Strategy
+
+For important visual assets (hero images, key illustrations, brand materials),
+generate multiple candidates and select the best:
+
+```bash
+# 4 candidates from one prompt
+ima2 gen "<detailed prompt>" -n 4 -d ./candidates --quality high
+
+# Or multimode for structurally different directions
+ima2 multimode "<detailed prompt>" --max-images 4 -d ./candidates
+```
+
+After generation, inspect every candidate with `view_image` before selecting.
+Do not blindly use the first result.
+
+### Prompt Iteration
+
+- Start with one high-detail prompt. Inspect the result with `view_image`.
+- On the next pass, make ONE targeted change and re-specify all constraints.
+  Do not rewrite the entire prompt from scratch.
+- Repeat invariants every iteration to prevent drift.
+- If the model consistently fails on a detail, try rephrasing, breaking the
+  request into a base generation + `ima2 edit` pass, or switching `--mode`.
+
+### Frontend Asset Quick Recipes
+
+Copy-paste starters for common frontend assets:
+
+**Hero image (landing page):**
+```bash
+ima2 gen "Use case: product-mockup. Asset type: landing page hero. A premium wireless headphone floating at a slight angle against a soft warm-gray studio backdrop. Matte black finish with brushed aluminum accents. Soft three-point studio lighting, key light from upper-left. Shallow depth of field. Wide composition with generous negative space on the right for headline overlay. No text, no logos, no watermark." \
+  --quality high --size 1536x1024 --mode direct -o hero.png
+```
+
+**OG / social share image:**
+```bash
+ima2 gen "Use case: ads-marketing. Asset type: social share card. Clean product flat-lay of a notebook, pen, and ceramic mug on a white marble desk. Overhead shot. Soft diffused daylight. Space in the upper third for title overlay. Warm neutral palette. No text, no logos, no watermark." \
+  --quality high --size 1200x640 --mode direct -o og-image.png
+```
+
+**App screenshot mockup background:**
+```bash
+ima2 gen "Use case: stylized-concept. Asset type: hero background for device mockup. Soft abstract gradient from #f0f4f8 to #dbeafe with subtle geometric shapes at 5% opacity. Clean, modern, minimal. No objects, no patterns, no text." \
+  --quality medium --size 1920x1088 --mode direct -o mockup-bg.png
+```
+
+**Avatar / profile placeholder:**
+```bash
+ima2 gen "Use case: stylized-concept. Asset type: user avatar. Friendly stylized portrait of a young professional, neutral expression, looking slightly left. Flat illustration style with subtle shadows. Solid #e5e7eb background. Circular crop safe. No text." \
+  --quality medium --size 512x512 --mode direct -o avatar.png
+```
+
+**Korean product hero:**
+```bash
+ima2 gen "Use case: product-mockup. Asset type: Korean service landing hero. A modern smartphone at 15-degree tilt showing a clean fintech app UI. The screen displays a balance card with exact text \"잔액 1,234,500원\" in 고딕체, large centered. Soft gradient backdrop from #f8fafc to #e2e8f0. Studio lighting from upper-right. No other text, no logos, no watermark." \
+  --quality high --size 1536x1024 --mode direct -o korean-hero.png
+```
+
+**Game environment concept art:**
+```bash
+ima2 gen "Use case: stylized-concept. Asset type: game environment concept art. A vast underground cavern with bioluminescent fungi on limestone walls. A narrow stone bridge crosses a dark chasm. Volumetric blue-green light from fungi clusters. Cinematic concept art style with industrial realism. Wide-angle, low camera, deep perspective. Mist rising from below. No characters, no text, no watermark." \
+  --quality high --size 1792x1024 --mode direct -o cave-env.png
+```
 
 ## Reference / I2I Workflows
 
@@ -366,23 +508,31 @@ movement, motion rhythm, sound/dialogue timing, and an ending hold.
 Blank video prompts are blocked. Weak natural-language prompts are allowed, but
 agents should always write an active prompt that includes:
 
-- visual flow: what changes on screen
-- motion flow: subject and camera motion
-- sound flow: music style, no music, room tone, or sound-effects-only
-- dialogue flow: exact line or explicit no-dialogue
-- ending frame: final pose, camera state, last spoken words, and final sound cue
-- duration pacing: make the selected seconds feel naturally filled with a
-  production-level sequence from opening composition to connected change to
-  stable ending frame
+- **shot design**: opening frame composition, one motivated reveal or change,
+  settling final frame — not a checklist of elements
+- **camera intent**: choose the camera move that serves the scene (macro push-in
+  for product, orbit for spatial VFX, handheld for documentary, crane for scale)
+  — do not default to "slow dolly in"
+- **production choices**: concrete material/texture, motivated lighting source,
+  depth layers (foreground/mid/background), lens framing — instead of generic
+  "cinematic" or "volumetric lighting"
+- **sound**: music style, no music, room tone, or sound-effects-only
+- **dialogue**: exact line in original language or explicit no-dialogue
+- **ending frame**: final pose, camera state, last spoken words, and final sound
+  cue — self-explanatory enough to serve as the first frame of a next clip
+- **duration pacing**: beat structure scales with length — 1-4s gets one action,
+  5-7s gets setup/turn/hold, 8-10s gets two connected beats, 11-15s gets a
+  three-beat arc
 
-Template:
+The planner is model-aware: it adjusts for `grok-imagine-video` (simpler, bolder
+composition at 480p) vs `grok-imagine-video-1.5` (finer detail, 1080p textures).
+For 1.5 text-to-video, the server uses a white-canvas shim internally; the
+planner automatically writes a fresh-scene prompt without referencing a source
+image.
 
-```text
-From the attached last frame, <subject/action> moves from A to B while the
-camera <movement>. Sound: <music/no music/SFX/room tone>. Dialogue: <line or no
-dialogue>. Pace the selected duration with a complete visual sequence. End on
-<final frame and final audio state>.
-```
+**Anti-slop**: the planner rejects generic prestige phrases ("AAA trailer",
+"senior VFX artist", "shot on RED"), filler lighting ("volumetric", "neon glow"),
+and unmotivated dark/moody defaults. Write what the camera actually sees.
 
 ### Prerequisites
 
@@ -711,21 +861,40 @@ For continuity clips, always define the final audio state: whether dialogue fini
 
 ### Structured Video Prompt Template
 
-Use this structure for serious video generation, Ref2V, extension prompts, and multi-shot continuity. A static visual description is not enough.
+Use this structure for serious video generation, Ref2V, extension prompts, and
+multi-shot continuity. A static visual description is not enough. Write like a
+director calling a shot, not filling out a form.
 
 ```text
-Scene Start: what the first frame already contains.
-Expected Motion: the exact A or B motion that must happen.
-Camera: pan, dolly, tracking, crane, handheld, static, or Shot Switch.
-Dialogue: speaker, exact line, timing, or "no dialogue".
-Music: style, swell/cut/resolve behavior, or "no background music".
-Sound Effects: room tone, footsteps, rain, machine hum, impact, etc.
-Ending Frame: final pose, composition, camera state.
-Continuity Handoff: final spoken line, music state, or sound cue for the next clip.
-Negative Constraints: no visible subtitles/text unless requested, preserve identity/style.
+Opening frame: composition, depth layers, spatial staging, material/texture.
+Motivated movement: what changes and why — reveal, follow, discover, tension.
+Camera intent: the specific move that serves this scene (macro push-in, orbit,
+  lateral slider, rack focus, locked overhead, handheld, crane).
+Visual turning point: a shift in focus, scale, light, or subject state.
+Dialogue: speaker (by visual appearance, not name), exact line in original
+  language, timing — or "no dialogue".
+Sound: music style with swell/cut/resolve behavior, or "no background music,
+  room tone only", or specific SFX (footsteps, rain, machine hum, impact).
+Settling final frame: stable pose, camera angle, background, lighting, held
+  audio state — self-explanatory for continuation.
+Negative constraints: no visible subtitles/text unless requested, preserve
+  identity/style.
 ```
 
-When creating a sequence, write both motions explicitly: "A motion" for the first clip and "B motion" for the continuation. For last-frame Ref2V, use ref 1 as identity/style and ref 2 as current state/last frame.
+When creating a sequence, write both motions explicitly: "A motion" for the
+first clip and "B motion" for the continuation. For last-frame Ref2V, use ref 1
+as identity/style and ref 2 as current state/last frame.
+
+**Example — product reveal (10s, 1.5, 1080p):**
+```text
+A single continuous macro shot begins inches above a matte black desk surface,
+tight on the brushed aluminum edge of wireless earbuds catching a narrow softbox
+reflection. The camera glides laterally as focus racks from the charging case
+texture to the earbud stem, revealing the full product silhouette against soft
+warm-gray negative space. A gentle ambient hum, no music. The camera settles
+into a medium close-up with the product centered, soft rim light from behind,
+holding steady on the final composition.
+```
 
 ### End Frame Guidance (via Ref2V)
 
