@@ -27,13 +27,21 @@ async function assertPortOccupied(port) {
   });
 }
 
-async function waitForAdvertise(path, timeoutMs = 8000) {
+async function waitForAdvertise(path, predicate, timeoutMs = 8000) {
   const deadline = Date.now() + timeoutMs;
+  let lastInfo = null;
   while (Date.now() < deadline) {
-    if (existsSync(path)) return JSON.parse(readFileSync(path, "utf-8"));
+    if (existsSync(path)) {
+      try {
+        lastInfo = JSON.parse(readFileSync(path, "utf-8"));
+        if (predicate(lastInfo)) return lastInfo;
+      } catch {
+        // Another process may be replacing the advertisement; retry its final state.
+      }
+    }
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  throw new Error("server advertisement did not appear");
+  throw new Error(`final server advertisement did not appear: ${JSON.stringify(lastInfo)}`);
 }
 
 test("server falls back when advertised localhost port is occupied", async (t) => {
@@ -61,7 +69,10 @@ test("server falls back when advertised localhost port is occupied", async (t) =
       },
     });
     const advertisePath = join(home, "server.json");
-    const info = await waitForAdvertise(advertisePath);
+    const info = await waitForAdvertise(
+      advertisePath,
+      (candidate) => candidate?.backend?.actualPort !== preferred,
+    );
     assert.equal(info.backend.configuredPort, preferred);
     assert.notEqual(info.backend.actualPort, preferred, "should have fallen back to a different port");
     assert.ok(info.backend.actualPort > preferred, "fallback port should be higher than preferred");

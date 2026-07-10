@@ -193,6 +193,9 @@ function runtimeHostUrl(host: string | undefined): string {
 }
 
 function advertise(ctx: RuntimeContext) {
+  // Proxy readiness can arrive before the backend has bound. Publishing that
+  // intermediate state makes consumers treat the configured port as live.
+  if (!ctx.serverActualPort) return;
   try {
     mkdirSync(dirname(ctx.config.storage.advertiseFile), { recursive: true });
     writeFileSync(
