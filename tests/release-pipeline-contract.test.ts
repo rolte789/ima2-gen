@@ -167,7 +167,7 @@ describe("package install policy contract", () => {
     assert.equal((workflow.match(/id-token:\s*write/g) || []).length, 1, "only publish job may mint OIDC tokens");
     assert.doesNotMatch(workflow, /uses:\s*[^\s]+@v\d/, "release actions must use immutable commit SHAs");
     assert.match(workflow, /verify-artifact release-artifact\/release-manifest\.json/);
-    assert.match(workflow, /npm publish "\$TARBALL"/);
+    assert.match(workflow, /TARBALL=.*'\.\/release-artifact\/'[\s\S]*npm publish "\$TARBALL"/);
     assert.match(workflow, /verify-existing:/);
     assert.match(workflow, /assert-remote-ref/);
     assert.match(workflow, /id: registry[\s\S]*guard-publish/);

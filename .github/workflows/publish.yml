@@ -155,7 +155,7 @@ jobs:
       - name: Publish tested tarball
         if: steps.registry.outputs.should_publish == 'true'
         run: |
-          TARBALL=$(node -p "'release-artifact/' + require('./release-artifact/release-manifest.json').filename")
+          TARBALL=$(node -p "'./release-artifact/' + require('./release-artifact/release-manifest.json').filename")
           npm publish "$TARBALL" --ignore-scripts --tag "${{ needs.prepare.outputs.npm_tag }}" --provenance --access public
       - name: Verify registry, dist-tag, integrity, and provenance
         run: >-

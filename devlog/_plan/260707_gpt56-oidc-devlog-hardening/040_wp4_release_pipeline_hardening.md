@@ -338,6 +338,11 @@ expose:
 - npm 12 accepts `--allow-scripts` for global installs but requires a project
   `allowScripts` manifest for project-scoped tarball installs, so package smoke
   now models that distinction explicitly.
+- preview run `29065289126` proved the package/OIDC preconditions but exposed an
+  npm package-spec ambiguity: `release-artifact/file.tgz` was parsed as a GitHub
+  shorthand and attempted SSH `git ls-remote`. The workflow now publishes the
+  explicit local path `./release-artifact/file.tgz`, and the source contract
+  prevents that prefix from regressing.
 
 Local evidence:
 
