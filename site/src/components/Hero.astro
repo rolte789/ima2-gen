@@ -29,8 +29,13 @@ const marqueeItems = ['100% LOCAL GALLERY', 'NO API KEY NEEDED', 'IMAGE + VIDEO'
             <span class="flip-slot" aria-hidden="true">
               <span class="flip-sizer">images</span>
               <span class="flip-sizer">videos</span>
-              <span class="flip-word flip-word-a">images</span>
-              <span class="flip-word flip-word-b">videos</span>
+              <span class="drum">
+                <span class="drum-face">images</span>
+                <span class="drum-face">videos</span>
+                <span class="drum-face">images</span>
+                <span class="drum-face">videos</span>
+              </span>
+              <span class="drum-shade"></span>
             </span>
             <span class="visually-hidden">images</span>{' you'}
           </span>
@@ -76,23 +81,21 @@ const marqueeItems = ['100% LOCAL GALLERY', 'NO API KEY NEEDED', 'IMAGE + VIDEO'
   .hero-line { position: relative; display: block; width: max-content; max-width: 100%; white-space: nowrap; }
   .line-one { z-index: 3; }
   .line-two { z-index: 1; margin-left: 7%; }
-  /* Split-flap word swap: sizers reserve widest-word width; faces stack in the same grid cell. */
-  .flip-slot { display: inline-grid; perspective: 640px; vertical-align: baseline; }
+  /* Cylinder drum word roll: sizers reserve widest-word width; 4 faces at -90deg steps,
+     apothem R = 0.5 * face height (line box = .94em) = .47em, so faces meet edge-to-edge.
+     Drum is pushed back by -R so the resting face sits at z=0 (no perspective scale drift). */
+  .flip-slot { display: inline-grid; perspective: 800px; vertical-align: baseline; }
   .flip-sizer { grid-area: 1 / 1; visibility: hidden; }
-  .flip-word { grid-area: 1 / 1; backface-visibility: hidden; transform-origin: 50% 8%; will-change: transform; }
-  .flip-word-b { transform: rotateX(90deg); opacity: 0; }
-  html.js .flip-word.flip-out { animation: flip-word-out .26s cubic-bezier(.55, 0, .85, .55) both; }
-  html.js .flip-word.flip-in { animation: flip-word-in .3s cubic-bezier(.18, .7, .22, 1.12) .22s both; }
-  @keyframes flip-word-out {
-    from { transform: rotateX(0deg); opacity: 1; }
-    70% { opacity: .55; }
-    to { transform: rotateX(-90deg); opacity: 0; }
-  }
-  @keyframes flip-word-in {
-    from { transform: rotateX(90deg); opacity: 0; }
-    35% { opacity: .65; }
-    to { transform: rotateX(0deg); opacity: 1; }
-  }
+  .drum { --drum-r: .47em; --drum-rot: 0deg; grid-area: 1 / 1; display: grid; transform-style: preserve-3d; transform: translateZ(calc(-1 * var(--drum-r))) rotateX(var(--drum-rot)); will-change: transform; }
+  html.js .drum { transition: transform .65s cubic-bezier(.22, .9, .24, 1.04); }
+  html.js .drum.drum-snap { transition: none; }
+  .drum-face { grid-area: 1 / 1; backface-visibility: hidden; }
+  .drum-face:nth-child(1) { transform: rotateX(0deg) translateZ(var(--drum-r)); }
+  .drum-face:nth-child(2) { transform: rotateX(-90deg) translateZ(var(--drum-r)); }
+  .drum-face:nth-child(3) { transform: rotateX(-180deg) translateZ(var(--drum-r)); }
+  .drum-face:nth-child(4) { transform: rotateX(-270deg) translateZ(var(--drum-r)); }
+  /* Static drum-housing scrims: entering/exiting faces pass through the darkened edge bands. */
+  .drum-shade { grid-area: 1 / 1; pointer-events: none; transform: translateZ(2px); background: linear-gradient(to bottom, rgba(11, 11, 15, .55), transparent 28%, transparent 72%, rgba(11, 11, 15, .55)); }
   .line-em { z-index: 3; margin-left: auto; color: transparent; background-image: var(--img); background-size: 145% auto; background-position: 35% 42%; -webkit-background-clip: text; background-clip: text; filter: saturate(1.4) brightness(1.75) contrast(1.05); }
   html.js .line-em { animation: hero-foil 10s ease-in-out infinite alternate; }
   .splash { z-index: 2; top: -18%; left: 28%; width: min(52vw, 690px); }
@@ -167,31 +170,32 @@ const marqueeItems = ['100% LOCAL GALLERY', 'NO API KEY NEEDED', 'IMAGE + VIDEO'
   @media (max-width: 480px) { :global(html[lang='ko']) h1 { font-size: 32px; } }
   @media (prefers-reduced-motion: reduce) {
     html.js .line-em { animation: none; }
-    html.js .flip-word { animation: none !important; }
-    .flip-word-a { transform: none; opacity: 1; }
-    .flip-word-b { transform: rotateX(90deg); opacity: 0; }
+    html.js .drum { transition: none !important; --drum-rot: 0deg !important; }
   }
 </style>
 
 <script>
-  // Split-flap word cycle (en hero only; the slot does not exist on ko).
+  // Cylinder drum word roll (en hero only; the drum does not exist on ko).
   (() => {
     if (!document.documentElement.classList.contains('js')) return;
-    const slot = document.querySelector<HTMLElement>('.flip-slot');
-    if (!slot) return;
-    const faces = Array.from(slot.querySelectorAll<HTMLElement>('.flip-word'));
-    if (faces.length < 2) return;
+    const drum = document.querySelector<HTMLElement>('.flip-slot .drum');
+    if (!drum) return;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
-    let current = 0;
+    let angle = 0;
+    // After a full revolution, rewind by 360deg with the transition off: -360 === 0 visually,
+    // so the accumulated angle stays bounded with no visible jump.
+    drum.addEventListener('transitionend', () => {
+      if (angle > -360) return;
+      while (angle <= -360) angle += 360;
+      drum.classList.add('drum-snap');
+      drum.style.setProperty('--drum-rot', `${angle}deg`);
+      void drum.offsetWidth;
+      drum.classList.remove('drum-snap');
+    });
     window.setInterval(() => {
       if (document.hidden || reduce.matches) return;
-      const out = faces[current];
-      current = (current + 1) % faces.length;
-      const inc = faces[current];
-      out.classList.remove('flip-in');
-      out.classList.add('flip-out');
-      inc.classList.remove('flip-out');
-      inc.classList.add('flip-in');
+      angle -= 90;
+      drum.style.setProperty('--drum-rot', `${angle}deg`);
     }, 2800);
   })();
 
