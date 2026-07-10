@@ -24,7 +24,19 @@ const marqueeItems = ['100% LOCAL GALLERY', 'NO API KEY NEEDED', 'IMAGE + VIDEO'
       <div class="eyebrow">{t(lang, 'hero.eyebrow')}</div>
       <h1 class="h-display" id="hero-h1" aria-describedby="hero-sub">
         <span class="hero-line line-one">{t(lang, 'hero.h1.line1')}</span>
-        <span class="hero-line line-two">{t(lang, 'hero.h1.line2')}</span>
+        {lang === 'en' ? (
+          <span class="hero-line line-two">
+            <span class="flip-slot" aria-hidden="true">
+              <span class="flip-sizer">images</span>
+              <span class="flip-sizer">videos</span>
+              <span class="flip-word flip-word-a">images</span>
+              <span class="flip-word flip-word-b">videos</span>
+            </span>
+            <span class="visually-hidden">images</span>{' you'}
+          </span>
+        ) : (
+          <span class="hero-line line-two">{t(lang, 'hero.h1.line2')}</span>
+        )}
         <span class="hero-line line-em" style={`--img:${iridescent}`}>{t(lang, 'hero.h1.em')}</span>
       </h1>
       <div class="blob-layer splash parallax-up" aria-hidden="true"><img src={splash} alt="" /></div>
@@ -64,6 +76,23 @@ const marqueeItems = ['100% LOCAL GALLERY', 'NO API KEY NEEDED', 'IMAGE + VIDEO'
   .hero-line { position: relative; display: block; width: max-content; max-width: 100%; white-space: nowrap; }
   .line-one { z-index: 3; }
   .line-two { z-index: 1; margin-left: 7%; }
+  /* Split-flap word swap: sizers reserve widest-word width; faces stack in the same grid cell. */
+  .flip-slot { display: inline-grid; perspective: 640px; vertical-align: baseline; }
+  .flip-sizer { grid-area: 1 / 1; visibility: hidden; }
+  .flip-word { grid-area: 1 / 1; backface-visibility: hidden; transform-origin: 50% 8%; will-change: transform; }
+  .flip-word-b { transform: rotateX(90deg); opacity: 0; }
+  html.js .flip-word.flip-out { animation: flip-word-out .26s cubic-bezier(.55, 0, .85, .55) both; }
+  html.js .flip-word.flip-in { animation: flip-word-in .3s cubic-bezier(.18, .7, .22, 1.12) .22s both; }
+  @keyframes flip-word-out {
+    from { transform: rotateX(0deg); opacity: 1; }
+    70% { opacity: .55; }
+    to { transform: rotateX(-90deg); opacity: 0; }
+  }
+  @keyframes flip-word-in {
+    from { transform: rotateX(90deg); opacity: 0; }
+    35% { opacity: .65; }
+    to { transform: rotateX(0deg); opacity: 1; }
+  }
   .line-em { z-index: 3; margin-left: auto; color: transparent; background-image: var(--img); background-size: 145% auto; background-position: 35% 42%; -webkit-background-clip: text; background-clip: text; filter: saturate(1.4) brightness(1.75) contrast(1.05); }
   html.js .line-em { animation: hero-foil 10s ease-in-out infinite alternate; }
   .splash { z-index: 2; top: -18%; left: 28%; width: min(52vw, 690px); }
@@ -136,10 +165,36 @@ const marqueeItems = ['100% LOCAL GALLERY', 'NO API KEY NEEDED', 'IMAGE + VIDEO'
   @media (max-width: 1100px) { :global(html[lang='ko']) h1 { font-size: 72px; } :global(html[lang='ko']) .hero-lower { margin-top: 32px; } }
   @media (max-width: 768px) { :global(html[lang='ko']) h1 { font-size: 52px; } :global(html[lang='ko']) .hero-lower { margin-top: 24px; } }
   @media (max-width: 480px) { :global(html[lang='ko']) h1 { font-size: 32px; } }
-  @media (prefers-reduced-motion: reduce) { html.js .line-em { animation: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    html.js .line-em { animation: none; }
+    html.js .flip-word { animation: none !important; }
+    .flip-word-a { transform: none; opacity: 1; }
+    .flip-word-b { transform: rotateX(90deg); opacity: 0; }
+  }
 </style>
 
 <script>
+  // Split-flap word cycle (en hero only; the slot does not exist on ko).
+  (() => {
+    if (!document.documentElement.classList.contains('js')) return;
+    const slot = document.querySelector<HTMLElement>('.flip-slot');
+    if (!slot) return;
+    const faces = Array.from(slot.querySelectorAll<HTMLElement>('.flip-word'));
+    if (faces.length < 2) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let current = 0;
+    window.setInterval(() => {
+      if (document.hidden || reduce.matches) return;
+      const out = faces[current];
+      current = (current + 1) % faces.length;
+      const inc = faces[current];
+      out.classList.remove('flip-in');
+      out.classList.add('flip-out');
+      inc.classList.remove('flip-out');
+      inc.classList.add('flip-in');
+    }, 2800);
+  })();
+
   document.querySelectorAll<HTMLElement>('.oneclick-cmd').forEach((row) => {
     const cmd = row.getAttribute('data-copy') ?? '';
     const btn = row.querySelector<HTMLButtonElement>('.oneclick-copy');
