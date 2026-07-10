@@ -20,6 +20,7 @@
     "test:install-policy": "node scripts/check-install-policy.mjs",
     "test:install-policy:npm12": "node scripts/check-install-policy.mjs --npm-pending",
     "test:package-install": "node --test tests/package-install-smoke.mjs",
+    "test:package-global-update": "node scripts/package-global-update-smoke.mjs",
     "test:inventory": "node scripts/classify-tests.mjs --check --fail-js-runtime",
     "setup": "node bin/ima2.js setup",
     "prepack": "npm run ui:build && npm run build:server && npm run build:cli",

@@ -3,13 +3,14 @@ import { createInterface } from "readline/promises";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { spawn, execSync } from "child_process";
+import { spawn, execFileSync } from "child_process";
 import { confirmDestructiveAction } from "./lib/destructive-confirm.js";
 import { doctor } from "./commands/doctor.js";
-import { openUrl, resolveBin, killProcessTree } from "./lib/platform.js";
+import { openUrl, killProcessTree } from "./lib/platform.js";
 import { maybePromptGithubStar } from "./lib/star-prompt.js";
 import { ensureFreshUiDist } from "./lib/ui-build.js";
-import { detectCodexAuth } from "../lib/codexDetect.js";
+import { codexFileLoginArgs, detectCodexAuth } from "../lib/codexDetect.js";
+import { packageCliCommand } from "../lib/packageCli.js";
 import { config as runtimeConfig } from "../config.js";
 
 import { errInfo } from "../lib/errInfo.js";
@@ -21,6 +22,18 @@ const ROOT = join(__dirname, "..");
 const CONFIG_DIR = runtimeConfig.storage.configDir;
 const CONFIG_FILE = runtimeConfig.storage.configFile;
 const LEGACY_CONFIG_FILE = join(ROOT, ".ima2", "config.json");
+
+function runSelf(args: string[]) {
+  execFileSync(process.execPath, [join(ROOT, "bin", "ima2.js"), ...args], { stdio: "inherit" });
+}
+
+function runCodexLogin() {
+  const codex = packageCliCommand("@openai/codex", "codex", codexFileLoginArgs());
+  execFileSync(codex.command, codex.args, { stdio: "inherit", windowsHide: true });
+  if (!detectCodexAuth().proxyReady) {
+    throw new Error("Codex login completed without a file-backed session for the GPT OAuth proxy");
+  }
+}
 
 // Load package.json for version
 let pkg = { version: "?", name: "ima2-gen" };
@@ -86,7 +99,7 @@ async function setup() {
     saveConfig(config);
     console.log("\n  Starting Grok OAuth login...\n");
     try {
-      execSync(`node ${JSON.stringify(join(ROOT, "bin", "ima2.js"))} grok login --manual-paste`, { stdio: "inherit" });
+      runSelf(["grok", "login", "--manual-paste"]);
     } catch {
       console.log("\n  Grok login failed or cancelled. You can retry with 'ima2 grok login'.\n");
       rl.close();
@@ -101,10 +114,13 @@ async function setup() {
     console.log("\n  Setting up both GPT OAuth + Grok OAuth...\n");
     // GPT OAuth
     const auth = detectCodexAuth();
-    if (!auth.authed) {
+    if (!auth.proxyReady) {
+      if (auth.authed) {
+        console.log("  Codex is signed in through the OS keyring; ima2 needs a file-backed session.\n");
+      }
       console.log("  Running GPT OAuth login...\n");
       try {
-        execSync(`${resolveBin("npx")} @openai/codex login`, { stdio: "inherit" });
+        runCodexLogin();
       } catch {
         console.log("\n  GPT login failed. Continuing with Grok...\n");
       }
@@ -114,7 +130,7 @@ async function setup() {
     // Grok OAuth
     console.log("  Running Grok OAuth login...\n");
     try {
-      execSync(`node ${JSON.stringify(join(ROOT, "bin", "ima2.js"))} grok login --manual-paste`, { stdio: "inherit" });
+      runSelf(["grok", "login", "--manual-paste"]);
     } catch {
       console.log("\n  Grok login failed. You can retry with 'ima2 grok login'.\n");
     }
@@ -129,17 +145,15 @@ async function setup() {
     console.log("\n  Starting GPT OAuth login...\n");
 
     const auth = detectCodexAuth();
-    const hasAuth = auth.authed;
+    const hasAuth = auth.proxyReady;
 
     if (!hasAuth) {
-      if (auth.platform === "win32") {
-        console.log(
-          "  Windows note: OpenAI Codex has no documented native installer. Use WSL2 for best results.\n",
-        );
+      if (auth.authed) {
+        console.log("  Codex is signed in through the OS keyring; ima2 needs a file-backed session.\n");
       }
       console.log("  Running 'codex login' — follow the browser prompt.\n");
       try {
-        execSync(`${resolveBin("npx")} @openai/codex login`, { stdio: "inherit" });
+        runCodexLogin();
       } catch {
         console.log("\n  Login failed or cancelled. You can retry with 'ima2 serve'.\n");
         rl.close();
@@ -195,7 +209,7 @@ async function serve(serveArgs: string[] = []) {
   }
 
   const serverPath = join(ROOT, "server.js");
-  const child = spawn("node", [serverPath], {
+  const child = spawn(process.execPath, [serverPath], {
     stdio: "inherit",
     env,
     cwd: ROOT,
@@ -245,10 +259,13 @@ async function showStatus() {
   const probeLabel =
     auth.probe === "authed" ? "✓ authed"
     : auth.probe === "unauthed" ? "✗ not logged in"
+    : auth.probe === "error" ? "✗ codex CLI failed"
     : "– codex CLI not found";
   console.log(`    codex login status           ${probeLabel}`);
-  if (auth.platform === "win32") {
-    console.log("    (Windows: no native codex installer — use WSL2)");
+  if (auth.authed && !auth.proxyReady) {
+    console.log("    GPT OAuth proxy             ✗ keyring-only; run 'ima2 login'");
+  } else if (auth.proxyReady) {
+    console.log("    GPT OAuth proxy             ✓ file-backed session ready");
   }
   console.log("");
 }

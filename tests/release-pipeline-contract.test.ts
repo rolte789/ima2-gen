@@ -182,6 +182,9 @@ describe("package install policy contract", () => {
     assert.match(workflow, /verify-artifact release-artifact\/release-manifest\.json/);
     assert.match(workflow, /TARBALL=.*'\.\/release-artifact\/'[\s\S]*npm publish "\$TARBALL"/);
     assert.match(workflow, /verify-existing:/);
+    assert.match(workflow, /windows-consumer:/);
+    assert.match(workflow, /needs:\s*\[prepare, package, windows-consumer\]/);
+    assert.match(workflow, /test:package-global-update/);
     assert.match(workflow, /assert-remote-ref/);
     assert.match(workflow, /id: registry[\s\S]*guard-publish/);
     assert.match(workflow, /if: steps\.registry\.outputs\.should_publish == 'true'[\s\S]*npm publish/);

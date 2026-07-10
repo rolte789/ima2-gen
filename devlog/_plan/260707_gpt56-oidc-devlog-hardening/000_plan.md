@@ -3,6 +3,8 @@
 Date: 2026-07-07
 Branch: `dev`
 Session: cxc-loop HOTL, one PABCD cycle per work-phase.
+Status: ACTIVE (Windows package-local OAuth corrective release)
+Release baseline: `v2.0.14` at `bea7ae5b5ea0a6e9039732794d2bdeb939e429b3`
 
 ## Objective
 
@@ -76,5 +78,7 @@ changes, and GitHub branch-protection/ruleset changes.
 ## Acceptance (every WP)
 
 Fresh green: `npm run typecheck`, `npm run typecheck:tests`, `npm test`
-(1066+ pass), `npm run test:inventory`. Per-WP activation evidence listed in
-each decade doc. One commit per WP, repo conventional style.
+(1094 pass), `npm run test:inventory`. Per-WP activation evidence is listed in
+each decade doc. WP4 closes with signed preview/stable registry proof, green
+Ubuntu/Windows npm 11/12 CI, and live Luna/Terra `medium` image generation from
+the published package.

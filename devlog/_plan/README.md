@@ -1,6 +1,6 @@
 ---
 created: 2026-04-23
-updated: 2026-07-07
+updated: 2026-07-10
 tags: [ima2-gen, devlog, roadmap]
 aliases: [ima2 active plan, image_gen current roadmap, ima2 개발계획]
 ---
@@ -31,7 +31,7 @@ Deferred / 미래 항목은 `_plan/` 직속이 아니라 `_plan/_future/`에 둔
 | 5 | `260531_video-settings-persistence/` | investigated / not fixed | Video setting localStorage persistence. |
 | 6 | `260601_video-mode-persistence-refresh/` | investigated / not fixed | Video mode refresh persistence and continue-from-video mode switch. |
 | 7 | `260605_stabilize-split/` | Phase 3 open | 500줄 분할. Phase 1(CSS)/2(store) 완료; Phase 3 backend 분할 잔여 (`routes/multimode.ts` 564, `routes/generate.ts` 547, `routes/nodes.ts` 530, `lib/oauthProxy/generators.ts` 501). |
-| 8 | `260707_gpt56-oidc-devlog-hardening/` | active | GPT-5.6 rollout + OIDC 릴리즈 전환 + devlog hardening (이 정리 pass 포함). |
+| 8 | `260707_gpt56-oidc-devlog-hardening/` | corrective release active | `v2.0.14` Windows 전역 업데이트 뒤 package-local Codex/OAuth 탐지 회귀 수정·검증. |
 
 Deferred (`_plan/_future/`): `260430_issue27-canvas-svg-export/`,
 `260430_issue28-canvas-pptx-export/`, `260430_issue31-provider-masked-edit/`,
@@ -85,6 +85,10 @@ Detailed issue-to-evidence matrix:
 
 ## 변경 기록
 
+- 2026-07-10: `v2.0.14` preview/latest provenance, 동일 release SHA,
+  Luna/Terra `medium` 생성은 통과했다. 이후 Windows 전역 업데이트에서
+  package-local Codex를 PATH에서 찾지 못하고 `.cmd`를 직접 실행하는 OAuth
+  회귀가 확인돼 archive를 보류하고 corrective release 단계를 추가했다.
 - 2026-07-07: devlog hardening pass (`260707_gpt56-oidc-devlog-hardening/030_wp3`).
   `_fin` 이동: `260624_agy-pr-integration/`, `260627_docs-refresh/`,
   `260627_preview-deploy-pipeline/`, `260628_wp6_docs_code_grounding/`,

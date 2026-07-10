@@ -397,3 +397,74 @@ Medium residuals were also accepted: C now invokes npm 12's own pending-script
 oracle for root and UI, and the branch handoff preserves SHA identity. The Codex
 pin was rechecked immediately before implementation: npm and the official
 openai/codex release both report stable `0.144.1` on 2026-07-10.
+
+## C extension checkpoint — 2026-07-10
+
+Terminal outcome: **REOPENED BEFORE ARCHIVE** after a Windows update regression
+was reported.
+
+The hardened release flow completed end to end from the release commit
+`bea7ae5b5ea0a6e9039732794d2bdeb939e429b3`:
+
+- preview run `29067112427` published
+  `2.0.14-preview.260710.29067112427.1` with `gitHead == bea7ae5`,
+  integrity `sha512-UcsSCayYLtUdKTFVnGSB7dMv2HmBqhOH64tE2PoJ+LiNKMi5+stxESyPE2RjaZxi8DswvL9MGuc4Yuo4/4s2LQ==`,
+  and verified npm/Sigstore provenance;
+- stable run `29067267628` published `ima2-gen@2.0.14` to `latest` with
+  `gitHead == bea7ae5`, integrity
+  `sha512-qkNuz/hfvR9SEACQABjOOiMhaVpj/F7ysUXkQb50autCgrwTYOkDL7rhMlZIh5Grdw47nq87BSaJCWh21HfViA==`,
+  and verified npm/Sigstore provenance;
+- `refs/heads/main`, `refs/heads/dev`, `refs/heads/preview`, and
+  `refs/tags/v2.0.14` all resolved to `bea7ae5` at publish completion;
+- release-commit CI runs `29067267405` (`dev`) and `29067267733` (`main`)
+  succeeded. The dev run exercised Ubuntu and Windows with Node 22/npm 11 and
+  Node 24/npm 12, including real package-install smoke in all four lanes;
+- GitHub Release `v2.0.14` was created only after registry proof and carries
+  `release-manifest.json` plus `sbom.cdx.json` as evidence assets.
+
+Independent post-release commands repeated the registry, tag, integrity,
+provenance, branch, CI, and GitHub Release checks. `release.sh patch` exited 0
+only after all of those checks and branch reconciliation completed.
+
+Published-package runtime activation also passed after restarting ima2-gen
+`v2.0.14` on `http://127.0.0.1:3333`:
+
+- Luna request `req_cli_gen_mreejnnx_fotkio` used provider `oauth`, model
+  `gpt-5.6-luna`, and quality `medium`; it returned HTTP 200 with one image in
+  22.6 seconds. The PNG is 1402x1122 with SHA-256
+  `56e15ea5615982b9990f0ec1b482728e20f6b0cf67ea12d5dee9c3ad6b92273f`.
+- Terra request `req_cli_gen_mreen9m1_n6foap` used provider `oauth`, model
+  `gpt-5.6-terra`, and quality `medium`; it returned HTTP 200 with one image in
+  63.0 seconds. The PNG is 1122x1402 with SHA-256
+  `318928b86e3bfafec8ebb9d699b4673448c96459690c2617eb0982a87e1c089e`.
+- The final service runs under launchd label `io.ima2.server`; `ima2 ping`
+  reports `v2.0.14` healthy with zero active jobs after generation.
+
+The previous invalid-parameter failure is closed at unit, package, OIDC workflow,
+registry, and live runtime levels. The unit remains in `_plan` until the Windows
+package-local OAuth corrective release is independently proven.
+
+### Windows package-local OAuth root cause
+
+The `v2.0.14` tarball contains both `@openai/codex` and `openai-oauth`, so package
+omission was rejected. The Windows global install exposes only `ima2.cmd` at the
+prefix root; the dependency's `codex.cmd` stays inside
+`ima2-gen/node_modules/.bin`. `codexDetect.ts` searched global PATH instead of
+that package-local dependency, then attempted to execute `.cmd` directly even
+though Node 24 on Windows rejects that path with `EINVAL`/`ENOENT`. The device
+login route had the same direct-shim defect, while the release server smoke set
+`IMA2_NO_OAUTH_PROXY=1` and never exercised either path.
+
+The fix resolves each dependency's declared JavaScript `bin` from its installed
+package manifest and invokes it with `process.execPath`. Status, setup/login,
+Switch Account device auth, and proxy startup no longer depend on PATH, `npx`,
+or `.cmd` shims. A first implementation incorrectly accepted keyring-only Codex
+authentication; independent Sol review rejected it because the bundled
+`openai-oauth` package enumerates filesystem candidates and exits when no
+`auth.json` exists. The final implementation separates general Codex auth from
+proxy readiness, forces `cli_auth_credentials_store="file"` for both login
+flows, passes the detected file explicitly with `--oauth-file`, and diagnoses
+keyring-only sessions without starting a false-ready proxy. A new release
+`windows-consumer` gate updates an isolated real global install with the exact
+release tarball on Node 22/npm 11 and Node 24/npm 12 before OIDC publish is
+allowed.

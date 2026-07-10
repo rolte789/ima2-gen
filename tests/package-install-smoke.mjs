@@ -2,8 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import net from "node:net";
 import { parsePackOutput } from "../scripts/release-artifact-contract.mjs";
 import { spawnNpmSync } from "../scripts/npm-subprocess.mjs";
@@ -139,15 +140,37 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
     assert.equal(existsSync(binShim("progrok")), true, "packaged install should include bundled progrok bin");
     assert.equal(existsSync(binShim("openai-oauth")), true, "packaged install should include bundled openai-oauth bin");
 
+    const installedRequire = createRequire(join(packageRoot, "package.json"));
+    const packageManifest = (packageName) => {
+      try {
+        return installedRequire.resolve(`${packageName}/package.json`);
+      } catch (error) {
+        if (error?.code !== "ERR_PACKAGE_PATH_NOT_EXPORTED") throw error;
+      }
+      let current = dirname(installedRequire.resolve(packageName));
+      while (true) {
+        const candidate = join(current, "package.json");
+        if (existsSync(candidate)) {
+          const manifest = JSON.parse(readFileSync(candidate, "utf8"));
+          if (manifest.name === packageName) return candidate;
+        }
+        const parent = dirname(current);
+        if (parent === current) throw new Error(`Could not locate ${packageName}/package.json`);
+        current = parent;
+      }
+    };
     const packageBin = (packageName, binName) => {
-      const dependencyRoot = join(packageRoot, "node_modules", packageName);
-      const manifest = JSON.parse(readFileSync(join(dependencyRoot, "package.json"), "utf8"));
+      const manifestPath = packageManifest(packageName);
+      const dependencyRoot = dirname(manifestPath);
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
       const entry = typeof manifest.bin === "string" ? manifest.bin : manifest.bin?.[binName];
       assert.equal(typeof entry, "string", `${packageName} should declare the ${binName} bin`);
       return join(dependencyRoot, entry);
     };
     const progrokBin = packageBin("progrok", "progrok");
     const oauthBin = packageBin("openai-oauth", "openai-oauth");
+    const codexBin = packageBin("@openai/codex", "codex");
+    assert.doesNotThrow(() => installedRequire.resolve("zod"));
 
     const oauthRoot = join(packageRoot, "node_modules", "openai-oauth");
     const oauthPackage = JSON.parse(readFileSync(join(oauthRoot, "package.json"), "utf8"));
@@ -166,6 +189,7 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
     }
 
     mkdirSync(configDir, { recursive: true });
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
     writeFileSync(join(configDir, "config.json"), JSON.stringify({ provider: "oauth" }));
     const env = {
       ...process.env,
@@ -175,6 +199,7 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
       IMA2_GENERATED_DIR: generatedDir,
       IMA2_DB_PATH: join(configDir, "sessions.db"),
       IMA2_ADVERTISE_FILE: join(configDir, "server.json"),
+      CODEX_HOME: join(homeDir, ".codex"),
       IMA2_NO_OAUTH_PROXY: "1",
       IMA2_NO_GROK_PROXY: "1",
     };
@@ -188,10 +213,27 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
     const oauthHelp = run(process.execPath, [oauthBin, "--help"], { cwd: projectDir, env });
     assert.match(oauthHelp.stdout, /openai-oauth|Options/i);
 
-    const doctor = run(process.execPath, [cliPath, "doctor"], { cwd: projectDir, env });
+    const codexStatus = spawnSync(process.execPath, [codexBin, "login", "status"], spawnOptions({
+      cwd: projectDir,
+      env: { ...env, PATH: "" },
+    }));
+    assert.equal(codexStatus.error, undefined, `package-local Codex should execute: ${codexStatus.error?.message || ""}`);
+    assert.equal(codexStatus.status, 1);
+    assert.match(`${codexStatus.stdout}\n${codexStatus.stderr}`, /Not logged in/i);
+
+    const status = run(process.execPath, [cliPath, "status"], {
+      cwd: projectDir,
+      env: { ...env, PATH: "" },
+    });
+    assert.doesNotMatch(status.stdout, /codex CLI not found/i);
+    assert.match(status.stdout, /not logged in/i);
+
+    const doctor = spawnSync(process.execPath, [cliPath, "doctor"], spawnOptions({ cwd: projectDir, env }));
+    assert.equal(doctor.status, 1, "doctor should fail when OAuth is configured without a file-backed session");
     assert.match(doctor.stdout, /Doctor/);
     assert.match(doctor.stdout, /runtime dependencies resolvable/);
     assert.match(doctor.stdout, /Storage/);
+    assert.match(doctor.stdout, /no file-backed Codex session/i);
 
     const port = await freePort();
     const logs = { stdout: "", stderr: "" };

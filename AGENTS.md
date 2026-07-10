@@ -43,7 +43,7 @@ ima2-gen/
 ├── integrations/comfyui/ # ComfyUI bridge/custom node
 ├── structure/            # Current architecture reference docs (00-07)
 ├── devlog/               # _plan (active), _fin (archived)
-├── tests/                # node:test contracts/regressions (1087 cases)
+├── tests/                # node:test contracts/regressions (1094 cases)
 └── package.json
 ```
 
@@ -64,7 +64,7 @@ ima2-gen/
 ```bash
 npm run typecheck          # tsc --noEmit (server + lib)
 npm run typecheck:tests    # tsc --noEmit (test files)
-npm test                   # node:test (1087 cases)
+npm test                   # node:test (1094 cases)
 npm run test:inventory     # verify test file registry
 cd ui && npm run build     # Vite production build
 ```

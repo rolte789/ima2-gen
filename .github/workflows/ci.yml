@@ -78,6 +78,10 @@ jobs:
       - name: Package install smoke
         run: npm run test:package-install
         timeout-minutes: 15
+      - name: Windows global update and package-local OAuth smoke
+        if: runner.os == 'Windows'
+        run: npm run test:package-global-update
+        timeout-minutes: 15
       - name: CLI smoke (grok --help)
         run: node bin/ima2.js grok --help
       - name: CLI smoke (video --help)

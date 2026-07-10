@@ -112,8 +112,46 @@ jobs:
           "${{ needs.prepare.outputs.source_ref }}"
           "$GITHUB_SHA"
 
-  publish:
+  windows-consumer:
     needs: [prepare, package]
+    if: needs.prepare.outputs.should_publish == 'true'
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - node: '22.23.0'
+            npm: '11.18.0'
+          - node: '24.17.0'
+            npm: '12.0.0'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ matrix.node }}
+          registry-url: 'https://registry.npmjs.org'
+      - name: Pin npm
+        run: npm install -g npm@${{ matrix.npm }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: npm-release-artifact
+          path: release-artifact
+      - name: Verify tested artifact digest
+        run: node scripts/release-contract.mjs verify-artifact release-artifact/release-manifest.json
+      - name: Update a real global install and probe package-local OAuth
+        shell: pwsh
+        run: |
+          $manifest = Get-Content release-artifact/release-manifest.json | ConvertFrom-Json
+          $env:IMA2_PACKAGE_TARBALL = Join-Path $PWD "release-artifact/$($manifest.filename)"
+          npm run test:package-global-update
+        timeout-minutes: 15
+
+  publish:
+    needs: [prepare, package, windows-consumer]
     if: needs.prepare.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
     permissions:
