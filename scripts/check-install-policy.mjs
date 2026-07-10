@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawnSync } from "node:child_process";
+import { spawnNpmSync } from "./npm-subprocess.mjs";
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -69,19 +69,15 @@ export function checkRepositoryInstallPolicy(root = process.cwd()) {
   ];
 }
 
-function npmCommand() {
-  return process.platform === "win32" ? "npm.cmd" : "npm";
-}
-
 export function checkNpmPendingApprovals(root = process.cwd()) {
   const errors = [];
   for (const [label, cwd] of [["root", root], ["ui", resolve(root, "ui")]]) {
-    const result = spawnSync(npmCommand(), ["approve-scripts", "--allow-scripts-pending", "--json"], {
+    const result = spawnNpmSync(["approve-scripts", "--allow-scripts-pending", "--json"], {
       cwd,
       encoding: "utf8",
     });
     if (result.status !== 0) {
-      errors.push(`${label}: npm approve-scripts failed: ${result.stderr || result.stdout}`);
+      errors.push(`${label}: npm approve-scripts failed: ${result.error?.message || result.stderr || result.stdout}`);
       continue;
     }
     const pending = JSON.parse(result.stdout || "{}").allowScripts || [];

@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release builds now pin Node `24.17.0`, npm `11.18.0`, and `@openai/codex` `0.144.1`; CI also performs clean npm 12 installs on Ubuntu and Windows.
 - npm 12 install-script approvals are explicit for root/UI lockfiles and one-click installers verify the installed native runtime with `ima2 doctor`.
 - GitHub Actions are pinned to full commit SHAs, Windows runs the installed-tarball smoke, and UI build dependencies are audited at high severity (`vite` 7.3.6, `esbuild` 0.28.1).
-- Test suite grew to **1086** cases across **206** files (72 runtime-importing, 134 contract-only).
+- Test suite grew to **1087** cases across **206** files (72 runtime-importing, 134 contract-only).
 
 ### Fixed
 
@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moderation over-filtering — removed safety tags and added error enrichment.
 - Packaged `openai-oauth` now has its required `zod` peer available in consumer installs; package smoke executes both bundled CLIs from the installed tarball.
 - npm 12 keyed-object `npm pack --json` output is normalized alongside npm 11 array output, so package smoke and release packing share one cross-version artifact contract.
+- Windows npm subprocesses execute `npm-cli.js` through Node with preserved arguments, and packaged CLI smoke executes declared JS bins instead of fragile `.cmd` shell shims.
 
 ## [2.0.4] - 2026-06-27
 

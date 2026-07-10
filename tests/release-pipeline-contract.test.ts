@@ -13,6 +13,7 @@ import {
   verifyArtifactDigest,
 } from "../scripts/release-contract.mjs";
 import { validateBundleParity, validateInstallPolicy } from "../scripts/check-install-policy.mjs";
+import { npmInvocation } from "../scripts/npm-subprocess.mjs";
 
 const SHA = "a".repeat(40);
 
@@ -144,6 +145,18 @@ describe("release artifact and provenance contract", () => {
 });
 
 describe("package install policy contract", () => {
+  it("preserves Windows npm argument boundaries without a command shell", () => {
+    const args = ["install", "C:\\path with spaces\\ima2.tgz", "value&literal"];
+    const invocation = npmInvocation(args, {
+      platform: "win32",
+      nodeExecPath: "C:\\Program Files\\nodejs\\node.exe",
+      npmExecPath: "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+    });
+    assert.equal(invocation.command, "C:\\Program Files\\nodejs\\node.exe");
+    assert.deepEqual(invocation.args.slice(1), args);
+    assert.match(invocation.args[0], /npm-cli\.js$/);
+  });
+
   it("detects missing install-script approvals and bundle lock drift", () => {
     const lock = { packages: { "": { bundleDependencies: ["progrok"] }, "node_modules/sharp": { version: "1.2.3", hasInstallScript: true } } };
     assert.deepEqual(validateInstallPolicy({ allowScripts: {} }, lock, "root"), ["root: missing allowScripts approval for sharp@1.2.3"]);

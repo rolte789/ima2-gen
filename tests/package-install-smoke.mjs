@@ -5,14 +5,11 @@ import { existsSync, mkdtempSync, rmSync, mkdirSync, readFileSync, readdirSync, 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import net from "node:net";
-import { parsePackOutput } from "../scripts/release-contract.mjs";
+import { parsePackOutput } from "../scripts/release-artifact-contract.mjs";
+import { spawnNpmSync } from "../scripts/npm-subprocess.mjs";
 
-function npmCommand() {
-  return process.platform === "win32" ? "npm.cmd" : "npm";
-}
-
-function run(command, args, options = {}) {
-  const result = spawnSync(command, args, {
+function spawnOptions(options) {
+  return {
     encoding: "utf8",
     ...options,
     env: {
@@ -20,17 +17,28 @@ function run(command, args, options = {}) {
       npm_config_loglevel: "error",
       ...(options.env || {}),
     },
-  });
+  };
+}
+
+function assertSuccess(result, label, args) {
   assert.equal(
     result.status,
     0,
-    `${command} ${args.join(" ")} failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+    `${label} ${args.join(" ")} failed\nerror:\n${result.error?.message || ""}\nstdout:\n${result.stdout || ""}\nstderr:\n${result.stderr || ""}`,
   );
   return result;
 }
 
+function run(command, args, options = {}) {
+  return assertSuccess(spawnSync(command, args, spawnOptions(options)), command, args);
+}
+
+function runNpm(args, options = {}) {
+  return assertSuccess(spawnNpmSync(args, spawnOptions(options)), "npm", args);
+}
+
 function npmMajor() {
-  const version = run(npmCommand(), ["--version"]).stdout.trim();
+  const version = runNpm(["--version"]).stdout.trim();
   return Number(version.split(".")[0]);
 }
 
@@ -111,7 +119,7 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
     if (tarball) {
       assert.equal(existsSync(tarball), true, `provided release tarball should exist: ${tarball}`);
     } else {
-      const pack = run(npmCommand(), ["pack", "--json", "--pack-destination", packDir], {
+      const pack = runNpm(["pack", "--json", "--pack-destination", packDir], {
         cwd: process.cwd(),
       });
       const packManifest = [parsePackOutput(pack.stdout)];
@@ -121,16 +129,25 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
       tarball = join(packDir, packManifest[0].filename);
     }
 
-    run(npmCommand(), ["init", "-y"], { cwd: projectDir });
+    runNpm(["init", "-y"], { cwd: projectDir });
     configureProjectInstallPolicy(projectDir);
-    run(npmCommand(), ["install", tarball], { cwd: projectDir });
+    runNpm(["install", tarball], { cwd: projectDir });
 
     const packageRoot = join(projectDir, "node_modules", "ima2-gen");
     const cliPath = join(packageRoot, "bin", "ima2.js");
-    const progrokBin = join(packageRoot, "node_modules", ".bin", process.platform === "win32" ? "progrok.cmd" : "progrok");
-    const oauthBin = join(packageRoot, "node_modules", ".bin", process.platform === "win32" ? "openai-oauth.cmd" : "openai-oauth");
-    assert.equal(existsSync(progrokBin), true, "packaged install should include bundled progrok bin");
-    assert.equal(existsSync(oauthBin), true, "packaged install should include bundled openai-oauth bin");
+    const binShim = (name) => join(packageRoot, "node_modules", ".bin", process.platform === "win32" ? `${name}.cmd` : name);
+    assert.equal(existsSync(binShim("progrok")), true, "packaged install should include bundled progrok bin");
+    assert.equal(existsSync(binShim("openai-oauth")), true, "packaged install should include bundled openai-oauth bin");
+
+    const packageBin = (packageName, binName) => {
+      const dependencyRoot = join(packageRoot, "node_modules", packageName);
+      const manifest = JSON.parse(readFileSync(join(dependencyRoot, "package.json"), "utf8"));
+      const entry = typeof manifest.bin === "string" ? manifest.bin : manifest.bin?.[binName];
+      assert.equal(typeof entry, "string", `${packageName} should declare the ${binName} bin`);
+      return join(dependencyRoot, entry);
+    };
+    const progrokBin = packageBin("progrok", "progrok");
+    const oauthBin = packageBin("openai-oauth", "openai-oauth");
 
     const oauthRoot = join(packageRoot, "node_modules", "openai-oauth");
     const oauthPackage = JSON.parse(readFileSync(join(oauthRoot, "package.json"), "utf8"));
@@ -165,10 +182,10 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
     const grokHelp = run(process.execPath, [cliPath, "grok", "--help"], { cwd: projectDir, env });
     assert.match(grokHelp.stdout, /bundled progrok runtime/);
 
-    const progrokHelp = run(progrokBin, ["--help"], { cwd: projectDir, env });
+    const progrokHelp = run(process.execPath, [progrokBin, "--help"], { cwd: projectDir, env });
     assert.match(progrokHelp.stdout, /Usage: progrok/);
 
-    const oauthHelp = run(oauthBin, ["--help"], { cwd: projectDir, env });
+    const oauthHelp = run(process.execPath, [oauthBin, "--help"], { cwd: projectDir, env });
     assert.match(oauthHelp.stdout, /openai-oauth|Options/i);
 
     const doctor = run(process.execPath, [cliPath, "doctor"], { cwd: projectDir, env });

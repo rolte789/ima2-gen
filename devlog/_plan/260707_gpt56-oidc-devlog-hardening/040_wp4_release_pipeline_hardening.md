@@ -343,11 +343,18 @@ expose:
   shorthand and attempted SSH `git ls-remote`. The workflow now publishes the
   explicit local path `./release-artifact/file.tgz`, and the source contract
   prevents that prefix from regressing.
+- dev CI run `29066079916` exposed two cross-platform contract splits before
+  stable promotion: Windows cannot execute `.cmd` shims through bare
+  `spawnSync`, and the older package-content smoke still assumed npm 11's array
+  JSON. npm subprocesses now invoke `npm-cli.js` through Node via
+  `npm-subprocess.mjs`; bundled CLIs execute their declared JS bins instead of
+  shell shims. Both release and package-content smoke reuse the same npm 11/12
+  artifact parser, with no `shell: true` argument-flattening path.
 
 Local evidence:
 
 - Node `24.17.0`, npm `11.18.0`: `npm run verify:release` passed typechecks,
-  inventory, UI/server/CLI builds, 1086/1086 tests, package lint, install policy,
+  inventory, UI/server/CLI builds, 1087/1087 tests, package lint, install policy,
   audit with zero vulnerabilities, and installed-tarball server smoke.
 - npm `12.0.0`: clean root/UI `npm ci`, native imports, pending-script oracle,
   UI build, typecheck, release-contract tests, keyed-object package packing,
@@ -355,6 +362,11 @@ Local evidence:
 - `release-contract pack` produced a digest-verified tarball with embedded
   `gitHead`, both bundled CLIs, direct `zod`, and a valid CycloneDX 1.5 SBOM;
   the exact artifact passed the installed-package server smoke.
+- preview run `29066108224` published
+  `2.0.14-preview.260710.29066108224.1` from `c5b1972`, then verified the
+  dist-tag, embedded `gitHead`, SHA-512 integrity, exact run/attempt provenance,
+  and npm Sigstore signature. This is the first live activation of the hardened
+  tested-artifact/OIDC path.
 - `actionlint`, YAML parse, shell syntax, installer mirror parity, module-size
   limits, and
   `git diff --check` passed. Windows PowerShell execution remains delegated to

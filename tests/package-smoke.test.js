@@ -1,9 +1,10 @@
 import { describe, it } from "node:test";
 import assert from "node:assert";
-import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { parsePackOutput } from "../scripts/release-artifact-contract.mjs";
+import { spawnNpmSync } from "../scripts/npm-subprocess.mjs";
 
 const REQUIRED_SOURCE_PACK_FILES = [
   "LICENSE",
@@ -46,26 +47,13 @@ const REQUIRED_RUNTIME_PACK_FILES = [
   "lib/cardNewsTemplateStore.js",
 ];
 
-function npmCommand() {
-  return process.platform === "win32" ? "npm.cmd" : "npm";
-}
-
-function npmPackCommandArgs(packDestination) {
-  const args = ["pack", "--dry-run", "--json", "--ignore-scripts", "--pack-destination", packDestination];
-  if (process.env.npm_execpath) {
-    return { command: process.execPath, args: [process.env.npm_execpath, ...args] };
-  }
-  return { command: npmCommand(), args };
-}
-
 let cachedPackManifest = null;
 
 function readPackManifest() {
   if (cachedPackManifest) return cachedPackManifest;
   const packDestination = mkdtempSync(join(tmpdir(), "ima2-pack-smoke-"));
   try {
-    const { command, args } = npmPackCommandArgs(packDestination);
-    const result = spawnSync(command, args, {
+    const result = spawnNpmSync(["pack", "--dry-run", "--json", "--ignore-scripts", "--pack-destination", packDestination], {
       cwd: process.cwd(),
       encoding: "utf8",
       env: {
@@ -81,12 +69,7 @@ function readPackManifest() {
     );
 
     try {
-      const jsonMatch = result.stdout.match(/\[\s*\{[\s\S]*\}\s*\]\s*$/);
-      assert.ok(jsonMatch, `npm pack output should end with a JSON manifest array\nstdout:\n${result.stdout}`);
-      const parsed = JSON.parse(jsonMatch[0]);
-      assert.ok(Array.isArray(parsed), "npm pack output should be a JSON array");
-      assert.ok(parsed[0], "npm pack output should include one package manifest");
-      cachedPackManifest = parsed[0];
+      cachedPackManifest = parsePackOutput(result.stdout);
       return cachedPackManifest;
     } catch (error) {
       assert.fail(`Could not parse npm pack --dry-run --json output: ${error.message}`);
