@@ -10,8 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **GPT-5.6 rollout** — `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna` accepted as OAuth image models across server validators, prompt builder, CLI, and UI pickers; reasoning ladder gains `max` after `xhigh`. Defaults unchanged (`gpt-5.4-mini`).
-- **Release tag guard** — `publish.yml` release path refuses to publish when the GitHub Release tag does not match `package.json` version.
-- **Release flow is OIDC-only** — local `scripts/release.sh` and `release:*` scripts no longer run credentialed `npm publish`; they end at `gh release create`, which triggers the trusted-publishing workflow (`publish.yml`). `gh` CLI auth is now a required preflight; npm login is not needed locally.
+- **Verified OIDC release contract** — a release commit must pass the `preview` channel before the same SHA can be tagged and published to `latest`; GitHub Release creation and branch synchronization happen only after npm dist-tag, `gitHead`, integrity, and provenance read-back succeeds.
+- **Tested-artifact evidence** — `publish.yml` packs once, install-smokes that exact tarball, records SHA-512 in `release-manifest.json`, emits a CycloneDX SBOM, and gives OIDC permission only to the job that publishes the downloaded artifact.
+- **Signed provenance recovery** — stable full reruns use a verify-only job, failed-job reruns guard against republishing an immutable version, and finalization recovers the original publish attempt from cryptographically verified npm Sigstore provenance instead of relying on recent successful-run listings.
 - **SSE multiplexing** — shared `GET /api/events` endpoint with ring-buffer replay and `Last-Event-ID` reconnect support (`lib/eventBus.ts`, `routes/events.ts`).
 - **Async POST generation mode** — multimode, node, and video routes accept async POST and dual-emit progress on both per-request SSE and the shared event bus.
 - **Frontend event channel** — singleton `EventSource` client (`ui/src/lib/eventChannel.ts`) replaces per-request SSE streams for UI generation flows.
@@ -25,7 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - UI clients migrated from per-request SSE to `eventChannel` + async POST for multimode, node, and video generation.
 - Multimode concurrency tracking uses `activeFlightIds` Set instead of `multimodeAbortControllers`.
-- Test suite grew to **968** cases across **186** files (65 runtime-importing, 121 contract-only).
+- Release builds now pin Node `24.17.0`, npm `11.18.0`, and `@openai/codex` `0.144.1`; CI also performs clean npm 12 installs on Ubuntu and Windows.
+- npm 12 install-script approvals are explicit for root/UI lockfiles and one-click installers verify the installed native runtime with `ima2 doctor`.
+- GitHub Actions are pinned to full commit SHAs, Windows runs the installed-tarball smoke, and UI build dependencies are audited at high severity (`vite` 7.3.6, `esbuild` 0.28.1).
+- Test suite grew to **1086** cases across **206** files (72 runtime-importing, 134 contract-only).
 
 ### Fixed
 
@@ -36,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AGY provider detection now finds user-local `agy` installs such as `~/.local/bin/agy` and supports `IMA2_AGY_BIN` for explicit binary paths.
 - AGY Windows pipe handling, Gemini API aspect ratio string values, multimode same-prompt batching.
 - Moderation over-filtering — removed safety tags and added error enrichment.
+- Packaged `openai-oauth` now has its required `zod` peer available in consumer installs; package smoke executes both bundled CLIs from the installed tarball.
+- npm 12 keyed-object `npm pack --json` output is normalized alongside npm 11 array output, so package smoke and release packing share one cross-version artifact contract.
 
 ## [2.0.4] - 2026-06-27
 
@@ -162,7 +168,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial npm publish of `ima2-gen` — local OAuth image generation studio with Classic mode, Node mode, Canvas Mode, and CLI.
 
-[Unreleased]: https://github.com/lidge-jun/ima2-gen/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/lidge-jun/ima2-gen/compare/v2.0.13...HEAD
+[2.0.4]: https://github.com/lidge-jun/ima2-gen/compare/v2.0.1...v2.0.4
 [2.0.1]: https://github.com/lidge-jun/ima2-gen/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/lidge-jun/ima2-gen/compare/v1.1.23...v2.0.0
 [1.1.23]: https://github.com/lidge-jun/ima2-gen/compare/v1.1.22...v1.1.23

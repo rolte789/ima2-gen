@@ -1,7 +1,7 @@
 # ima2-gen — AI Context
 
 ## What This Project Does
-Local image generation studio (v2.0.5) — CLI + 웹 UI
+Local image generation studio (v2.x) — CLI + 웹 UI
 - GPT OAuth, API Key, Grok, Gemini API, Antigravity CLI 다중 provider 지원
 - 텍스트→이미지, 이미지→이미지(편집), 비디오 생성
 - SSE 멀티플렉싱: 단일 `GET /api/events` SSE 채널 + async POST (202) 아키텍처
@@ -43,7 +43,7 @@ ima2-gen/
 ├── integrations/comfyui/ # ComfyUI bridge/custom node
 ├── structure/            # Current architecture reference docs (00-07)
 ├── devlog/               # _plan (active), _fin (archived)
-├── tests/                # node:test contracts/regressions (1077 cases)
+├── tests/                # node:test contracts/regressions (1086 cases)
 └── package.json
 ```
 
@@ -64,7 +64,7 @@ ima2-gen/
 ```bash
 npm run typecheck          # tsc --noEmit (server + lib)
 npm run typecheck:tests    # tsc --noEmit (test files)
-npm test                   # node:test (1077 cases)
+npm test                   # node:test (1086 cases)
 npm run test:inventory     # verify test file registry
 cd ui && npm run build     # Vite production build
 ```

@@ -20,6 +20,12 @@ Session: cxc-loop HOTL, one PABCD cycle per work-phase.
    stale (updated 2026-06-11); audit `_plan` units, move closed-out ones to
    `_fin`, folder loose `.md` files, refresh `structure/07-devlog-map.md`,
    fix stale AGENTS.md facts (v2.0.1 → 2.0.5, 968 → 1066 tests).
+4. **WP4** — release recurrence hardening after the live v2.0.8-v2.0.13
+   sequence: make preview a mandatory pre-tag candidate gate, publish the exact
+   tarball that passed install smoke, narrow OIDC to the publish job, enforce
+   event/ref/version/main-ancestry contracts, pin the release toolchain and
+   bundled Codex dependency, support npm 12 install-script policy explicitly,
+   and wait for registry/provenance proof before declaring a release done.
 
 ## Source evidence
 
@@ -39,6 +45,10 @@ Session: cxc-loop HOTL, one PABCD cycle per work-phase.
 - `~/.codex/opencodex-catalog.json` on this machine does not yet list 5.6
   slugs — live probes of gpt-5.6 may fail upstream; that is acceptable
   evidence (surface-not-blocked is what we verify).
+- Live release evidence on 2026-07-10: v2.0.8-v2.0.12 all created tags and
+  GitHub Releases before their deterministic install/test/package failures;
+  v2.0.13 is the first successful `latest` + `preview` pair. The failure
+  taxonomy and prevention design are recorded in `040_wp4_release_pipeline_hardening.md`.
 
 ## Work-phase map (dependency-ordered)
 
@@ -47,12 +57,21 @@ Session: cxc-loop HOTL, one PABCD cycle per work-phase.
 | 1 | `010_wp1_gpt56_models.md` | model + reasoning surfaces, tests, i18n |
 | 2 | `020_wp2_oidc_release.md` | release scripts + infra docs |
 | 3 | `030_wp3_devlog_hardening.md` | devlog/_plan audit + structure docs + AGENTS.md |
+| 4 | `040_wp4_release_pipeline_hardening.md` | pre-tag preview gate, tested artifact publish, npm/OIDC/package policy |
 
 ## Out of scope
 
-- opencodex repo changes; npm publishing; `git push` (user rule);
+- opencodex repo changes outside the vendored compatibility reference;
 - flipping any default model or reasoning default;
 - new dependencies; UI redesign.
+
+## Scope amendment — 2026-07-10
+
+The user subsequently authorized commit, push, preview publishing, and main npm
+publishing. WP4 therefore includes the live preview → stable promotion and
+post-publish proof needed to verify the hardening. It still excludes opencodex
+changes, unrelated third-party dependencies, UI work, npm trusted-publisher identity
+changes, and GitHub branch-protection/ruleset changes.
 
 ## Acceptance (every WP)
 

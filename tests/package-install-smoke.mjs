@@ -1,10 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import net from "node:net";
+import { parsePackOutput } from "../scripts/release-contract.mjs";
 
 function npmCommand() {
   return process.platform === "win32" ? "npm.cmd" : "npm";
@@ -16,7 +17,7 @@ function run(command, args, options = {}) {
     ...options,
     env: {
       ...process.env,
-      npm_config_loglevel: "silent",
+      npm_config_loglevel: "error",
       ...(options.env || {}),
     },
   });
@@ -26,6 +27,23 @@ function run(command, args, options = {}) {
     `${command} ${args.join(" ")} failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
   );
   return result;
+}
+
+function npmMajor() {
+  const version = run(npmCommand(), ["--version"]).stdout.trim();
+  return Number(version.split(".")[0]);
+}
+
+function configureProjectInstallPolicy(projectDir) {
+  if (npmMajor() < 12) return;
+  const packagePath = join(projectDir, "package.json");
+  const manifest = JSON.parse(readFileSync(packagePath, "utf8"));
+  manifest.allowScripts = {
+    "better-sqlite3": true,
+    "ima2-gen": true,
+    sharp: true,
+  };
+  writeFileSync(packagePath, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
 async function freePort() {
@@ -89,21 +107,46 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
 
   let child = null;
   try {
-    const pack = run(npmCommand(), ["pack", "--json", "--pack-destination", packDir], {
-      cwd: process.cwd(),
-    });
-    const packJson = pack.stdout.match(/\[\s*\{[\s\S]*\}\s*\]\s*$/);
-    assert.ok(packJson, `npm pack output should end with a JSON manifest array\nstdout:\n${pack.stdout}`);
-    const packManifest = JSON.parse(packJson[0]);
-    const tarball = join(packDir, packManifest[0].filename);
+    let tarball = process.env.IMA2_PACKAGE_TARBALL;
+    if (tarball) {
+      assert.equal(existsSync(tarball), true, `provided release tarball should exist: ${tarball}`);
+    } else {
+      const pack = run(npmCommand(), ["pack", "--json", "--pack-destination", packDir], {
+        cwd: process.cwd(),
+      });
+      const packManifest = [parsePackOutput(pack.stdout)];
+      for (const bundled of ["progrok", "openai-oauth"]) {
+        assert.ok(packManifest[0].bundled.includes(bundled), `packed artifact should bundle ${bundled}`);
+      }
+      tarball = join(packDir, packManifest[0].filename);
+    }
 
     run(npmCommand(), ["init", "-y"], { cwd: projectDir });
+    configureProjectInstallPolicy(projectDir);
     run(npmCommand(), ["install", tarball], { cwd: projectDir });
 
     const packageRoot = join(projectDir, "node_modules", "ima2-gen");
     const cliPath = join(packageRoot, "bin", "ima2.js");
     const progrokBin = join(packageRoot, "node_modules", ".bin", process.platform === "win32" ? "progrok.cmd" : "progrok");
+    const oauthBin = join(packageRoot, "node_modules", ".bin", process.platform === "win32" ? "openai-oauth.cmd" : "openai-oauth");
     assert.equal(existsSync(progrokBin), true, "packaged install should include bundled progrok bin");
+    assert.equal(existsSync(oauthBin), true, "packaged install should include bundled openai-oauth bin");
+
+    const oauthRoot = join(packageRoot, "node_modules", "openai-oauth");
+    const oauthPackage = JSON.parse(readFileSync(join(oauthRoot, "package.json"), "utf8"));
+    assert.equal(oauthPackage.version, "1.0.2-ima2.1");
+    assert.match(oauthPackage.ima2Patch, /originator\/version headers/);
+    const oauthRuntime = readdirSync(join(oauthRoot, "dist"))
+      .filter((name) => name.endsWith(".js"))
+      .map((name) => readFileSync(join(oauthRoot, "dist", name), "utf8"))
+      .join("\n");
+    for (const marker of ["codex_cli_rs", "IMA2_CODEX_CLIENT_VERSION", "0.144.0"]) {
+      assert.ok(oauthRuntime.includes(marker), `installed OAuth runtime should include ${marker}`);
+    }
+    if (process.env.IMA2_PACKAGE_TARBALL && process.env.GITHUB_SHA) {
+      const installedPackage = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
+      assert.equal(installedPackage.gitHead, process.env.GITHUB_SHA, "release tarball should embed its source SHA");
+    }
 
     mkdirSync(configDir, { recursive: true });
     writeFileSync(join(configDir, "config.json"), JSON.stringify({ provider: "oauth" }));
@@ -124,6 +167,9 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
 
     const progrokHelp = run(progrokBin, ["--help"], { cwd: projectDir, env });
     assert.match(progrokHelp.stdout, /Usage: progrok/);
+
+    const oauthHelp = run(oauthBin, ["--help"], { cwd: projectDir, env });
+    assert.match(oauthHelp.stdout, /openai-oauth|Options/i);
 
     const doctor = run(process.execPath, [cliPath, "doctor"], { cwd: projectDir, env });
     assert.match(doctor.stdout, /Doctor/);

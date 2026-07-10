@@ -1,83 +1,180 @@
 name: Publish to npm
 
 on:
-  release:
-    types: [published]
   push:
     branches: [preview]
-  workflow_dispatch:
+    tags: ['v*']
+
+permissions:
+  contents: read
 
 concurrency:
   group: publish-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.ref == 'refs/heads/preview' }}
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      should_publish: ${{ steps.plan.outputs.should_publish }}
+      should_verify: ${{ steps.plan.outputs.should_verify }}
+      channel: ${{ steps.plan.outputs.channel }}
+      npm_tag: ${{ steps.plan.outputs.npm_tag }}
+      version: ${{ steps.plan.outputs.version }}
+      source_ref: ${{ steps.plan.outputs.source_ref }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: '.node-version'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Pin release npm
+        run: |
+          NPM_VERSION=$(node -p "require('./package.json').packageManager.split('@').pop()")
+          npm install -g "npm@$NPM_VERSION"
+          echo "node=$(node -v) npm=$(npm -v)"
+      - name: Fetch release branches and tags
+        run: git fetch origin main dev preview --tags
+      - id: plan
+        name: Classify trusted publish event
+        run: node scripts/release-contract.mjs prepare
+
+  package:
+    needs: prepare
+    if: needs.prepare.outputs.should_publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: '.node-version'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Pin release npm
+        run: |
+          NPM_VERSION=$(node -p "require('./package.json').packageManager.split('@').pop()")
+          npm install -g "npm@$NPM_VERSION"
+          test "$(npm -v)" = "$NPM_VERSION"
+      - name: Prove package job has no OIDC token
+        run: test -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}"
+      - run: npm ci
+      - run: npm run test:native-deps
+      - run: npm --prefix ui ci --no-audit --no-fund
+      - name: Set preview package version
+        if: needs.prepare.outputs.channel == 'preview'
+        run: npm version "${{ needs.prepare.outputs.version }}" --no-git-tag-version
+      - run: npm run verify:release:source
+        timeout-minutes: 25
+      - id: artifact
+        name: Pack release artifact once
+        run: node scripts/release-contract.mjs pack "$RUNNER_TEMP/npm-release"
+      - name: Install-smoke the exact release artifact
+        run: npm run test:package-install
+        env:
+          IMA2_PACKAGE_TARBALL: ${{ steps.artifact.outputs.tarball }}
+      - name: Upload tested package, manifest, and SBOM
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: npm-release-artifact
+          path: ${{ runner.temp }}/npm-release/
+          if-no-files-found: error
+          retention-days: 90
+
+  verify-existing:
+    needs: prepare
+    if: needs.prepare.outputs.should_verify == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: '.node-version'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Pin release npm
+        run: |
+          NPM_VERSION=$(node -p "require('./package.json').packageManager.split('@').pop()")
+          npm install -g "npm@$NPM_VERSION"
+          test "$(npm -v)" = "$NPM_VERSION"
+      - name: Verify immutable registry package and signed provenance
+        run: >-
+          node scripts/release-contract.mjs verify-channel
+          "${{ needs.prepare.outputs.version }}"
+          "${{ needs.prepare.outputs.npm_tag }}"
+          "${{ needs.prepare.outputs.source_ref }}"
+          "$GITHUB_SHA"
+
   publish:
+    needs: [prepare, package]
+    if: needs.prepare.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          node-version: '22.23.0'
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: '.node-version'
           registry-url: 'https://registry.npmjs.org'
-      - name: Upgrade npm for OIDC trusted publishing
+      - name: Pin release npm
         run: |
-          # npm 12 blocks install scripts (allowScripts policy) so better-sqlite3/sharp
-          # native bindings never build and npm test hangs. Pin to npm 11 (>= 11.5.1
-          # satisfies OIDC trusted publishing; 11.17.0 was the last known-good publish).
-          npm install -g npm@11
-          echo "node=$(node -v) npm=$(npm -v)"
-      - run: npm ci
-      - name: Rebuild native modules for CI runner
-        run: npm rebuild better-sqlite3 sharp 2>/dev/null || true
-      - run: npm --prefix ui install --no-audit --no-fund
-      - run: npm run typecheck
-      - run: npm run typecheck:tests
-      - run: npm run test:inventory
-      - run: npm run build:server
-      - run: npm run build:cli
-      - run: npm --prefix ui run build
-      - run: npm test
-        timeout-minutes: 20
-      - run: npm run lint:pkg
-      - run: npm run test:package-install
-      - name: Verify OIDC preconditions
+          NPM_VERSION=$(node -p "require('./package.json').packageManager.split('@').pop()")
+          npm install -g "npm@$NPM_VERSION"
+          test "$(npm -v)" = "$NPM_VERSION"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: npm-release-artifact
+          path: release-artifact
+      - name: Verify tested artifact digest
+        run: node scripts/release-contract.mjs verify-artifact release-artifact/release-manifest.json
+      - name: Verify OIDC endpoint
         run: |
-          echo "npm=$(npm -v)"
-          npm_major=$(npm -v | cut -d. -f1)
-          npm_minor=$(npm -v | cut -d. -f2)
-          if [ "$npm_major" -lt 11 ] || { [ "$npm_major" -eq 11 ] && [ "$npm_minor" -lt 5 ]; }; then
-            echo "::error::npm >= 11.5.1 required for OIDC trusted publishing (got $(npm -v))"
-            exit 1
-          fi
-          if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
-            echo "::error::OIDC token endpoint not available — check id-token: write permission"
-            exit 1
-          fi
-          echo "✓ npm version OK, OIDC endpoint available"
-      - name: Verify release tag matches package version (release only)
-        if: github.event_name == 'release'
+          test -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}"
+          echo "OIDC endpoint is available to the publish job"
+      - name: Recheck live release refs
+        run: node scripts/release-contract.mjs assert-remote-ref "$GITHUB_REF" "$GITHUB_SHA"
+      - id: registry
+        name: Guard immutable registry version
+        run: >-
+          node scripts/release-contract.mjs guard-publish
+          release-artifact/release-manifest.json
+          "${{ needs.prepare.outputs.npm_tag }}"
+          "${{ needs.prepare.outputs.source_ref }}"
+          "$GITHUB_SHA"
+      - name: Publish tested tarball
+        if: steps.registry.outputs.should_publish == 'true'
         run: |
-          PKG_VERSION=$(node -p "require('./package.json').version")
-          TAG="${{ github.event.release.tag_name }}"
-          if [ "$TAG" != "v$PKG_VERSION" ]; then
-            echo "::error::Release tag $TAG does not match package.json version v$PKG_VERSION — refusing to publish latest"
-            exit 1
-          fi
-          echo "✓ tag $TAG matches package.json version"
-      - name: Set preview version (preview branch push only)
-        if: github.event_name != 'release'
+          TARBALL=$(node -p "'release-artifact/' + require('./release-artifact/release-manifest.json').filename")
+          npm publish "$TARBALL" --ignore-scripts --tag "${{ needs.prepare.outputs.npm_tag }}" --provenance --access public
+      - name: Verify registry, dist-tag, integrity, and provenance
+        run: >-
+          node scripts/release-contract.mjs verify-registry
+          release-artifact/release-manifest.json
+          "${{ needs.prepare.outputs.npm_tag }}"
+          "${{ needs.prepare.outputs.source_ref }}"
+          "$GITHUB_SHA"
+        env:
+          IMA2_EXPECT_CURRENT_PROVENANCE: ${{ steps.registry.outputs.should_publish }}
+      - name: Write release proof summary
         run: |
-          PREVIEW=$(node -e "const [a,b,c]=require('./package.json').version.split('-')[0].split('.').map(Number); const d=new Date(); const z=n=>String(n).padStart(2,'0'); const tag=\`\${String(d.getUTCFullYear()).slice(2)}\${z(d.getUTCMonth()+1)}\${z(d.getUTCDate())}\`; process.stdout.write(\`\${a}.\${b}.\${c+1}-preview-\${tag}\`)")
-          echo "preview version: $PREVIEW"
-          npm version "$PREVIEW" --no-git-tag-version
-      - name: Publish (latest on release, preview dist-tag on preview push)
-        run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            npm publish --provenance --access public
-          else
-            npm publish --tag preview --provenance --access public
-          fi
+          VERSION=$(node -p "require('./release-artifact/release-manifest.json').version")
+          INTEGRITY=$(node -p "require('./release-artifact/release-manifest.json').integrity")
+          {
+            echo "### npm publish proof"
+            echo "- channel: ${{ needs.prepare.outputs.channel }}"
+            echo "- version: $VERSION"
+            echo "- source: $GITHUB_REF@$GITHUB_SHA"
+            echo "- integrity: $INTEGRITY"
+            echo "- workflow: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } >> "$GITHUB_STEP_SUMMARY"
