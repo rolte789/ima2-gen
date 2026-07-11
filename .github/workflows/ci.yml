@@ -17,6 +17,7 @@ jobs:
   test:
     name: test (${{ matrix.os }}, node ${{ matrix.node }}, npm ${{ matrix.npm }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -38,6 +39,14 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ matrix.node }}
+          # npm's content-addressed cache is npm-version agnostic, so sharing it
+          # across the npm 11/12 matrix legs on the same OS is intentional.
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            ui/package-lock.json
+      - name: Structure line-count drift (fast fail)
+        run: node scripts/refresh-structure-line-counts.mjs --check
       - name: Pin npm
         run: npm install -g npm@${{ matrix.npm }}
       - name: Install root deps
