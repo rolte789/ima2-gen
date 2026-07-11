@@ -222,7 +222,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | `lib/agentSettings.ts` | 76 | Per-session generation settings |
 | `lib/agentRuntime.ts` | 412 | Turn execution, tool dispatch, generation delegation |
 | `lib/agentQueueStore.ts` | 346 | Durable async queue persistence |
-| `lib/agentQueueWorker.ts` | 211 | Background queue worker |
+| `lib/agentQueueWorker.ts` | 220 | Background queue worker |
 | `lib/agentCommandParser.ts` | 75 | Slash-command parsing |
 | `lib/agentToolManifest.ts` | 100 | Tool metadata for `/api/agent/tools` |
 | `lib/agentPlannerModel.ts` | 201 | Planner model selection |

@@ -15,7 +15,7 @@ import { hasAgentErrorTurnRecorded, runAgentGenerationPlan } from "./agentRuntim
 import { appendAgentTurn } from "./agentStore.js";
 import type { AgentGenerationPlan, AgentQueueItem } from "./agentTypes.js";
 import { errInfo } from "./errInfo.js";
-import { finishJob, setJobPhase, startJob } from "./inflight.js";
+import { finishJob, isStartJobFailure, setJobPhase, startJob } from "./inflight.js";
 import { logEvent } from "./logger.js";
 import type { RuntimeContext } from "./runtimeContext.js";
 
@@ -124,20 +124,29 @@ async function runClaimedQueueItem(ctx: RuntimeContext, itemId: string) {
   const timeoutController = new AbortController();
   const timeout = setTimeout(() => timeoutController.abort("timeout"), timeoutMs);
   timeout.unref?.();
-  const signal = combineAbortSignals(controller.signal, timeoutController.signal);
-  startJob({
-    requestId: item.requestId,
-    kind: "agent_queue",
-    prompt: item.prompt,
+ const signal = combineAbortSignals(controller.signal, timeoutController.signal);
+  const started = startJob({
+   requestId: item.requestId,
+   kind: "agent_queue",
+   prompt: item.prompt,
     meta: {
       sessionId: item.sessionId,
       queueItemId: item.id,
       variants: plan.plannedVariants,
       parallelism: plan.plannedParallelism,
-      requestedVariants: plan.requestedVariants,
-    },
-  });
-  try {
+     requestedVariants: plan.requestedVariants,
+   },
+ });
+  if (started && isStartJobFailure(started)) {
+    clearTimeout(timeout);
+    runningControllers.delete(item.id);
+    const reason = started.code === "TOO_MANY_JOBS"
+      ? "Too many concurrent generation jobs"
+      : "Request ID already in use";
+    failAgentQueueItem(item.id, { code: started.code, message: reason });
+    return;
+  }
+ try {
     logEvent("agent_queue", "start", { itemId: item.id, sessionId: item.sessionId });
     setJobPhase(item.requestId, "streaming");
     const result = await runAgentGenerationPlan(ctx, item.sessionId, item.prompt, plan, {
