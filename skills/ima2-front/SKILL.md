@@ -39,14 +39,20 @@ wiring, visual verification, and frontend platform rules.
 ## Modular References
 
 > **Loading references via CLI:**
+> **Recommended: install skills so agents read references natively from disk.**
+> ```bash
+> ima2 skill install                 # copies all skills to ~/.codex/skills/ (global)
+> ima2 skill install --local         # copies to ./.codex/skills/ (project)
+> ima2 skill install --tmp           # copies to $TMPDIR/ima2-skills/ (ephemeral)
+> ```
+> After install, agents discover SKILL.md and follow `references/` paths naturally.
+>
+> **Ad-hoc reading (without install):**
 > ```bash
 > ima2 skill front refs              # list all reference modules with line counts
 > ima2 skill front ref motion        # print one module (basename match)
 > ima2 skill front ref stacks/react  # print a nested module
-> ima2 skill front --with-refs       # bundle SKILL.md + all refs (large output)
 > ```
-> Use `refs` to discover what is available, then `ref <name>` to load on demand.
-> Avoid `--with-refs` unless you need the full context; it outputs ~8k lines.
 
 | File                                      | When to Read                         | What It Covers                                                                    |
 | ----------------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------- |

@@ -1,5 +1,6 @@
-import { existsSync, readFileSync, readdirSync, statSync } from "fs";
-import { dirname, join, relative, basename, extname } from "path";
+import { existsSync, readFileSync, readdirSync, statSync, mkdirSync, cpSync } from "fs";
+import { dirname, join, relative, basename, extname, resolve } from "path";
+import { homedir, tmpdir } from "os";
 import { fileURLToPath } from "url";
 import { parseArgs } from "../lib/args.js";
 import { die, json, out } from "../lib/output.js";
@@ -23,10 +24,14 @@ const KNOWN_SKILLS: Record<string, { dir: string; description: string }> = {
   },
 };
 
+const CODEX_HOME = join(homedir(), ".codex", "skills");
+
 const HELP = `
-  ima2 skill [<name>] [path|refs|ref <name>] [--json] [--with-refs]
+  ima2 skill [<name>] [path|refs|ref <name>|install] [--json]
 
   Print packaged ima2 Markdown skills and reference modules for agents.
+  Each skill includes a SKILL.md + a references/ directory with modular
+  docs that the agent can read via relative paths from the SKILL.md.
 
   Commands:
     ima2 skill              Print skills/ima2/SKILL.md (core)
@@ -35,26 +40,39 @@ const HELP = `
     ima2 skill ls            List all available skills
     ima2 skill <name> path   Print skill file path
 
-  Reference modules:
+  Install (recommended for agents):
+    ima2 skill install                Install all skills to ~/.codex/skills/
+    ima2 skill install --global       Same (explicit)
+    ima2 skill install --local        Install to ./.codex/skills/ (project-level)
+    ima2 skill install --dir <path>   Install to a custom directory
+    ima2 skill install --tmp          Install to a temp directory (ephemeral)
+
+    Installing copies SKILL.md + references/ to the target so that agents
+    (Codex, Claude, etc.) discover and read skills natively, including all
+    reference modules via relative paths. This is the recommended approach.
+
+  Reference modules (for ad-hoc reading without install):
     ima2 skill <name> refs          List reference modules for a skill
     ima2 skill <name> ref <name>    Print one reference module
-    ima2 skill <name> --with-refs   Print SKILL.md + all reference modules bundled
 
   Examples:
-    ima2 skill front refs                  List all frontend references
-    ima2 skill front ref motion            Print references/motion.md
-    ima2 skill uiux ref design-isms        Print references/design-isms.md
-    ima2 skill front --with-refs           Bundle skill + all refs into one output
-    ima2 skill front --with-refs --json    Same, as JSON
+    ima2 skill install                      Install skills globally (recommended)
+    ima2 skill front refs                   List all frontend references
+    ima2 skill front ref motion             Print references/motion.md
+    ima2 skill uiux ref design-isms         Print references/design-isms.md
 
-  Agent note:
-    SKILL.md files reference modules via relative paths like "references/motion.md".
-    Use 'refs' to discover available modules, then load them on demand with 'ref'
-    to keep context lean. Use '--with-refs' for a full context bundle.
+  Agent quick-start:
+    1. Run: ima2 skill install
+    2. Skills appear at ~/.codex/skills/ima2, ima2-front, ima2-uiux
+    3. Agent reads SKILL.md and follows references/ paths natively
+    4. No need to pipe large outputs through stdout
 
   Options:
     --json         Print JSON wrapper
-    --with-refs    Bundle SKILL.md + all reference modules
+    --global       Install to ~/.codex/skills/ (default)
+    --local        Install to ./.codex/skills/
+    --dir <path>   Install to a custom directory
+    --tmp          Install to $TMPDIR/ima2-skills/
     -h, --help     Show help
 `;
 
@@ -62,6 +80,10 @@ const FLAGS = {
   json: { type: "boolean" },
   help: { short: "h", type: "boolean" },
   "with-refs": { type: "boolean" },
+  global: { type: "boolean" },
+  local: { type: "boolean" },
+  dir: { type: "string" },
+  tmp: { type: "boolean" },
 };
 
 function readPackageVersion(): string {
@@ -140,16 +162,64 @@ function resolveRef(skillDir: string, refName: string): RefEntry | null {
   return null;
 }
 
-function bundleWithRefs(skillContent: string, skillDir: string): string {
-  const refs = discoverRefs(skillDir);
-  if (refs.length === 0) return skillContent;
-  const parts = [skillContent.replace(/\n$/, "")];
-  parts.push("\n\n---\n\n# Bundled Reference Modules\n");
-  for (const ref of refs) {
-    const content = readFileSync(ref.absPath, "utf-8").replace(/\n$/, "");
-    parts.push(`\n## [ref: ${ref.name}] (${ref.relPath})\n\n${content}\n`);
+// ── Install helpers ──
+
+function copySkillDir(srcDir: string, destDir: string): { files: number } {
+  mkdirSync(destDir, { recursive: true });
+  cpSync(srcDir, destDir, { recursive: true });
+  // Count files copied
+  let count = 0;
+  function countFiles(dir: string) {
+    for (const item of readdirSync(dir)) {
+      const full = join(dir, item);
+      if (statSync(full).isDirectory()) countFiles(full);
+      else count++;
+    }
   }
-  return parts.join("");
+  countFiles(destDir);
+  return { files: count };
+}
+
+function resolveInstallDir(args: Record<string, unknown>): string {
+  if (args.dir) return resolve(String(args.dir));
+  if (args.tmp) return join(tmpdir(), "ima2-skills");
+  if (args.local) return join(process.cwd(), ".codex", "skills");
+  // Default: global ~/.codex/skills/
+  return CODEX_HOME;
+}
+
+function installSkills(targetBase: string, asJson: boolean) {
+  const results: Array<{ name: string; dir: string; dest: string; files: number }> = [];
+
+  for (const [name, info] of Object.entries(KNOWN_SKILLS)) {
+    const srcDir = join(SKILLS_DIR, info.dir);
+    if (!existsSync(join(srcDir, "SKILL.md"))) continue;
+    const destDir = join(targetBase, info.dir);
+    const { files } = copySkillDir(srcDir, destDir);
+    results.push({ name, dir: info.dir, dest: destDir, files });
+  }
+
+  if (asJson) {
+    json({
+      installed: results.map((r) => ({
+        name: r.name,
+        dir: r.dir,
+        path: r.dest,
+        files: r.files,
+      })),
+      target: targetBase,
+    });
+  } else {
+    out(`\n  Installed ${results.length} ima2 skills to ${targetBase}\n`);
+    for (const r of results) {
+      out(`    ✓  ${r.dir.padEnd(12)} ${r.files} files → ${r.dest}`);
+    }
+    out(`\n  Agents can now read SKILL.md + references/ via filesystem paths.`);
+    if (targetBase === CODEX_HOME) {
+      out(`  Codex discovers these automatically. Other agents: point at the path above.`);
+    }
+    out("");
+  }
 }
 
 // ── Main command ──
@@ -162,6 +232,13 @@ export default async function skillCmd(argv: string[]) {
   }
 
   const positional = args.positional as string[];
+
+  // ima2 skill install — copy skills to filesystem
+  if (positional[0] === "install") {
+    const targetBase = resolveInstallDir(args);
+    installSkills(targetBase, !!args.json);
+    return;
+  }
 
   // ima2 skill ls — list available skills
   if (positional[0] === "ls" || positional[0] === "list") {
@@ -184,8 +261,10 @@ export default async function skillCmd(argv: string[]) {
         const status = existsSync(skillPath) ? "✓" : "✗";
         out(`    ${status}  ${name.padEnd(8)} ${info.description}`);
       }
-      out(`\n  Usage: ima2 skill <name>       Print a skill`);
-      out(`         ima2 skill <name> path   Print its file path\n`);
+      out(`\n  Usage: ima2 skill <name>         Print a skill`);
+      out(`         ima2 skill <name> path     Print its file path`);
+      out(`         ima2 skill <name> refs     List reference modules`);
+      out(`         ima2 skill install         Install all skills to ~/.codex/skills/\n`);
     }
     return;
   }
@@ -200,13 +279,13 @@ export default async function skillCmd(argv: string[]) {
     skillName = positional[0];
     if (positional[1] === "path") wantPath = true;
     else if (positional[1] === "refs") wantRefs = true;
-    else if (positional[1] === "ref" && positional[2]) wantRef = positional[2];
+    else if (positional[1] === "ref" && positional[2]) wantRef = positional.slice(2).join("/");
   } else if (positional[0] === "path") {
     wantPath = true;
   } else if (positional[0] === "refs") {
     wantRefs = true;
   } else if (positional[0] === "ref" && positional[1]) {
-    wantRef = positional[1];
+    wantRef = positional.slice(1).join("/");
   }
 
   const targetPath = resolveSkillPath(skillName);
@@ -244,7 +323,7 @@ export default async function skillCmd(argv: string[]) {
         out(`    ${r.name.padEnd(30)} ${String(r.lines).padStart(4)} lines`);
       }
       out(`\n  Load one:  ima2 skill ${skillName} ref <name>`);
-      out(`  Load all:  ima2 skill ${skillName} --with-refs\n`);
+      out(`  Install:   ima2 skill install (recommended — copies SKILL.md + all refs)\n`);
     }
     return;
   }
@@ -272,10 +351,20 @@ export default async function skillCmd(argv: string[]) {
     return;
   }
 
-  // --with-refs: bundle SKILL.md + all reference modules
+  // --with-refs: bundle SKILL.md + all reference modules (hidden, discouraged)
   if (args["with-refs"]) {
     const content = readSkill(targetPath);
-    const bundled = bundleWithRefs(content, skillDir);
+    // Inline bundle — kept for backward compat but not recommended
+    const refs = discoverRefs(skillDir);
+    let bundled = content.replace(/\n$/, "");
+    if (refs.length > 0) {
+      bundled += "\n\n---\n\n# Bundled Reference Modules\n";
+      for (const ref of refs) {
+        const rc = readFileSync(ref.absPath, "utf-8").replace(/\n$/, "");
+        bundled += `\n## [ref: ${ref.name}] (${ref.relPath})\n\n${rc}\n`;
+      }
+    }
+    process.stderr.write("  hint: prefer 'ima2 skill install' — agents read references natively from disk.\n");
     if (args.json) {
       json({
         name: skillName === "ima2" ? "ima2" : `ima2-${skillName}`,

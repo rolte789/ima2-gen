@@ -55,13 +55,19 @@ fetch/open/text/get-dom/snapshot only after candidate URLs exist.
 
 ## Modular References
 
-> **Loading references via CLI:**
+> **Recommended: install skills so agents read references natively from disk.**
+> ```bash
+> ima2 skill install                 # copies all skills to ~/.codex/skills/ (global)
+> ima2 skill install --local         # copies to ./.codex/skills/ (project)
+> ima2 skill install --tmp           # copies to $TMPDIR/ima2-skills/ (ephemeral)
+> ```
+> After install, agents discover SKILL.md and follow `references/` paths naturally.
+>
+> **Ad-hoc reading (without install):**
 > ```bash
 > ima2 skill uiux refs              # list all reference modules with line counts
 > ima2 skill uiux ref design-isms   # print one module (basename match)
-> ima2 skill uiux --with-refs       # bundle SKILL.md + all refs (large output)
 > ```
-> Use `refs` to discover what is available, then `ref <name>` to load on demand.
 
 | File | When to Read | What It Covers |
 |------|-------------|----------------|

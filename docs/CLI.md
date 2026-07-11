@@ -48,7 +48,10 @@ Agents should start from the packaged skill and capability commands instead of g
 | `ima2 skill uiux refs` | List reference modules for the design skill |
 | `ima2 skill front ref <name>` | Print one reference module by name (e.g. `motion`, `stacks/react`) |
 | `ima2 skill uiux ref <name>` | Print one reference module by name (e.g. `design-isms`) |
-| `ima2 skill front --with-refs` | Bundle SKILL.md + all reference modules into one output |
+| `ima2 skill install` | Install all skills to `~/.codex/skills/` (recommended for agents) |
+| `ima2 skill install --local` | Install to `./.codex/skills/` (project-level) |
+| `ima2 skill install --tmp` | Install to `$TMPDIR/ima2-skills/` (ephemeral) |
+| `ima2 skill install --dir <path>` | Install to a custom directory |
 | `ima2 skill front refs --json` | JSON list of reference modules |
 | `ima2 skill front ref motion --json` | JSON wrapper around one reference module |
 | `ima2 capabilities --json` | Print supported commands, model/quality/reasoning values, and advisory limits |
@@ -423,7 +426,8 @@ ima2 skill front --json
 ima2 skill uiux path
 ima2 skill front refs
 ima2 skill front ref motion
-ima2 skill front --with-refs
+ima2 skill install
+ima2 skill install --tmp
 ima2 capabilities --json
 ima2 defaults set model gpt-5.5
 ima2 defaults set reasoning high
