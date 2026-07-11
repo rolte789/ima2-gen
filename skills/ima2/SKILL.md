@@ -246,6 +246,36 @@ discouraged.
 | Game environment concept | `high` | `1792x1024` or `2048x1152` | Wide cinematic |
 | Storyboard (for i2v) | `high` | `1024x1024` | 3x3 grid, square |
 
+### Cutout Assets and Background Strategy
+
+GPT Image 2 does not reliably produce true transparent (alpha) backgrounds.
+Use the solid-background-then-remove strategy for cutout assets:
+
+**Generate on a pure solid background:**
+- **Black** (`#000000`) for reflective/metallic/glass subjects
+- **White** (`#ffffff`) for dark/matte/opaque subjects
+- **Brand color** when the target page background is known
+
+State the exact hex and ban AI additions: "PURE SOLID BLACK background hex
+#000000. No checkerboard, no transparency pattern, no gradient, no floor plane,
+no shadow, no vignette." Use `--mode direct`.
+
+```bash
+ima2 gen "3D chrome splash on PURE SOLID BLACK background hex #000000. \
+  No gradient, no floor, no shadow, no vignette." \
+  --quality high --size 1024x1024 --mode direct -o splash.png
+```
+
+**Remove background after generation:**
+- CSS `mix-blend-mode: screen` (black bg on light page)
+- CSS `mix-blend-mode: multiply` (white bg on dark page)
+- ima2 Canvas Mode background cleanup (export with alpha or matte)
+- `ima2 edit asset.png --prompt "remove the background, keep only the subject"`
+- Programmatic: `sharp` / ImageMagick / `rembg`
+
+**Anti-pattern:** requesting "transparent background" or "PNG with alpha" in the
+prompt — the model often produces a fake checkerboard burned into the image.
+
 ### Korean Text in Images
 
 When generating images with Korean text:
