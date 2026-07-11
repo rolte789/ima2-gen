@@ -35,6 +35,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
     let finishErrorCode: string | undefined;
     let finishMeta: Record<string, unknown> = {};
     let finishCanceled = false;
+    let jobOwned = false;
     const cancelController = new AbortController();
     const fail = (status: number, payload: Record<string, unknown>) => {
       finishStatus = "error";
@@ -160,6 +161,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
           requestId,
         });
       }
+      jobOwned = true;
       registerJobAbortController(requestId, cancelController);
       if (asyncMode) {
         res.status(202).json({ requestId, async: true });
@@ -482,7 +484,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
         requestId,
       });
     } finally {
-      finishJob(requestId, {
+      if (jobOwned) finishJob(requestId, {
         canceled: finishCanceled,
         status: finishStatus,
         httpStatus: finishHttpStatus,

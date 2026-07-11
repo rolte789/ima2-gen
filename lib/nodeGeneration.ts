@@ -36,6 +36,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
     let finishHttpStatus: number | undefined;
     let finishErrorCode: string | undefined;
     let finishCanceled = false;
+    let jobOwned = false;
     const cancelController = new AbortController();
     const referencePayload = summarizeReferencePayload(body.references);
     try {
@@ -167,6 +168,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
           requestId,
         );
       }
+      jobOwned = true;
       registerJobAbortController(requestId, cancelController);
       if (asyncMode) res.status(202).json({ requestId });
       logEvent("node", "request", {
@@ -463,7 +465,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
         upstreamParam: ext.upstreamParam || null,
       }, requestId);
     } finally {
-      finishJob(requestId, {
+      if (jobOwned) finishJob(requestId, {
         canceled: finishCanceled,
         status: finishStatus,
         httpStatus: finishHttpStatus,

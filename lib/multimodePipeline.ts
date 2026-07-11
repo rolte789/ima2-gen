@@ -33,6 +33,7 @@ function dualEmitMultimode(res: Response, requestId: string, event: string, data
     publish(requestId, event, data as Record<string, unknown>);
   }
 }
+
 function respondMultimodeValidationError(
   res: Response,
   requestId: string,
@@ -62,6 +63,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
     let finishErrorCode;
     let finishMeta = {};
     let finishCanceled = false;
+    let jobOwned = false;
     const cancelController = new AbortController();
     const images: MultimodeRouteItem[] = [];
     const persistedIndexes = new Set<number>();
@@ -191,6 +193,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
           requestId,
         });
       }
+      jobOwned = true;
       registerJobAbortController(requestId, cancelController);
       if (asyncMode) res.status(202).json({ requestId });
       logEvent("multimode", "request", { requestId, quality, model: imageModel, size: effectiveSize, moderation, maxImages, refs: refCheck.refs.length, referenceBytes: referencePayload.referenceBytes, promptChars: typeof prompt === "string" ? prompt.length : 0, webSearchEnabled, });
@@ -470,7 +473,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
       logError("multimode", "error", err.raw, { requestId, code: finishErrorCode });
       dualEmitMultimode(res, requestId, "error", { error: err.message, code: finishErrorCode, status: finishHttpStatus, requestId, upstreamCode: ext.upstreamCode || null, upstreamType: ext.upstreamType || null, upstreamParam: ext.upstreamParam || null, });
     } finally {
-      finishJob(requestId, {
+      if (jobOwned) finishJob(requestId, {
         canceled: finishCanceled,
         status: finishStatus,
         httpStatus: finishHttpStatus,
@@ -480,4 +483,3 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
       if (!res.writableEnded) res.end();
     }
 }
-
