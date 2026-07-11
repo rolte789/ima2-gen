@@ -103,7 +103,7 @@ routes/
 | `lib/ssePublish.ts` | 17 | `publishJobEvent` — terminal `done` suppression after cancel (cancel↔done race guard) |
 | `ui/src/lib/eventChannel.ts` | 128 | Browser singleton `EventSource` for `/api/events`; exponential backoff reconnect; `subscribe(jobId)` routing; connection state callbacks; `armStreamTimeout`; `ensureConnected` |
 | `ui/src/lib/sseStreamError.ts` | 25 | Shared `parseSseErrorPayload` — normalizes flat/nested SSE error shapes |
-| `bin/ima2.ts` | 471 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
+| `bin/ima2.ts` | 488 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
 | `bin/commands/gen.ts` | 224 | CLI image-generation client with references, provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, and output-dir options |
 | `bin/commands/edit.ts` | 152 | CLI image-edit client with provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, and output options |
 | `bin/commands/multimode.ts` | 201 | CLI multimode SSE client with provider override, references, prompt mode, incremental image save, timeout recovery, web-search, reasoning-effort, and session options |
@@ -122,7 +122,7 @@ routes/
 | `bin/commands/grok.ts` | 91 | Grok OAuth login and status helpers |
 | `bin/commands/defaults.ts` | 193 | CLI default provider/model/size/reasoning-effort get/set |
 | `bin/commands/capabilities.ts` | 111 | CLI wrapper for `GET /api/capabilities` |
-| `bin/commands/skill.ts` | 140 | CLI packaged-skill reader: `skill [ls|<name>] [path] [--json]` over KNOWN_SKILLS (ima2/front/uiux) |
+| `bin/commands/skill.ts` | 400 | CLI packaged-skill reader: `skill [ls|<name>] [path] [--json]` over KNOWN_SKILLS (ima2/front/uiux) |
 | `bin/commands/backfillThumbs.ts` | 26 | Gallery thumbnail backfill command |
 | `bin/commands/cancel.ts` | 49 | Inflight cancel client |
 | `bin/commands/ls.ts` | 65 | History list client (legacy alias); supports session and server-side favorites filtering via `favoritesOnly=1` |
