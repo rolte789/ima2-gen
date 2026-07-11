@@ -38,37 +38,47 @@ wiring, visual verification, and frontend platform rules.
 
 ## Modular References
 
+> **Loading references via CLI:**
+> ```bash
+> ima2 skill front refs              # list all reference modules with line counts
+> ima2 skill front ref motion        # print one module (basename match)
+> ima2 skill front ref stacks/react  # print a nested module
+> ima2 skill front --with-refs       # bundle SKILL.md + all refs (large output)
+> ```
+> Use `refs` to discover what is available, then `ref <name>` to load on demand.
+> Avoid `--with-refs` unless you need the full context; it outputs ~8k lines.
+
 | File                                      | When to Read                         | What It Covers                                                                    |
 | ----------------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------- |
-| `references/core/crud-ui.md`              | C2 list/detail/form product screens  | State coverage (loading/empty/error/permission), forms, objective UX gates         |
-| `references/core/anti-slop.md`            | New components or UI redesign        | 2026 AI slop patterns, Korean slop, oversized text, fake assets, default UI smells |
-| `references/core/aesthetics.md`           | Visual design decisions              | Domain-correct visual direction, typography, color, composition, serif three-role system, expressive/functional layers, AI-brand grammar                    |
-| `references/core/product-density.md`      | Apps, tools, dashboards              | Density profiles for landing, consumer app, SaaS, ops, finance, devtools          |
-| `references/core/asset-requirements.md`   | Any public/product/visual surface    | Required screenshots, images, diagrams, charts, generated bitmaps, or 3D assets, mockup production pipeline   |
-| `references/core/visual-verification.md`  | Changes affecting rendered layout    | Screenshot, viewport, text fit, state, asset, and motion verification              |
-| `references/core/korea-2026.md`           | Korean-first or Korea-facing UI      | Korean service patterns, CJK typography, formats, mobile flows, Korean serif/myeongjo display                     |
-| `references/core/ux-writing-ko.md`        | Korean UI copy                       | Natural Korean labels, error messages, tone, spacing, punctuation                  |
-| `references/core/soft-3d-asset-gates.md`  | 3D/miniature/character-like visuals  | Toss-style soft 3D vs generic cute asset slop, domain gates                        |
-| `references/core/motion.md`               | Motion/animation needed              | CSS animations, Framer Motion, CSS scroll-driven timelines, pointer-proximity chip motion (magnetic/dock), View Transitions, domain gates, organic bg + capsule label, product-led hero motion |
-| `references/core/liquid-glass.md`         | Translucent materials, glass chrome, pill-chip surfaces | Liquid Glass layer discipline, named material states (pill-at-top/pill-scrolled/media-overlay/clear), FE-PILL-NEST-01, blur-free pill alternative, perf + a11y gates |
-| `references/core/top-bar.md`              | Top/nav bar composition, sticky chrome | Top-bar grammar: geometry, slots, scroll-state contract (FE-TOPBAR-STATE-01), hover-surface contract (FE-TOPBAR-HOVER-01), domain gate, mobile collapse |
-| `references/core/iterative-design.md`     | Multi-round design                   | LLM convergence problem, Diverge→Kill→Mutate process, upgrade techniques           |
-| `references/core/prototype-variants.md`   | Runnable design variants             | `?variant=` switchers, structurally distinct options, cleanup after winner selection |
-| `references/core/typography-wrapping.md`  | Heading/descriptor text changes      | `text-wrap: balance/pretty`, natural phrase breaks at any width, dynamic-viewport verification, `ch` units, Korean keep-all/orphan rules (verified 2026-07-07) |
-| `references/core/logo-sections.md`        | Integration/partner logo display     | Marquee CSS, static grid, orphan cell fix, grayscale treatment, no individual hover |
-| `references/core/brand-asset-sourcing.md` | Brand logos in UI                    | Simple Icons/SVGL sourcing, AI agent strategy, placeholder hierarchy, legal guide  |
-| `references/core/reference-capture.md`    | Cloning/analyzing other sites        | HTML+asset capture mechanics (pageAssets/curl), analysis-only legal line, provenance manifest, never-ship gate |
-| `references/core/dropdown-layer.md`       | Dropdowns, selects, menus, pickers   | Unified dropdown design layer (FE-DROPDOWN-LAYER-01): one skin over headless primitives, DS-detection precedence, scope table, mobile sheet |
-| `references/core/layout-discipline.md`    | Landing/marketing pages              | Hero, eyebrow, section repetition, bento, zigzag, per-section responsive transforms, hero composition grammar (2026) |
-| `references/core/consistency-locks.md`    | Any multi-section page               | Color, shape, theme consistency per page                                           |
-| `references/core/responsive-viewport.md`  | Layout or breakpoint changes         | Canonical breakpoints, page containment, container queries, responsive images, safe area, split-screen |
-| `references/core/mobile-ux.md`            | Consumer/landing pages with mobile traffic | Thumb zone, touch targets, sticky CTA, mobile section composition, bottom sheet, portrait media |
-| `references/core/seo-baseline.md`         | Public-facing sites, SSR/SSG         | SEO meta, JSON-LD, robots.txt, GEO strategies, OG/Twitter cards                    |
-| `references/core/a11y-patterns.md`        | Interactive widgets, modals, forms   | ARIA patterns, focus management, keyboard nav, screen reader testing               |
-| `references/core/performance-budget.md`   | Launch / audit                       | CWV targets, bundle budgets, font loading, image optimization, build gates         |
-| `references/core/theme-switching.md`      | Dark mode / theme                    | CSS custom properties toggle, FOWT prevention, transition, component checklist     |
-| `references/core/color-system.md`         | Color tokens, palettes wiring, theme-ready CSS | Token layering, `oklch()` + fallback discipline, `color-mix()`, `light-dark()`, Tailwind v4/shadcn wiring, contrast gates (verified 2026-07-07) |
-| `references/core/i18n-global.md`          | Multi-language / RTL                 | RTL layout, pluralization, Intl API, locale switching, content expansion           |
+| `references/crud-ui.md`              | C2 list/detail/form product screens  | State coverage (loading/empty/error/permission), forms, objective UX gates         |
+| `references/anti-slop.md`            | New components or UI redesign        | 2026 AI slop patterns, Korean slop, oversized text, fake assets, default UI smells |
+| `references/aesthetics.md`           | Visual design decisions              | Domain-correct visual direction, typography, color, composition, serif three-role system, expressive/functional layers, AI-brand grammar                    |
+| `references/product-density.md`      | Apps, tools, dashboards              | Density profiles for landing, consumer app, SaaS, ops, finance, devtools          |
+| `references/asset-requirements.md`   | Any public/product/visual surface    | Required screenshots, images, diagrams, charts, generated bitmaps, or 3D assets, mockup production pipeline   |
+| `references/visual-verification.md`  | Changes affecting rendered layout    | Screenshot, viewport, text fit, state, asset, and motion verification              |
+| `references/korea-2026.md`           | Korean-first or Korea-facing UI      | Korean service patterns, CJK typography, formats, mobile flows, Korean serif/myeongjo display                     |
+| `references/ux-writing-ko.md`        | Korean UI copy                       | Natural Korean labels, error messages, tone, spacing, punctuation                  |
+| `references/soft-3d-asset-gates.md`  | 3D/miniature/character-like visuals  | Toss-style soft 3D vs generic cute asset slop, domain gates                        |
+| `references/motion.md`               | Motion/animation needed              | CSS animations, Framer Motion, CSS scroll-driven timelines, pointer-proximity chip motion (magnetic/dock), View Transitions, domain gates, organic bg + capsule label, product-led hero motion |
+| `references/liquid-glass.md`         | Translucent materials, glass chrome, pill-chip surfaces | Liquid Glass layer discipline, named material states (pill-at-top/pill-scrolled/media-overlay/clear), FE-PILL-NEST-01, blur-free pill alternative, perf + a11y gates |
+| `references/top-bar.md`              | Top/nav bar composition, sticky chrome | Top-bar grammar: geometry, slots, scroll-state contract (FE-TOPBAR-STATE-01), hover-surface contract (FE-TOPBAR-HOVER-01), domain gate, mobile collapse |
+| `references/iterative-design.md`     | Multi-round design                   | LLM convergence problem, Diverge→Kill→Mutate process, upgrade techniques           |
+| `references/prototype-variants.md`   | Runnable design variants             | `?variant=` switchers, structurally distinct options, cleanup after winner selection |
+| `references/typography-wrapping.md`  | Heading/descriptor text changes      | `text-wrap: balance/pretty`, natural phrase breaks at any width, dynamic-viewport verification, `ch` units, Korean keep-all/orphan rules (verified 2026-07-07) |
+| `references/logo-sections.md`        | Integration/partner logo display     | Marquee CSS, static grid, orphan cell fix, grayscale treatment, no individual hover |
+| `references/brand-asset-sourcing.md` | Brand logos in UI                    | Simple Icons/SVGL sourcing, AI agent strategy, placeholder hierarchy, legal guide  |
+| `references/reference-capture.md`    | Cloning/analyzing other sites        | HTML+asset capture mechanics (pageAssets/curl), analysis-only legal line, provenance manifest, never-ship gate |
+| `references/dropdown-layer.md`       | Dropdowns, selects, menus, pickers   | Unified dropdown design layer (FE-DROPDOWN-LAYER-01): one skin over headless primitives, DS-detection precedence, scope table, mobile sheet |
+| `references/layout-discipline.md`    | Landing/marketing pages              | Hero, eyebrow, section repetition, bento, zigzag, per-section responsive transforms, hero composition grammar (2026) |
+| `references/consistency-locks.md`    | Any multi-section page               | Color, shape, theme consistency per page                                           |
+| `references/responsive-viewport.md`  | Layout or breakpoint changes         | Canonical breakpoints, page containment, container queries, responsive images, safe area, split-screen |
+| `references/mobile-ux.md`            | Consumer/landing pages with mobile traffic | Thumb zone, touch targets, sticky CTA, mobile section composition, bottom sheet, portrait media |
+| `references/seo-baseline.md`         | Public-facing sites, SSR/SSG         | SEO meta, JSON-LD, robots.txt, GEO strategies, OG/Twitter cards                    |
+| `references/a11y-patterns.md`        | Interactive widgets, modals, forms   | ARIA patterns, focus management, keyboard nav, screen reader testing               |
+| `references/performance-budget.md`   | Launch / audit                       | CWV targets, bundle budgets, font loading, image optimization, build gates         |
+| `references/theme-switching.md`      | Dark mode / theme                    | CSS custom properties toggle, FOWT prevention, transition, component checklist     |
+| `references/color-system.md`         | Color tokens, palettes wiring, theme-ready CSS | Token layering, `oklch()` + fallback discipline, `color-mix()`, `light-dark()`, Tailwind v4/shadcn wiring, contrast gates (verified 2026-07-07) |
+| `references/i18n-global.md`          | Multi-language / RTL                 | RTL layout, pluralization, Intl API, locale switching, content expansion           |
 | See also: `ima2-uiux` skill         | Vague requests, onboarding, UX states | Intent discovery, design isms, product personalities, onboarding/empty/error patterns |
 | `references/stacks/react.md`              | React projects                       | Server Components, hooks, state, TanStack Query, shadcn/ui, performance            |
 | `references/stacks/nextjs.md`             | Next.js projects                     | App Router, RSC, image optimization, data fetching, middleware                     |
@@ -186,7 +196,7 @@ Adjust these dials based on what's being built. Present to user if unclear.
 
 After Design Read, set dials per `ima2-uiux` §2 Dial Setting.
 
-Product density profile (D1-D8 in `references/core/product-density.md`) sets component class; VISUAL_DENSITY (1-10) sets spacing within that class. These are orthogonal axes.
+Product density profile (D1-D8 in `references/product-density.md`) sets component class; VISUAL_DENSITY (1-10) sets spacing within that class. These are orthogonal axes.
 
 Adapt dynamically based on user requests. Dashboard → density up. Portfolio → variance up. Data tool → motion down.
 Korean app/tool surfaces usually need higher density and clearer hierarchy, not oversized hero text.
@@ -195,12 +205,12 @@ Korean app/tool surfaces usually need higher density and clearer hierarchy, not 
 
 ## 4. Implementation
 
-Read `references/core/aesthetics.md` for full guidelines. Summary:
+Read `references/aesthetics.md` for full guidelines. Summary:
 
 - **Typography**: Use domain-appropriate typography. For Korean-first UIs, prioritize CJK-safe stacks before Latin display fonts. Apply `text-wrap: balance` on all headings **AND short descriptors** (hero subtitle, card description, caption — anything 1-3 lines). Use `text-wrap: pretty` only on body paragraphs (4+ lines). `pretty` has no effect on short text and will leave Korean orphans like "합니다." or "화." on a line alone. See `typography-wrapping.md` for full rules.
 - **Color**: Max 1 accent. Use neutral bases (Zinc/Slate) with singular high-contrast accent — avoid purple-on-white.
 - **Layout**: Match the product surface. Avoid centered-card/hero patterns in repeated-use tools.
-- **Motion**: See `references/core/motion.md`. One signature moment + a few
+- **Motion**: See `references/motion.md`. One signature moment + a few
   supporting reveals > 10 scattered effects; landing-bucket floor/ceiling per
   FE-MOTION-BUCKET-01.
 - **Assets**: Use screenshots, product images, diagrams, charts, illustrations, generated bitmaps, or soft 3D only when they add product meaning. When a real bitmap is needed (icon, hero, illustration), generate it with `ima2` — probe `ima2 status`, attempt `ima2 serve` if down — falling back to the native `imagegen` tool only when ima2 is truly unavailable; never ship a placeholder. `ima2` is preferred because it supports reference images, multi-candidate generation (`-n N`, multimode, independent CLI parallel — see `asset-requirements.md` FE-ASSET-PARALLEL-01), prompt builder, session style sheets, provider routing (GPT/Grok/Gemini — see `asset-requirements.md` FE-ASSET-PROVIDER-01), variant selection with element-ledger synthesis (`asset-requirements.md` FE-ASSET-SELECT-01), cutout asset background strategy (`asset-requirements.md` FE-ASSET-BG-01), and video (`ima2 video` — see `motion.md` FE-MOTION-VIDEO-01) for motion assets. For parallel generation, monitor with `ima2 ps --json` and cancel unwanted jobs with `ima2 cancel <id>`. Write **very explicit long prompts** (subject, composition, palette, lighting, style, aspect) per `asset-requirements.md`; prefer real/generated image or video assets over CSS gradient washes. Read any design reference or captured screenshot back into context with `view_image` before matching it. Third-party captures follow `reference-capture.md` (analysis-only, provenance manifest).
@@ -254,7 +264,7 @@ For interactive cleanup: ima2 Canvas Mode. For targeted fix: `ima2 edit`.
 Rule classes (dev §0.2): items below are DEFAULT — deviate with a stated reason; concrete
 values and palettes are STYLE_SAMPLE (§1.5); the emoji-as-UI-icon ban is the only STRICT item.
 
-Read `references/core/anti-slop.md` for full rules. Key standards:
+Read `references/anti-slop.md` for full rules. Key standards:
 
 ### Hero discipline (FE-HERO-01)
 
@@ -278,8 +288,8 @@ Read `references/core/anti-slop.md` for full rules. Key standards:
 - Avoid generic soft 3D icon packs; soft 3D must be semantic, brand-consistent, and restrained
 - **NEVER use emoji as UI visual elements** (feature icons, card icons, section markers, buttons) — emoji in production UI is the #1 AI slop signal. Use SVG icons (Lucide/Phosphor/Heroicons). See `anti-slop.md § Emoji Slop`
 - Warm beige/cream backgrounds with brass/clay accents are banned as defaults for premium-consumer briefs — see `anti-slop.md § Premium-Consumer Palette Ban`
-- Layout monotony (same family repeated, 3+ zigzag sections, overused eyebrows) — see `references/core/layout-discipline.md`
-- Color, shape, and theme must be locked per-page and audited before shipping — see `references/core/consistency-locks.md`
+- Layout monotony (same family repeated, 3+ zigzag sections, overused eyebrows) — see `references/layout-discipline.md`
+- Color, shape, and theme must be locked per-page and audited before shipping — see `references/consistency-locks.md`
 - Use off-black (`#0a0a0a`, `#111`) — pure `#000000` lacks depth
 - **Responsive enforcement**: every multi-column section must declare its mobile/tablet collapse behavior — "it'll work at mobile" is not a plan. See `responsive-viewport.md`
 - **Page containment required**: `max-w-[1400px] mx-auto` or equivalent wrapper. Content stretching to viewport edges on wide monitors is a layout bug
@@ -294,7 +304,7 @@ Read `references/core/anti-slop.md` for full rules. Key standards:
 
 ### Do not ship these tells (FE-AI-TELL-01)
 
-Version labels in heroes, numbered eyebrows, middle-dot overuse, duplicate image reuse, monospace uppercase card labels, fake social-proof headers, decorative scroll cues, weather/status strips with no product purpose, photo-credit captions in UI chrome, and generic "trusted by teams worldwide" claims are AI-default tells. Full catalog: `references/core/anti-slop.md` + `references/core/layout-discipline.md`.
+Version labels in heroes, numbered eyebrows, middle-dot overuse, duplicate image reuse, monospace uppercase card labels, fake social-proof headers, decorative scroll cues, weather/status strips with no product purpose, photo-credit captions in UI chrome, and generic "trusted by teams worldwide" claims are AI-default tells. Full catalog: `references/anti-slop.md` + `references/layout-discipline.md`.
 
 ---
 
@@ -589,6 +599,6 @@ Frontend does not operate in isolation. When consuming backend APIs or implement
 ## §16 Pre-Flight Checklist
 
 Before shipping a production frontend surface, run through the full pre-flight checklist
-at `references/core/preflight-full.md`. It covers design/composition, responsive/mobile,
+at `references/preflight-full.md`. It covers design/composition, responsive/mobile,
 states/behavior, Korean-first rules, SEO/theme/i18n, and performance/verification gates.
 Use it as the C-phase audit companion for frontend work at C2+.

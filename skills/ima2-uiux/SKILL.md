@@ -33,9 +33,9 @@ Activates by change surface when:
 - Handling logo dark mode variants, OG images, or social sharing meta
 
 Read this before style-specific references when the user cannot articulate a clear design direction.
-For anti-slop detection and banned patterns, defer to `dev-frontend/references/core/anti-slop.md`, especially the 2026 gradient budget and one-note theme bans.
+For anti-slop detection and banned patterns, defer to `ima2 skill front ref anti-slop`, especially the 2026 gradient budget and one-note theme bans.
 
-**Emoji ban (stub):** no emoji as UI visual elements (STRICT). Canonical rule, scope, and exemptions: `ima2-front` §5 / `dev-frontend/references/core/anti-slop.md § Emoji Slop`.
+**Emoji ban (stub):** no emoji as UI visual elements (STRICT). Canonical rule, scope, and exemptions: `ima2-front` §5 / `ima2 skill front ref anti-slop` § Emoji Slop.
 
 **Role separation:** This skill owns design judgment: intent discovery, information architecture, UX state meaning, typography/color/layout direction, product personality, brand vocabulary, anti-slop pattern judgment, and design-system decisions. `ima2-front` owns implementation: HTML/CSS/components, responsive mechanics, accessibility wiring, runtime behavior, and rendered verification. After choosing the design direction here, load `ima2-front` for concrete implementation.
 
@@ -54,6 +54,14 @@ fetch/open/text/get-dom/snapshot only after candidate URLs exist.
 > §1.5 and stays STRICT/DEFAULT.
 
 ## Modular References
+
+> **Loading references via CLI:**
+> ```bash
+> ima2 skill uiux refs              # list all reference modules with line counts
+> ima2 skill uiux ref design-isms   # print one module (basename match)
+> ima2 skill uiux --with-refs       # bundle SKILL.md + all refs (large output)
+> ```
+> Use `refs` to discover what is available, then `ref <name>` to load on demand.
 
 | File | When to Read | What It Covers |
 |------|-------------|----------------|
@@ -221,7 +229,7 @@ From the Design Read, derive and declare three dials before any code:
 ```
 DESIGN_VARIANCE: <1-10>
 MOTION_INTENSITY: <1-10>
-Product density profile: <D1-D8> (see dev-frontend/references/core/product-density.md)
+Product density profile: <D1-D8> (see `ima2 skill front ref product-density`)
 Reasoning: <one sentence explaining why these values match the brief>
 ```
 
@@ -367,7 +375,7 @@ utility CRUD/dashboard screens are exempt.
    Asset prompts inside mockups/builds should be VERY EXPLICIT LONG prompts;
    prefer real/generated photographic, texture, illustration, or motion assets
    over CSS gradient washes.
-   **Parallel strategy selection** (see `dev-frontend/references/core/asset-requirements.md`
+   **Parallel strategy selection** (see `ima2 skill front ref asset-requirements`
    FE-ASSET-PARALLEL-01): for the 5-render process, prefer `ima2 gen -n 5 -d <dir>`
    (single-request batch) when all 5 share the same locked concept prompt. Use
    `ima2 multimode "<prompt>" --max-images 5` when you want SSE streaming to inspect

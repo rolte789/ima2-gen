@@ -115,6 +115,9 @@ ima2 skill front         # print the frontend skill
 ima2 skill uiux          # print the design skill
 ima2 skill front path    # print file path (for agents)
 ima2 skill front --json  # JSON wrapper (for agents)
+ima2 skill front refs    # list reference modules (35 files)
+ima2 skill front ref motion        # load one reference module
+ima2 skill front --with-refs       # bundle skill + all references
 ```
 
 The Frontend and UI/UX skills are production-grade design engineering guides

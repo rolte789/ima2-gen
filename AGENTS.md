@@ -58,7 +58,15 @@ Three Markdown skill files ship inside `skills/` for AI coding agents:
 | UI/UX Design | `skills/ima2-uiux/SKILL.md` | `ima2 skill uiux` | Image-first ism discovery, UX states, design-isms, product personalities, 18 reference files |
 
 Use `ima2 skill ls` to list, `ima2 skill <name> path` for file paths,
-`ima2 skill <name> --json` for JSON-wrapped content.
+`ima2 skill <name> --json` for JSON-wrapped content. Reference modules
+inside `front` and `uiux` skills are loadable individually:
+
+```bash
+ima2 skill front refs              # list reference modules with line counts
+ima2 skill front ref anti-slop     # load one module by name
+ima2 skill uiux ref design-isms    # load a uiux module
+ima2 skill front --with-refs       # bundle SKILL.md + all refs (large context)
+```
 
 ## Devlog Phase Roadmap
 - Current active plans live under `devlog/_plan/`.

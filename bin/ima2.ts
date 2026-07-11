@@ -358,6 +358,9 @@ function showHelp() {
     ima2 skill ls                     List all skills (core, front, uiux)
     ima2 skill front                  Print frontend implementation skill
     ima2 skill uiux                   Print design direction skill
+    ima2 skill front refs             List frontend reference modules
+    ima2 skill front ref motion       Load one reference module
+    ima2 skill front --with-refs      Bundle skill + all refs
     ima2 capabilities --json         Inspect supported models/options
     ima2 defaults --json             Inspect running server defaults
     ima2 ping                        Health check

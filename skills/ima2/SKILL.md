@@ -23,6 +23,10 @@ Start by discovering the local package and running server state:
 ```bash
 ima2 skill
 ima2 skill --json
+ima2 skill ls                     # list all skills (core, front, uiux)
+ima2 skill front refs             # list frontend reference modules
+ima2 skill front ref motion       # load one reference module
+ima2 skill front --with-refs      # bundle skill + all refs (large)
 ima2 capabilities --json
 ima2 defaults --json
 ima2 ping
@@ -600,6 +604,9 @@ ima2 config keys --json
 - Do not print API keys, OAuth tokens, config files, or `.env` values.
 - Use `ima2 capabilities --json` before guessing model names.
 - Use `ima2 skill path` when an agent needs the installed Markdown skill path.
+- Use `ima2 skill <name> refs` to discover reference modules for front/uiux skills.
+- Use `ima2 skill <name> ref <refname>` to load a specific reference module on demand.
+- Use `ima2 skill <name> --with-refs` to bundle skill + all references (large context).
 - Use `ima2 inflight ls --json` or `ima2 ps --json` to inspect active jobs.
 
 ## Video Generation
