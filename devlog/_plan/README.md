@@ -1,6 +1,6 @@
 ---
 created: 2026-04-23
-updated: 2026-07-10
+updated: 2026-07-11
 tags: [ima2-gen, devlog, roadmap]
 aliases: [ima2 active plan, image_gen current roadmap, ima2 개발계획]
 ---
@@ -25,13 +25,8 @@ Deferred / 미래 항목은 `_plan/` 직속이 아니라 `_plan/_future/`에 둔
 | 순서 | 경로 | 상태 | 역할 |
 |---:|---|---|---|
 | 1 | `260515_fork-prompting-modularization-research/` | research | Prompt Builder/composer modularization reference. |
-| 2 | `260516_agent-mode-followup-jawdev/` | plan | Agent Mode follow-up: layout, queue, parallel gen, sidebar. |
-| 3 | `260517_agent-ui-polish-jawdev/` | plan | Agent Mode UI polish/crash triage. |
-| 4 | `260531_pr-issue-review-rebase-plan/` | reference | PR #81/#3 통합 계획 + 이슈 triage 문서. |
-| 5 | `260531_video-settings-persistence/` | investigated / not fixed | Video setting localStorage persistence. |
-| 6 | `260601_video-mode-persistence-refresh/` | investigated / not fixed | Video mode refresh persistence and continue-from-video mode switch. |
-| 7 | `260605_stabilize-split/` | Phase 3 open | 500줄 분할. Phase 1(CSS)/2(store) 완료; Phase 3 backend 분할 잔여 (`routes/multimode.ts` 564, `routes/generate.ts` 547, `routes/nodes.ts` 530, `lib/oauthProxy/generators.ts` 501). |
-| 8 | `260707_gpt56-oidc-devlog-hardening/` | corrective release active | `v2.0.14` Windows 전역 업데이트 뒤 package-local Codex/OAuth 탐지 회귀 수정·검증. |
+| 2 | `260531_pr-issue-review-rebase-plan/` | reference | PR #81/#3 통합 계획 + 이슈 triage 문서. |
+| 3 | `260711_production-hardening/` | closeout 단계 | 프로덕션 하드닝 멀티 WP: devlog closeout, Agent(비디오) 탭 전면 개선, persistence 검증, 500줄 분할, 캔버스 G1, 하드닝 스캔/수정, 최종 검증. 상세는 레인 내 000/010/011/012/020/021/030/090 문서. |
 
 Deferred (`_plan/_future/`): `260430_issue27-canvas-svg-export/`,
 `260430_issue28-canvas-pptx-export/`, `260430_issue31-provider-masked-edit/`,
@@ -85,6 +80,27 @@ Detailed issue-to-evidence matrix:
 
 ## 변경 기록
 
+- 2026-07-11 (3차): production-hardening 구현 라운드 완료. `_fin` 이동:
+  `260605_stabilize-split/` (Phase 3 분할 완료 — 4파일 전부 500줄 이하),
+  `260516_agent-mode-followup-jawdev/` + `260517_agent-ui-polish-jawdev/`
+  (잔여 스코프 구현 완료; Refs/Web projection·forms/style-lock은 future로
+  disposition). 최종 게이트: typecheck/typecheck:tests 통과, `npm test`
+  1120개 중 1118 pass 0 fail(2 skip), ui:build 통과, 전역 설치본 동기화 +
+  서버 재기동, agbrowse 브라우저 QA (Agent 데스크톱/Queue 탭/모바일 탑바).
+- 2026-07-11 (2차): 비디오 persistence 2개 레인 `_fin` 이동 완료 — 계약 테스트
+  `tests/video-defaults-persistence-contract.test.js` 신설(7 pass)로 reload/탭
+  sync/continue-from-video 모드 전환 검증. `_fin`의 기존 stale 사본은 최신
+  closeout 포함 본으로 갱신.
+- 2026-07-11: production-hardening pass 시작 (`260711_production-hardening/`,
+  goalplan `ima2-gen-production-hardening-devlog-fin-closeou`). `_fin` 이동:
+  `260711_skill-structured-prompting/` (closeout + 계약 테스트 통과),
+  `260711_canvas-i2i-annotation-cleanup/` (closeout + 1094 테스트; G1 후속은
+  새 레인 WP7 승계), `260707_gpt56-oidc-devlog-hardening/` (v2.0.15 npm 게시
+  확인 — publish.yml `windows-consumer` 게이트 통과가 publish 선행 조건).
+  비디오 persistence 2개 레인은 sol 탐사 결과 현재 코드에 수정 반영 확인
+  (`persistenceRegistry.ts:31`, `storePersistence.ts:237`, `useAppStore.ts:145/388`,
+  `storeSettingsImpl.ts:77`, `storeUIImpl.ts:66`, `continueFromItem.ts:31`) —
+  계약 테스트 증거 확보 후 이동 예정.
 - 2026-07-10: `v2.0.14` preview/latest provenance, 동일 release SHA,
   Luna/Terra `medium` 생성은 통과했다. 이후 Windows 전역 업데이트에서
   package-local Codex를 PATH에서 찾지 못하고 `.cmd`를 직접 실행하는 OAuth

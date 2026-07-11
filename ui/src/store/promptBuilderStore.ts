@@ -4,6 +4,7 @@ import {
   type PromptBuilderChatRequest,
 } from "../lib/api";
 import type { GenerateItem } from "../types";
+import { t } from "../i18n";
 
 export type PromptBuilderAttachment = {
   id: string;
@@ -60,9 +61,10 @@ async function fileToAttachment(file: File): Promise<PromptBuilderAttachment> {
   const id = uid();
   const kind = file.type.startsWith("image/") ? "image" as const : "file" as const;
   if (kind === "image") {
-    const dataUrl = await new Promise<string>((resolve) => {
+    const dataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error ?? new Error(t("modal.attachmentReadFailed")));
       reader.readAsDataURL(file);
     });
     return { id, kind, name: file.name, mimeType: file.type, size: file.size, dataUrl };
@@ -90,8 +92,12 @@ export const usePromptBuilderStore = create<PromptBuilderState>()((set, get) => 
   },
 
   addAttachments: async (files) => {
-    const items = await Promise.all(files.map(fileToAttachment));
-    set((s) => ({ attachments: [...s.attachments, ...items] }));
+    try {
+      const items = await Promise.all(files.map(fileToAttachment));
+      set((s) => ({ attachments: [...s.attachments, ...items], error: null }));
+    } catch {
+      set({ error: t("modal.attachmentReadFailed") });
+    }
   },
 
   removeAttachment: (id) => {

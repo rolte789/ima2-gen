@@ -45,6 +45,7 @@
 }
 
 .agent-message-list {
+  position: relative;
   min-height: 0;
   overflow-y: auto;
   padding: 18px;
@@ -52,6 +53,58 @@
   align-content: start;
   gap: 12px;
   background: var(--bg);
+}
+
+.agent-message-list__jump {
+  position: sticky;
+  bottom: 4px;
+  justify-self: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.agent-run-status__indicator {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--accent);
+  animation: agent-pulse 1s ease-in-out infinite;
+}
+
+.agent-run-status--error .agent-run-status__indicator {
+  background: var(--red);
+  animation: none;
+}
+
+.agent-run-status__elapsed {
+  flex: 0 0 auto;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.agent-run-status__queue {
+  min-height: 26px;
+  margin-left: auto;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--control-bg);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  white-space: nowrap;
+}
+
+.agent-run-status__queue:disabled {
+  cursor: default;
 }
 
 .agent-message-list__empty,
@@ -234,7 +287,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 10px;
+  height: 32px;
+  padding: 4px 8px;
   border: 1px dashed var(--border);
   border-radius: 8px;
   background: color-mix(in srgb, var(--surface) 78%, transparent);
@@ -325,10 +379,15 @@
 }
 
 .agent-result-thumb img,
+.agent-result-thumb video,
 .agent-result-thumb .agent-image-fallback {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.agent-result-thumb video {
+  pointer-events: none;
 }
 
 .agent-result-thumb--compact {
@@ -343,6 +402,43 @@
   border-left: 1px solid var(--border);
   display: grid;
   gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.agent-tool-call-row__toggle {
+  height: 28px;
+  padding: 3px 7px;
+}
+
+.agent-tool-call-details dd > span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.agent-tool-call-details dd,
+.agent-tool-call-details dd.is-expanded {
+  max-height: none;
+  overflow: visible;
+}
+
+.agent-tool-call-details dd.is-expanded > span {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+
+.agent-tool-call-details dd > button {
+  margin-top: 3px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-bright);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
 }
 
 .agent-message__tool-details[hidden] {
@@ -397,6 +493,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .agent-status__dot,
+  .agent-run-status__indicator,
   .agent-run-status__spinner,
   .agent-message.is-streaming .agent-message__role::after,
   .agent-run__step.is-streaming .agent-run__step-marker,

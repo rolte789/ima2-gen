@@ -68,8 +68,9 @@ export interface AgentQueueItem {
   errorCode?: string | null;
   errorMessage?: string | null;
   createdAt: number;
-  startedAt?: number | null;
+  startedAt: number | null;
   finishedAt?: number | null;
+  progressStage?: "requesting" | "polling" | "downloading" | null;
   options: AgentGenerationSettings;
   plan: AgentGenerationPlan;
 }

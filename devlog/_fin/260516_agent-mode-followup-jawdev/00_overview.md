@@ -149,3 +149,12 @@ This lane is split into:
 - `05_pabcd_implementation_plan.md`
 - `06_verification_risks_and_acceptance.md`
 
+
+## Closeout (2026-07-11, 260711_production-hardening WP1-3)
+
+잔여 스코프가 production-hardening 레인에서 구현 완료됨: durable queue/fanout/이중 접힘/세션별
+spinner(기존 DONE) + 이번 라운드에서 pane preference(ima2.agentPanePreference), 모델 칩→사이드바
+Model 탭 연동, Quality 세그먼트/스테퍼 UI, tool compact 계약(32/28px·3줄 clamp·400px scroll),
+모바일 모드 복귀/큐 시트, 정직한 진행 표시(startedAt+progressStage), running 취소, 재시작 복구.
+Refs/Web context projection과 forms/style-lock은 future scope로 disposition
+(devlog/_plan/260711_production-hardening/030_implementation.md 참조). 전체 스위트 1120개 0 fail.

@@ -133,15 +133,23 @@ export function ResultActions({
     }
   };
 
-  const copyPrompt = () => {
+  const copyPrompt = async () => {
     if (!actionImage.prompt) return;
-    void navigator.clipboard.writeText(actionImage.prompt);
-    showToast(t("toast.promptCopied"));
+    try {
+      await navigator.clipboard.writeText(actionImage.prompt);
+      showToast(t("toast.promptCopied"));
+    } catch {
+      showToast(t("clipboard.writeFailed"), true);
+    }
   };
 
-  const copyMetadataValue = (value: string) => {
-    void navigator.clipboard.writeText(value);
-    showToast(t("toast.metadataCopied"));
+  const copyMetadataValue = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      showToast(t("toast.metadataCopied"));
+    } catch {
+      showToast(t("clipboard.writeFailed"), true);
+    }
   };
 
   const newFromHere = async () => {
@@ -254,7 +262,7 @@ export function ResultActions({
           </button>
         </>
       )}
-      <button type="button" className="action-btn" onClick={copyPrompt}>
+      <button type="button" className="action-btn" onClick={() => void copyPrompt()}>
         {t("result.copyPrompt")}
       </button>
       <button
@@ -354,7 +362,7 @@ export function ResultActions({
         <ResultMetadataModal
           item={actionImage}
           onClose={() => setMetadataOpen(false)}
-          onCopy={copyMetadataValue}
+          onCopy={(value) => void copyMetadataValue(value)}
         />
       )}
     </div>

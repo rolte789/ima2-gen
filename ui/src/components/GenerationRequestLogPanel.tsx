@@ -10,11 +10,17 @@ export function GenerationRequestLogPanel() {
   const activeGenerations = useAppStore((state) => state.activeGenerations);
   const [items, setItems] = useState<GenerationRequestLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(false);
     try {
       const result = await getGenerationRequestLog();
       setItems(result.items);
+    } catch {
+      setItems([]);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -35,6 +41,15 @@ export function GenerationRequestLogPanel() {
 
   if (loading) {
     return <div className="generation-request-log__empty">{t("common.loading")}</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="generation-request-log__empty" role="alert">
+        <span>{t("generationLog.loadFailed")}</span>
+        <button type="button" onClick={() => void refresh()}>{t("generationLog.retry")}</button>
+      </div>
+    );
   }
 
   return (

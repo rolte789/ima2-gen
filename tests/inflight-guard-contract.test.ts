@@ -24,7 +24,7 @@ test("inflight startJob guards duplicate requestId and concurrent capacity", () 
 });
 
 test("nodes, multimode, and video routes map startJob failures to 409 and 429", () => {
-  for (const relPath of ["routes/nodes.ts", "routes/multimode.ts", "routes/video.ts"]) {
+  for (const relPath of ["lib/nodeGeneration.ts", "lib/multimodePipeline.ts", "routes/video.ts"]) {
     const src = readSource(relPath);
     assert.match(src, /const started = startJob\(/);
     assert.match(src, /if \(started && isStartJobFailure\(started\)\)/);

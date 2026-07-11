@@ -72,16 +72,16 @@ routes/
 
 | File | Lines | Responsibility |
 |---|---:|---|
-| `server.ts` | 440 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, route registration, static serving |
-| `config.ts` | 366 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
+| `server.ts` | 491 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, route registration, static serving |
+| `config.ts` | 367 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
 | `routes/index.ts` | 63 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, and (when `features.cardNews`) cardNews |
 | `routes/capabilities.ts` | 35 | `GET /api/capabilities` — agent-facing runtime defaults; `GET/PATCH /api/config/grok-planner` — Grok planner model query/update |
-| `routes/generate.ts` | 548 | Classic generation API, model validation, reference validation, provider/web-search/reasoning-effort plumbing, cancellation, upstream validation pass-through, sidecar save |
+| `routes/generate.ts` | 10 | Classic generation API route wiring |
 | `routes/edit.ts` | 392 | Edit API, mask validation, cancellation, OAuth/API edit response save, provider/web-search/reasoning-effort plumbing |
-| `routes/multimode.ts` | 565 | `POST /api/generate/multimode` SSE orchestrator: multimode inflight state, incremental final-image save/send, partial timeout, cancellation, provider/web-search/reasoning-effort plumbing |
+| `routes/multimode.ts` | 10 | `POST /api/generate/multimode` route wiring |
 | `routes/video.ts` | 427 | `POST /api/video/generate` SSE: Grok video T2V/I2V/Ref2V, active prompt guard, continuation lineage, sidecar persistence |
-| `routes/videoExtended.ts` | 285 | Video edit, extension, frame extraction, and Grok 4.3 first/last-frame analysis |
-| `routes/nodes.ts` | 531 | Node generation API, explicit context/search policy, SSE partial/error streaming, child references, safe retry diagnostics, cancellation, node sidecar save, node fetch |
+| `routes/videoExtended.ts` | 300 | Video edit, extension, frame extraction, and Grok 4.3 first/last-frame analysis |
+| `routes/nodes.ts` | 28 | Node generation and node fetch route wiring |
 | `routes/sessions.ts` | 318 | SQLite-backed session list/load/save/rename/delete, style-sheet get/put/enable/extract, graph save |
 | `routes/history.ts` | 234 | History list, cursor pagination, favorites-only filtering, grouped gallery, soft delete (OS trash), restore, gallery favorite toggle, permanent delete |
 | `routes/imageImport.ts` | 38 | `POST /api/history/import-local` raw image upload (PNG/JPEG/WebP) — Phase 10 drop-import for Canvas |
@@ -89,14 +89,14 @@ routes/
 | `routes/storage.ts` | 48 | Gallery storage status and generated-folder open action |
 | `routes/metadata.ts` | 78 | `/api/metadata/read` for embedded XMP image metadata extraction |
 | `routes/annotations.ts` | 119 | `GET/PUT/DELETE /api/annotations/:filename` for canvas annotation overlays |
-| `routes/canvasVersions.ts` | 70 | `POST/PUT /api/canvas-versions` for canvas version snapshots |
+| `routes/canvasVersions.ts` | 100 | `POST/PUT /api/canvas-versions` for canvas version snapshots |
 | `routes/comfy.ts` | 44 | `POST /api/comfy/export-image` ComfyUI bridge export |
 | `routes/prompts.ts` | 429 | Prompt library CRUD, favorites, import/export, and folder management |
 | `routes/promptImport.ts` | 380 | Prompt library preview/commit import API plus PR2 curated search, PR3 GitHub folder browse/preview, and PR4 discovery review endpoints |
-| `routes/cardNews.ts` | 212 | Dev-gated card-news templates, sets, drafts, jobs, regenerate, export (only registered when `config.features.cardNews`) |
+| `routes/cardNews.ts` | 213 | Dev-gated card-news templates, sets, drafts, jobs, regenerate, export (only registered when `config.features.cardNews`) |
 | `routes/generationRequestLog.ts` | 19 | `GET /api/generation-requests` — ring buffer of last 200 generation attempts (#95) |
 | `lib/generationRequestLog.ts` | 42 | In-memory generation request log store |
-| `routes/agent.ts` | 326 | Agent Mode API — sessions, turns, durable queue, compact, manifest, tools (`/api/agent/*`); backed by `lib/agent*.ts`; no CLI wrapper |
+| `routes/agent.ts` | 325 | Agent Mode API — sessions, turns, durable queue, compact, manifest, tools (`/api/agent/*`); backed by `lib/agent*.ts`; no CLI wrapper |
 | `routes/promptBuilder.ts` | 38 | `POST /api/prompt-builder/chat` prompt-builder assistant (`lib/promptBuilder/client.ts`); wrapped by `ima2 prompt build` |
 | `routes/events.ts` | 85 | `GET /api/events` — SSE multiplexing endpoint; single persistent stream for all async job progress; ring replay + `replay-gap` + heartbeat |
 | `lib/eventBus.ts` | 83 | Global pub/sub event bus with ring buffer (2000), monotonic `seq`, `replaySince`, `hasReplayGap` |
@@ -142,9 +142,9 @@ routes/
 | `bin/lib/browser-id.ts` | 17 | CLI browser-id header helper |
 | `lib/sessionStore.ts` | 309 | SQLite session and graph persistence, graph parent normalization, style-sheet helpers, session-title lookup |
 | `lib/styleSheet.ts` | 140 | Session style-sheet extraction and prefix composition |
-| `lib/assetLifecycle.ts` | 147 | Soft delete (OS trash via `trash` dep), restore, node asset-missing marking |
+| `lib/assetLifecycle.ts` | 175 | Soft delete (OS trash via `trash` dep), restore, node asset-missing marking |
 | `lib/systemTrash.ts` | 21 | Cross-platform OS-trash helper wrapping the `trash` dependency |
-| `lib/db.ts` | 296 | SQLite bootstrap and migrations: sessions, nodes, edges, inflight, prompts, prompt folders, canvas versions |
+| `lib/db.ts` | 298 | SQLite bootstrap and migrations: sessions, nodes, edges, inflight, prompts, prompt folders, canvas versions |
 | `lib/nodeStore.ts` | 92 | Node image and metadata load/save |
 | `lib/inflight.ts` | 324 | SQLite-backed active job registry for classic/node/multimode, abort controllers, cancel state, and short-lived terminal job snapshots |
 | `lib/logger.ts` | 162 | Safe structured logging, redaction, level filtering, and test sink helpers |
@@ -153,7 +153,7 @@ routes/
 | `lib/packageCli.ts` | 54 | Package-local dependency CLI resolution and Node invocation contract |
 | `lib/errorClassify.ts` | 110 | Upstream/OAuth error classifier for stable error codes, including provider validation errors |
 | `lib/generationErrors.ts` | 241 | Generation error normalization, retry classification, status mapping |
-| `lib/historyList.ts` | 196 | History reconstruction from generated assets, sidecars, embedded XMP metadata fallback, session-aware rows |
+| `lib/historyList.ts` | 199 | History reconstruction from generated assets, sidecars, embedded XMP metadata fallback, session-aware rows |
 | `lib/videoContinuity.ts` | 181 | Video active-prompt guard, generated video sidecar lineage read/normalize/append, max-4 continuity retention, planner context formatting |
 | `lib/videoFrameExtract.ts` | 79 | Generated-dir-safe MP4 validation and ffmpeg frame extraction for video frame/analyze/continue workflows |
 | `lib/grokVideoAdapter.ts` | 487 | Grok video planner and xAI video generation adapter, including continuity-aware prompt planning and model fallback metadata |
@@ -163,7 +163,12 @@ routes/
 | `lib/oauthLauncher.ts` | 119 | OAuth proxy child process startup and actual ready-port capture |
 | `lib/oauthProxy.ts` | 4 | Re-export shim for the `lib/oauthProxy/` subtree (kept for callers that imported the original module path) |
 | `lib/oauthProxy/index.ts` | 29 | Public surface — re-exports generators, streams, prompts, references, runtime, and shared types |
-| `lib/oauthProxy/generators.ts` | 502 | Generate/edit/multimode OAuth Responses request builders, masked-edit guard (`maskedEditEnabled`), upstream 4xx parsing |
+| `lib/oauthProxy/generators.ts` | 220 | OAuth Responses single-image generation and stable generator exports |
+| `lib/oauthProxy/multimodeGenerators.ts` | 304 | OAuth Responses multimode and edit generators, masked-edit guard |
+| `lib/generatePipeline.ts` | 503 | Classic generation pipeline, provider retry, persistence, and event publication |
+| `lib/multimodePipeline.ts` | 484 | Multimode streaming pipeline, persistence, cancellation, and partial timeout |
+| `lib/nodeGeneration.ts` | 475 | Node provider routing, retry, persistence, and SSE publication |
+| `lib/nodeValidation.ts` | 44 | Node prompt, references, and moderation validation |
 | `lib/oauthProxy/streams.ts` | 233 | SSE/event-stream helpers and safe stream diagnostics |
 | `lib/oauthProxy/prompts.ts` | 158 | Prompt assembly with injected `SAFETY_INTENT_POLICY` from `lib/promptSafetyPolicy.ts` |
 | `lib/oauthProxy/references.ts` | 46 | Reference image preparation and validation for the OAuth path |
@@ -180,20 +185,20 @@ routes/
 | `lib/refs.ts` | 134 | Reference image validation, count/size limits |
 | `lib/referenceImageCompress.ts` | 85 | Sharp-based reference image compression below the configured byte cap |
 | `lib/imageModels.ts` | 216 | Image model allowlist and `normalizeImageModel(ctx, raw)` helper |
-| `lib/imageMetadata.ts` | 114 | `ima2.generation.v1` payload schema, XMP build/parse, embed limits |
+| `lib/imageMetadata.ts` | 117 | `ima2.generation.v1` payload schema, XMP build/parse, embed limits |
 | `lib/imageMetadataStore.ts` | 68 | Sharp-based embed/read of XMP metadata into PNG/JPEG/WebP |
-| `lib/canvasVersionStore.ts` | 224 | Canvas version snapshot storage, list, restore, and pruning |
+| `lib/canvasVersionStore.ts` | 331 | Canvas version snapshot storage, list, restore, and pruning |
 | `lib/comfyBridge.ts` | 236 | ComfyUI bridge: workflow export, image staging, integration helper handoff |
 | `lib/pngInfo.ts` | 27 | PNG-info text-chunk parsing for ComfyUI/A1111 metadata interop |
 | `lib/cardNewsTemplateStore.ts` | 253 | Card-news image template registry and preview reads |
 | `lib/cardNewsRoleTemplateStore.ts` | 48 | Built-in role-template list (`mid-5`, etc.) |
-| `lib/cardNewsManifestStore.ts` | 155 | Per-set manifest and sidecar persistence under `~/.ima2/generated/cardnews/` |
-| `lib/cardNewsJobStore.ts` | 143 | In-memory card-news job/card status, retry/finish helpers |
+| `lib/cardNewsManifestStore.ts` | 149 | Per-set manifest and sidecar persistence under `~/.ima2/generated/cardnews/` |
+| `lib/cardNewsJobStore.ts` | 153 | In-memory card-news job/card status, retry/finish helpers |
 | `lib/cardNewsPlanner.ts` | 237 | Deterministic and planner-driven card-news draft creation |
 | `lib/cardNewsPlannerClient.ts` | 156 | OAuth-Responses JSON planner request wrapper |
 | `lib/cardNewsPlannerPrompt.ts` | 63 | Card-news planner prompt builder |
 | `lib/cardNewsPlannerSchema.ts` | 322 | Card-news planner JSON schema, validation, and repair |
-| `lib/cardNewsGenerator.ts` | 272 | Card-by-card image assembly orchestrator |
+| `lib/cardNewsGenerator.ts` | 307 | Card-by-card image assembly orchestrator |
 | `lib/promptImport/errors.ts` | 19 | Prompt import error type and detection helpers |
 | `lib/promptImport/curatedSources.ts` | 142 | Static curated prompt source registry for PR2 indexed search |
 | `lib/promptImport/discoveryRegistry.ts` | 330 | File-based PR4 discovery review queue, approved/rejected state, reviewed source conversion, and allowed-path validation |
@@ -211,18 +216,18 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 
 | File | Lines | Responsibility |
 |---|---:|---|
-| `lib/agentTypes.ts` | 173 | Shared Agent Mode types |
+| `lib/agentTypes.ts` | 174 | Shared Agent Mode types |
 | `lib/agentStore.ts` | 423 | SQLite session/turn persistence |
 | `lib/agentStoreRows.ts` | 137 | Row mapping helpers for agent store |
 | `lib/agentSettings.ts` | 76 | Per-session generation settings |
-| `lib/agentRuntime.ts` | 410 | Turn execution, tool dispatch, generation delegation |
-| `lib/agentQueueStore.ts` | 317 | Durable async queue persistence |
-| `lib/agentQueueWorker.ts` | 149 | Background queue worker |
+| `lib/agentRuntime.ts` | 412 | Turn execution, tool dispatch, generation delegation |
+| `lib/agentQueueStore.ts` | 346 | Durable async queue persistence |
+| `lib/agentQueueWorker.ts` | 211 | Background queue worker |
 | `lib/agentCommandParser.ts` | 75 | Slash-command parsing |
 | `lib/agentToolManifest.ts` | 100 | Tool metadata for `/api/agent/tools` |
 | `lib/agentPlannerModel.ts` | 201 | Planner model selection |
 | `lib/agentGenerationPlanner.ts` | 353 | Generation plan assembly |
-| `lib/agentImageVideoGen.ts` | 369 | Image/video generation caller for agent turns |
+| `lib/agentImageVideoGen.ts` | 377 | Image/video generation caller for agent turns |
 | `lib/agentQuestionResponder.ts` | 274 | `/question` responder |
 
 ## UI File Map
@@ -231,13 +236,13 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 |---|---|---:|---|
 | App shell | `ui/src/App.tsx` | 189 | Initial hydration, polling, classic/node/card-news canvas switch, Canvas Mode workspace mount, theme attributes, prompt library overlay, mobile shell |
 | Entry | `ui/src/main.tsx` | 41 | React mount |
-| Types | `ui/src/types.ts` | 262 | Provider, quality, size, image model, theme family, embedded metadata, response types, web-search, reasoning effort, multimode |
+| Types | `ui/src/types.ts` | 265 | Provider, quality, size, image model, theme family, embedded metadata, response types, web-search, reasoning effort, multimode |
 | Canvas types | `ui/src/types/canvas.ts` | 98 | Canvas Mode shared types (annotations, versions, masks, brushes) |
 | Store | `ui/src/store/useAppStore.ts` | 508 | Zustand facade; classic/node/video/multimode/inflight/history logic split into `ui/src/store/store*Impl.ts` modules |
-| Persistence registry | `ui/src/store/persistenceRegistry.ts` | 86 | Single source of truth for `ima2.*` localStorage key names — covers gallery scope, gallery default scope, settings, and theme keys; prevents drift between hydration helpers and setters (#43) |
+| Persistence registry | `ui/src/store/persistenceRegistry.ts` | 90 | Single source of truth for `ima2.*` localStorage key names — covers gallery scope, gallery default scope, settings, and theme keys; prevents drift between hydration helpers and setters (#43) |
 | Card-news store | `ui/src/store/cardNewsStore.ts` | 417 | Card-news plan, role/image template selection, planner draft, job polling, regenerate actions |
 | Mode/dev gates | `ui/src/lib/devMode.ts` | 16 | `IS_DEV_UI`, `ENABLE_NODE_MODE`, `ENABLE_CARD_NEWS_MODE` build-time flags |
-| API client | `ui/src/lib/api.ts` | 103 | Browser-side REST barrel re-export (`api-core`, `api-capabilities`, `api-inflight`, `api-generate`, …) |
+| API client | `ui/src/lib/api.ts` | 105 | Browser-side REST barrel re-export (`api-core`, `api-capabilities`, `api-inflight`, `api-generate`, …) |
 | Card-news API client | `ui/src/lib/cardNewsApi.ts` | 276 | Card-news templates, draft, jobs, regenerate, set/manifest helpers |
 | Node API client | `ui/src/lib/nodeApi.ts` | 153 | Node generation JSON/SSE client and node error status propagation |
 | Node graph helpers | `ui/src/lib/nodeGraph.ts` | 42 | Visual-edge parent derivation and incoming-edge conflict helpers |

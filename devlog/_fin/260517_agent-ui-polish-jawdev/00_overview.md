@@ -68,3 +68,8 @@ depends_on:
 - `04_topbar_model_chip.md`
 - `05_sidebar_tab_separation.md`
 - `06_verification_checklist.md`
+
+## Closeout (2026-07-11, 260711_production-hardening WP1-3)
+
+Polish 0-5 전 항목 구현 완료 (상세: devlog/_plan/260711_production-hardening/030_implementation.md).
+브라우저 QA 스크린샷: 260711_production-hardening/assets/qa-agent-*.png. 전체 스위트 1120개 0 fail.

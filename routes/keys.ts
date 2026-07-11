@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { readFile, writeFile, rename } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
 import type { RuntimeContext } from "../lib/runtimeContext.js";
 import { initVertexAuth, clearVertexAuth } from "../lib/vertexAuth.js";
 
@@ -7,9 +8,29 @@ import { initVertexAuth, clearVertexAuth } from "../lib/vertexAuth.js";
 // save can't corrupt config.json (which may hold API keys). Rename also forces
 // 0600 perms even if a looser-perm config pre-existed.
 async function writeConfigAtomic(cfgPath: string, data: unknown): Promise<void> {
-  const tmp = `${cfgPath}.${process.pid}.tmp`;
+  const tmp = `${cfgPath}.${process.pid}.${randomBytes(8).toString("hex")}.tmp`;
   await writeFile(tmp, JSON.stringify(data, null, 2), { mode: 0o600 });
   await rename(tmp, cfgPath);
+}
+
+let configMutationQueue: Promise<void> = Promise.resolve();
+
+function serializeConfigMutation<T>(mutation: () => Promise<T>): Promise<T> {
+  const result = configMutationQueue.then(mutation, mutation);
+  configMutationQueue = result.then(() => undefined, () => undefined);
+  return result;
+}
+
+async function updateConfigFile(
+  cfgPath: string,
+  mutate: (config: Record<string, unknown>) => void,
+): Promise<void> {
+  await serializeConfigMutation(async () => {
+    let existing: Record<string, unknown> = {};
+    try { existing = JSON.parse(await readFile(cfgPath, "utf-8")); } catch { /* new file */ }
+    mutate(existing);
+    await writeConfigAtomic(cfgPath, existing);
+  });
 }
 
 type KeyProvider = "openai" | "xai" | "gemini";
@@ -83,12 +104,7 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
       return res.status(400).json({ ok: false, error: "mode must be apikey|vertex", code: "INVALID_MODE" });
     }
     const cfgPath = ctx.config.storage.configFile;
-    let existing: Record<string, unknown> = {};
-    try {
-      existing = JSON.parse(await readFile(cfgPath, "utf-8"));
-    } catch { /* new file */ }
-    existing.geminiAuthMode = mode;
-    await writeConfigAtomic(cfgPath, existing);
+    await updateConfigFile(cfgPath, (existing) => { existing.geminiAuthMode = mode; });
     (ctx as any).geminiAuthMode = mode;
     return res.json({ ok: true, geminiAuthMode: mode });
   });
@@ -127,13 +143,10 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
 
     // Save to config.json
     const cfgPath = ctx.config.storage.configFile;
-    let existing: Record<string, unknown> = {};
-    try {
-      existing = JSON.parse(await readFile(cfgPath, "utf-8"));
-    } catch { /* new file */ }
-    existing.vertexServiceAccountJson = trimmed;
-    existing.geminiAuthMode = "vertex";
-    await writeConfigAtomic(cfgPath, existing);
+    await updateConfigFile(cfgPath, (existing) => {
+      existing.vertexServiceAccountJson = trimmed;
+      existing.geminiAuthMode = "vertex";
+    });
 
     // Hot-update runtime
     (ctx as any).vertexServiceAccountJson = trimmed;
@@ -153,12 +166,7 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
     }
 
     const cfgPath = ctx.config.storage.configFile;
-    let existing: Record<string, unknown> = {};
-    try {
-      existing = JSON.parse(await readFile(cfgPath, "utf-8"));
-    } catch { /* ignore */ }
-    delete existing.vertexServiceAccountJson;
-    await writeConfigAtomic(cfgPath, existing);
+    await updateConfigFile(cfgPath, (existing) => { delete existing.vertexServiceAccountJson; });
 
     clearVertexAuth();
     (ctx as any).vertexServiceAccountJson = undefined;
@@ -215,13 +223,10 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
 
     // Save to config.json
     const cfgPath = ctx.config.storage.configFile;
-    let existing: Record<string, unknown> = {};
-    try {
-      existing = JSON.parse(await readFile(cfgPath, "utf-8"));
-    } catch { /* new file */ }
-    existing[CONFIG_KEY_MAP[provider]] = trimmed;
-    if (provider === "gemini") existing.geminiAuthMode = "apikey";
-    await writeConfigAtomic(cfgPath, existing);
+    await updateConfigFile(cfgPath, (existing) => {
+      existing[CONFIG_KEY_MAP[provider]] = trimmed;
+      if (provider === "gemini") existing.geminiAuthMode = "apikey";
+    });
 
     // Hot-update runtime context
     if (provider === "openai") {
@@ -258,12 +263,7 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
 
     // Remove from config.json
     const cfgPath = ctx.config.storage.configFile;
-    let existing: Record<string, unknown> = {};
-    try {
-      existing = JSON.parse(await readFile(cfgPath, "utf-8"));
-    } catch { /* ignore */ }
-    delete existing[CONFIG_KEY_MAP[provider]];
-    await writeConfigAtomic(cfgPath, existing);
+    await updateConfigFile(cfgPath, (existing) => { delete existing[CONFIG_KEY_MAP[provider]]; });
 
     // Clear runtime
     if (provider === "openai") {

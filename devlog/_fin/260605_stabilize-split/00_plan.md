@@ -236,3 +236,11 @@ commit `369bb5b`에서 3건(E/F/G) 수정 완료. 회귀 테스트 8개 존재.
 3. `npm test` — 전체 테스트
 4. `cd ui && npm run build` — Vite 빌드
 5. 분할된 모든 파일 `wc -l` ≤ 500 확인
+
+## Phase 3 Closeout (2026-07-11, 260711_production-hardening WP6)
+
+백엔드 4파일 분할 완료 (worker Copernicus): routes/multimode.ts 9줄, routes/generate.ts 9줄,
+routes/nodes.ts 27줄, lib/oauthProxy/generators.ts 219줄. 신규 모듈: lib/generatePipeline.ts(499),
+lib/multimodePipeline.ts(492), lib/nodeGeneration.ts(471), lib/nodeValidation.ts(29),
+lib/oauthProxy/multimodeGenerators.ts(303) — 전부 500줄 이하. 이동 관련 소스 계약 테스트 20건 갱신,
+전체 스위트 1116개 중 1114 pass 0 fail, typecheck/typecheck:tests 통과.

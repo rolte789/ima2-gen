@@ -17,6 +17,7 @@ type Props = {
   settings?: AgentGenerationSettings;
   insertedPrompt?: { id: number; text: string } | null;
   onSettingsChange?: (patch: Partial<AgentGenerationSettings>) => void;
+  onOpenModelTab?: () => void;
   onWebSearchChange: (enabled: boolean) => void;
   onAttachFiles: (files: File[]) => void;
   onImageSelect: (imageId: string) => void;
@@ -33,6 +34,7 @@ export function AgentChatPane({
   settings,
   insertedPrompt,
   onSettingsChange,
+  onOpenModelTab,
   onWebSearchChange,
   onAttachFiles,
   onImageSelect,
@@ -48,7 +50,7 @@ export function AgentChatPane({
           <strong>{session?.title ?? t("agent.newSession")}</strong>
         </div>
         <div className="agent-pane-header__actions">
-          {settings && onSettingsChange ? <AgentModelSelector settings={settings} onChange={onSettingsChange} /> : null}
+          {settings && onSettingsChange ? <AgentModelSelector settings={settings} onChange={onSettingsChange} onOpenModelTab={onOpenModelTab} /> : null}
           <AgentStatusBadge status={runtimeStatus} compacted={session?.compacted} />
         </div>
       </header>

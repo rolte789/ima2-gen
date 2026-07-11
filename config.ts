@@ -76,6 +76,7 @@ export const config = {
     // Accept both IMA2_PORT and legacy PORT.
     port: pickInt(firstDefined(env.IMA2_PORT, env.PORT), fileCfg.server?.port, 3333),
     host: pickStr(env.IMA2_HOST, fileCfg.server?.host, "127.0.0.1"),
+    lanToken: env.IMA2_LAN_TOKEN || "",
     bodyLimit: pickStr(env.IMA2_BODY_LIMIT, fileCfg.server?.bodyLimit, "50mb"),
   },
   limits: {

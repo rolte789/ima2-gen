@@ -35,6 +35,7 @@ export async function generateAgentImageWithRetry(
   webSearchEnabled: boolean,
   options: AgentRunOptions,
 ) {
+  options.onProgressStage?.("requesting");
   let lastError: unknown = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -249,6 +250,7 @@ export async function runAgentVideoGeneration(
     ? GROK_VIDEO_MODEL_15
     : GROK_VIDEO_MODEL_BASE;
 
+  options.onProgressStage?.("requesting");
   const result = await generateVideoViaGrok(prompt, ctx, {
     model: videoModel,
     mode,
@@ -259,7 +261,13 @@ export async function runAgentVideoGeneration(
     requestId,
     signal: options.signal ?? undefined,
     plannerModel: isAgentGrokPlannerModel(options.model) ? options.model : undefined,
+    onEvent: (event) => {
+      if (event.phase === "submitted" || event.phase === "progress") {
+        options.onProgressStage?.("polling");
+      }
+    },
   });
+  options.onProgressStage?.("downloading");
   const video = await persistAgentVideo(ctx, sessionId, prompt, requestId, result);
   const finishedAt = Date.now();
   const toolCall: AgentToolCallSummary = {

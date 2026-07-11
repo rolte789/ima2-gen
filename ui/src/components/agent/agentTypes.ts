@@ -82,6 +82,7 @@ export type AgentQueueItem = {
   createdAt: number;
   startedAt?: number | null;
   finishedAt?: number | null;
+  progressStage?: "requesting" | "polling" | "downloading" | null;
   options: AgentGenerationSettings;
   plan: AgentGenerationPlan;
 };

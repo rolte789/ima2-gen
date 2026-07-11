@@ -7,6 +7,11 @@ export type AgentRunProgress = {
   labelKey: "pendingQueued" | "pendingPlanning" | "pendingGenerating" | "runError";
   queuedCount: number;
   runningCount: number;
+  failedCount: number;
+  startedAt?: number | null;
+  progressStage?: AgentQueueItem["progressStage"];
+  jobKind?: "image" | "video";
+  variantCount?: number;
   lastError?: string | null;
 };
 
@@ -23,6 +28,10 @@ export function deriveAgentRunProgress({
   runSummary,
   localPendingCount,
 }: DeriveAgentRunProgressInput): AgentRunProgress | null {
+  const failedCount = queueItems.filter((item) => item.status === "failed").length;
+  const activeItem = findActiveQueueItem(queueItems);
+  const activeMeta = activeItem ? getQueueItemProgressMeta(activeItem) : {};
+
   if (runSummary?.status === "error" && runSummary.lastError) {
     return {
       active: true,
@@ -30,6 +39,7 @@ export function deriveAgentRunProgress({
       labelKey: "runError",
       queuedCount: runSummary.queuedCount,
       runningCount: runSummary.runningCount,
+      failedCount,
       lastError: runSummary.lastError,
     };
   }
@@ -41,11 +51,13 @@ export function deriveAgentRunProgress({
       labelKey: "pendingQueued",
       queuedCount: runSummary.queuedCount,
       runningCount: runSummary.runningCount,
+      failedCount,
+      ...activeMeta,
     };
   }
 
   if (runSummary?.status === "running") {
-    const startedAt = findActiveQueueStartedAt(queueItems);
+    const startedAt = activeItem?.startedAt ?? activeItem?.createdAt ?? null;
     const hasServerToolTurn = turns.some((turn) =>
       !isLocalTurn(turn) &&
       turn.role === "tool" &&
@@ -57,6 +69,8 @@ export function deriveAgentRunProgress({
       labelKey: hasServerToolTurn ? "pendingGenerating" : "pendingPlanning",
       queuedCount: runSummary.queuedCount,
       runningCount: runSummary.runningCount,
+      failedCount,
+      ...activeMeta,
     };
   }
 
@@ -67,15 +81,27 @@ export function deriveAgentRunProgress({
       labelKey: "pendingPlanning",
       queuedCount: runSummary?.queuedCount ?? 0,
       runningCount: runSummary?.runningCount ?? 0,
+      failedCount,
     };
   }
 
   return null;
 }
 
-function findActiveQueueStartedAt(queueItems: readonly AgentQueueItem[]): number | null {
-  const active = queueItems
-    .filter((item) => item.status === "running")
-    .sort((a, b) => (a.startedAt ?? a.createdAt) - (b.startedAt ?? b.createdAt))[0];
-  return active ? active.startedAt ?? active.createdAt ?? null : null;
+function findActiveQueueItem(queueItems: readonly AgentQueueItem[]): AgentQueueItem | null {
+  return [...queueItems]
+    .filter((item) => item.status === "running" || item.status === "queued")
+    .sort((a, b) => {
+      if (a.status !== b.status) return a.status === "running" ? -1 : 1;
+      return (a.startedAt ?? a.createdAt) - (b.startedAt ?? b.createdAt);
+    })[0] ?? null;
+}
+
+function getQueueItemProgressMeta(item: AgentQueueItem) {
+  return {
+    startedAt: item.startedAt ?? null,
+    progressStage: item.progressStage ?? null,
+    jobKind: item.plan.mode === "video" || item.plan.videoParams ? "video" as const : "image" as const,
+    variantCount: item.plan.plannedVariants || item.plan.prompts.length || 1,
+  };
 }

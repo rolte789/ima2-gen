@@ -315,7 +315,7 @@ function showHelp() {
     config <sub>   Config get/set/ls/path/rm       (ima2 config --help)
     defaults <sub> Inspect/change model defaults   (ima2 defaults --help)
     capabilities   Agent capability metadata       (ima2 capabilities --help)
-    skill          Print packaged agent skill      (ima2 skill --help)
+    skill          Print packaged agent skills      (ima2 skill --help)
     ping           Ping running server / check health
 
   Options:
@@ -341,7 +341,10 @@ function showHelp() {
     ima2 gen "merge" --ref a.png --ref b.png -q high -o out.png
     ima2 video "a cat playing piano" --duration 10
     ima2 ls -n 10                    Last 10 generations
-    ima2 skill                       Print agent usage skill
+    ima2 skill                       Print core agent skill
+    ima2 skill ls                     List all skills (core, front, uiux)
+    ima2 skill front                  Print frontend implementation skill
+    ima2 skill uiux                   Print design direction skill
     ima2 capabilities --json         Inspect supported models/options
     ima2 defaults --json             Inspect running server defaults
     ima2 ping                        Health check

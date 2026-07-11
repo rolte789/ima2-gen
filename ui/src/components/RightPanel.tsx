@@ -3,6 +3,7 @@ import { useAppStore } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import { GenerationControlsPanel } from "./GenerationControlsPanel";
 import { isPromptBuilderEnabled } from "../lib/workspaceProfile";
+import { useModalFocus } from "../hooks/useModalFocus";
 
 const LazyPromptLibraryPanel = lazy(() =>
   import("./PromptLibraryPanel").then((module) => ({ default: module.PromptLibraryPanel })),
@@ -46,6 +47,7 @@ export function RightPanel() {
   const [logOpen, setLogOpen] = useState(false);
   const builderEnabled = isPromptBuilderEnabled(workspaceProfile) && !isMobile;
   const drawerOpen = isMobile ? open : true;
+  const drawerRef = useModalFocus<HTMLElement>(isMobile && open, toggle);
 
   const activeTab: RightPanelTab = logOpen
     ? "log"
@@ -80,8 +82,12 @@ export function RightPanel() {
         />
       ) : null}
       <aside
+        ref={drawerRef}
         className={`right-panel${open ? "" : " collapsed"}${isMobile && drawerOpen ? " drawer-open" : ""}`}
         aria-label={t("panel.detailSettings")}
+        aria-modal={isMobile && open ? "true" : undefined}
+        role={isMobile && open ? "dialog" : undefined}
+        tabIndex={isMobile ? -1 : undefined}
       >
         {!isMobile && (
           <button
@@ -106,6 +112,8 @@ export function RightPanel() {
                 type="button"
                 role="tab"
                 aria-selected={activeTab === "builder"}
+                aria-controls="right-panel-tab-builder"
+                title={t("promptBuilder.title")}
                 className={`right-panel-tabs__button${activeTab === "builder" ? " active" : ""}`}
                 onClick={() => setTab("builder")}
               >
@@ -115,16 +123,20 @@ export function RightPanel() {
             <button
               type="button"
               role="tab"
-              aria-selected={activeTab === "settings"}
-              className={`right-panel-tabs__button${activeTab === "settings" ? " active" : ""}`}
-              onClick={() => setTab("settings")}
+              aria-selected={activeTab === "log"}
+              aria-controls="right-panel-tab-log"
+              title={t("generationLog.title")}
+              className={`right-panel-tabs__button${builderEnabled ? "" : " right-panel-tabs__button--full"}${activeTab === "log" ? " active" : ""}`}
+              onClick={() => setTab("log")}
             >
-              {t("panel.detailSettings")}
+              {t("generationLog.title")}
             </button>
             <button
               type="button"
               role="tab"
               aria-selected={activeTab === "library"}
+              aria-controls="right-panel-tab-library"
+              title={t("promptLibrary.title")}
               className={`right-panel-tabs__button right-panel-tabs__button--full${activeTab === "library" ? " active" : ""}`}
               onClick={() => setTab("library")}
             >
@@ -133,27 +145,37 @@ export function RightPanel() {
             <button
               type="button"
               role="tab"
-              aria-selected={activeTab === "log"}
-              className={`right-panel-tabs__button${activeTab === "log" ? " active" : ""}`}
-              onClick={() => setTab("log")}
+              aria-selected={activeTab === "settings"}
+              aria-controls="right-panel-tab-settings"
+              title={t("panel.detailSettings")}
+              className={`right-panel-tabs__button right-panel-tabs__button--full${activeTab === "settings" ? " active" : ""}`}
+              onClick={() => setTab("settings")}
             >
-              {t("generationLog.title")}
+              {t("panel.detailSettings")}
             </button>
           </div>
           {activeTab === "builder" && builderEnabled ? (
-            <Suspense fallback={<div className="prompt-library-panel__loading">{t("common.loading")}</div>}>
-              <LazyPromptBuilderPanel variant="sidebar" />
-            </Suspense>
+            <div id="right-panel-tab-builder" role="tabpanel">
+              <Suspense fallback={<div className="prompt-library-panel__loading">{t("common.loading")}</div>}>
+                <LazyPromptBuilderPanel variant="sidebar" />
+              </Suspense>
+            </div>
           ) : activeTab === "library" ? (
-            <Suspense fallback={<div className="prompt-library-panel__loading">{t("common.loading")}</div>}>
-              <LazyPromptLibraryPanel variant="embedded" />
-            </Suspense>
+            <div id="right-panel-tab-library" role="tabpanel">
+              <Suspense fallback={<div className="prompt-library-panel__loading">{t("common.loading")}</div>}>
+                <LazyPromptLibraryPanel variant="embedded" />
+              </Suspense>
+            </div>
           ) : activeTab === "log" ? (
-            <Suspense fallback={<div className="prompt-library-panel__loading">{t("common.loading")}</div>}>
-              <LazyGenerationRequestLogPanel />
-            </Suspense>
+            <div id="right-panel-tab-log" role="tabpanel">
+              <Suspense fallback={<div className="prompt-library-panel__loading">{t("common.loading")}</div>}>
+                <LazyGenerationRequestLogPanel />
+              </Suspense>
+            </div>
           ) : (
-            <GenerationControlsPanel />
+            <div id="right-panel-tab-settings" role="tabpanel">
+              <GenerationControlsPanel />
+            </div>
           )}
         </div>
       </aside>

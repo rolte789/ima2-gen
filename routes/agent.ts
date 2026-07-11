@@ -15,14 +15,13 @@ import {
   setAgentWebSearch,
 } from "../lib/agentStore.js";
 import {
-  cancelAgentQueueItem,
   createAgentQueueItem,
   getAgentGenerationErrors,
   getAgentQueueItem,
   listAgentQueueItems,
   retryAgentQueueItem,
 } from "../lib/agentQueueStore.js";
-import { ensureAgentQueueWorker, tickAgentQueueWorker } from "../lib/agentQueueWorker.js";
+import { cancelRunningAgentQueueItem, ensureAgentQueueWorker, tickAgentQueueWorker } from "../lib/agentQueueWorker.js";
 import { parseAgentSlashCommand, formatAgentQuestionReply, formatAgentSlashHelp } from "../lib/agentCommandParser.js";
 import { requestAgentQuestionAnswer } from "../lib/agentQuestionResponder.js";
 import { agentAllowedToolPayload, runAgentTurn } from "../lib/agentRuntime.js";
@@ -225,8 +224,8 @@ export function registerAgentRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   app.post("/api/agent/queue/:itemId/cancel", (req: Request<{ itemId: string }>, res: Response) => {
     const item = getAgentQueueItem(req.params.itemId);
     if (!item) return sendError(res, queueItemNotFound(req.params.itemId));
-    const ok = cancelAgentQueueItem(item.id);
-    if (!ok) return sendError(res, queueActionError("AGENT_QUEUE_CANCEL_FAILED", "Only queued Agent work can be canceled."));
+    const ok = cancelRunningAgentQueueItem(item.id);
+    if (!ok) return sendError(res, queueActionError("AGENT_QUEUE_CANCEL_FAILED", "Only queued or running Agent work can be canceled."));
     res.json(getAgentWorkspacePayload(item.sessionId));
   });
 

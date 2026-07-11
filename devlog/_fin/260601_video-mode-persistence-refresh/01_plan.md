@@ -285,3 +285,9 @@ if (isVideo) {
 | `ui/src/store/persistenceRegistry.ts` | MODIFY — `ima2.videoDefaults` 키 등록 |
 | `ui/src/store/useAppStore.ts` | MODIFY — save/load 헬퍼, 초기화, setter, sync |
 | `ui/src/lib/continueFromItem.ts` | MODIFY — Video 아이템 → selectVideoModel() |
+
+## Closeout (2026-07-11, 260711_production-hardening WP5)
+
+Video mode 새로고침 persistence + continue-from-video 모드 전환 모두 코드 반영 확인:
+useAppStore.ts:388(videoModelSelected 복원), continueFromItem.ts:45(selectVideoModel 호출).
+계약 테스트: tests/video-defaults-persistence-contract.test.js (7 pass).

@@ -3,13 +3,15 @@ import { useI18n } from "../../i18n";
 import { AGENT_LLM_MODEL_OPTIONS, getAgentLlmModelOption } from "../../lib/agentModelOptions";
 import { REASONING_EFFORT_OPTIONS } from "../../lib/reasoning";
 import type { AgentGenerationSettings } from "./agentTypes";
+import { ChevronRightIcon } from "./AgentIcons";
 
 type Props = {
   settings: AgentGenerationSettings;
   onChange: (patch: Partial<AgentGenerationSettings>) => void;
+  onOpenModelTab?: () => void;
 };
 
-export function AgentModelSelector({ settings, onChange }: Props) {
+export function AgentModelSelector({ settings, onChange, onOpenModelTab }: Props) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -52,6 +54,11 @@ export function AgentModelSelector({ settings, onChange }: Props) {
         </span>
         <span className="image-model-select__trigger-effort">{currentReasoning.shortLabel}</span>
       </button>
+      {onOpenModelTab ? (
+        <button type="button" className="agent-model-select__open-tab" onClick={onOpenModelTab} aria-label={t("agent.modelTabView")} title={t("agent.modelTabView")}>
+          <ChevronRightIcon size={13} />
+        </button>
+      ) : null}
       {open ? (
         <div className="image-model-select__menu agent-model-select__menu" role="menu" aria-label={t("sidebar.quickSettingsMenu")}>
           <div className="image-model-select__section" role="group" aria-label={t("agent.model")}>

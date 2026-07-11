@@ -37,6 +37,7 @@ export type AgentRunOptions = {
   signal?: AbortSignal | null;
   videoParams?: AgentVideoParams | null;
   sourceImagePolicy?: AgentSourceImagePolicy | null;
+  onProgressStage?: (stage: "requesting" | "polling" | "downloading") => void;
 };
 
 export function assertAgentAllowedTools(tools: readonly string[]) {
@@ -302,6 +303,7 @@ async function runGeneratorWithRuntimeRecovery(
   try {
     return await generateAgentImageWithRetry(ctx, sessionId, prompt, manifest, webSearchEnabled, options);
   } catch (error) {
+    if (options.signal?.aborted) throw error;
     const err = errInfo(error);
     if (isRuntimeRestartableError(error)) {
       restartAgentRuntimeSession(sessionId, err.code || err.message);

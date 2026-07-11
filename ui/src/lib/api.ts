@@ -53,6 +53,8 @@ export {
   deleteCanvasAnnotations,
   createCanvasVersion,
   updateCanvasVersion,
+  recordCanvasAnnotationBake,
+  revertCanvasAnnotations,
   type ImageMetadataReadResponse,
 } from "./api-canvas";
 export {

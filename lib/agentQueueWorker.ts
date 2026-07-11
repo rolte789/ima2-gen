@@ -4,6 +4,9 @@ import {
   completeAgentQueueItem,
   failAgentQueueItem,
   getAgentQueueItem,
+  cancelAgentQueueItem,
+  recoverRunningAgentQueueItems,
+  updateAgentQueueItemProgress,
   updateAgentQueueItemPlan,
   type AgentQueueLimits,
 } from "./agentQueueStore.js";
@@ -23,8 +26,17 @@ const DEFAULT_LIMITS: AgentQueueLimits = {
 
 let workerTimer: NodeJS.Timeout | null = null;
 let ticking = false;
+let startupRecovered = false;
+const runningControllers = new Map<string, AbortController>();
+
+const IMAGE_TIMEOUT_MS = 10 * 60 * 1_000;
+const VIDEO_TIMEOUT_MS = 30 * 60 * 1_000;
 
 export function ensureAgentQueueWorker(ctx: RuntimeContext) {
+  if (!startupRecovered) {
+    recoverRunningAgentQueueItems();
+    startupRecovered = true;
+  }
   if (workerTimer) return;
   workerTimer = setInterval(() => {
     void tickAgentQueueWorker(ctx);
@@ -38,6 +50,16 @@ export function stopAgentQueueWorker() {
     clearInterval(workerTimer);
     workerTimer = null;
   }
+  for (const controller of runningControllers.values()) controller.abort("Worker stopped");
+  runningControllers.clear();
+}
+
+export function cancelRunningAgentQueueItem(id: string, reason = "Canceled by user") {
+  const item = getAgentQueueItem(id);
+  if (!item || (item.status !== "queued" && item.status !== "running")) return false;
+  const canceled = cancelAgentQueueItem(id, reason);
+  if (canceled && item.status === "running") runningControllers.get(id)?.abort(reason);
+  return canceled;
 }
 
 export async function tickAgentQueueWorker(ctx: RuntimeContext) {
@@ -91,7 +113,18 @@ async function resolveRuntimePlan(ctx: RuntimeContext, item: AgentQueueItem): Pr
 async function runClaimedQueueItem(ctx: RuntimeContext, itemId: string) {
   const item = getAgentQueueItem(itemId);
   if (!item) return;
+  const controller = new AbortController();
+  runningControllers.set(item.id, controller);
   const plan = await resolveRuntimePlan(ctx, item);
+  if (controller.signal.aborted) {
+    runningControllers.delete(item.id);
+    return;
+  }
+  const timeoutMs = plan.mode === "video" ? VIDEO_TIMEOUT_MS : IMAGE_TIMEOUT_MS;
+  const timeoutController = new AbortController();
+  const timeout = setTimeout(() => timeoutController.abort("timeout"), timeoutMs);
+  timeout.unref?.();
+  const signal = combineAbortSignals(controller.signal, timeoutController.signal);
   startJob({
     requestId: item.requestId,
     kind: "agent_queue",
@@ -112,6 +145,8 @@ async function runClaimedQueueItem(ctx: RuntimeContext, itemId: string) {
       requestId: item.requestId,
       webSearchEnabled: item.options.webSearchEnabled,
       parallelism: plan.plannedParallelism,
+      signal,
+      onProgressStage: (stage) => updateAgentQueueItemProgress(item.id, stage),
     }, {
       appendUserTurn: false,
     });
@@ -122,8 +157,20 @@ async function runClaimedQueueItem(ctx: RuntimeContext, itemId: string) {
     });
     logEvent("agent_queue", "finish", { itemId: item.id, imageCount: result.imageIds.length });
   } catch (error) {
+    const current = getAgentQueueItem(item.id);
+    if (current?.status === "canceled") {
+      finishJob(item.requestId, {
+        status: "canceled",
+        errorCode: "canceled",
+        meta: { queueItemId: item.id },
+      });
+      logEvent("agent_queue", "canceled", { itemId: item.id, reason: current.errorMessage });
+      return;
+    }
     const err = errInfo(error);
-    failAgentQueueItem(item.id, { code: err.code, message: err.message });
+    const timedOut = timeoutController.signal.aborted;
+    const failure = timedOut ? { code: "timeout", message: "timeout" } : { code: err.code, message: err.message };
+    failAgentQueueItem(item.id, failure);
     // The chat pane must never fail silently — surface the failure as an
     // assistant error turn unless the runtime already recorded one.
     if (!hasAgentErrorTurnRecorded(error)) {
@@ -131,7 +178,7 @@ async function runClaimedQueueItem(ctx: RuntimeContext, itemId: string) {
         appendAgentTurn({
           sessionId: item.sessionId,
           role: "assistant",
-          text: err.code ? `${err.message} [${err.code}]` : err.message,
+          text: failure.code ? `${failure.message} [${failure.code}]` : failure.message,
           status: "error",
         });
       } catch (turnError) {
@@ -140,9 +187,24 @@ async function runClaimedQueueItem(ctx: RuntimeContext, itemId: string) {
     }
     finishJob(item.requestId, {
       status: "failed",
-      errorCode: err.code,
+      errorCode: failure.code,
       meta: { queueItemId: item.id },
     });
-    logEvent("agent_queue", "error", { itemId: item.id, code: err.code, message: err.message });
+    logEvent("agent_queue", "error", { itemId: item.id, code: failure.code, message: failure.message });
+  } finally {
+    clearTimeout(timeout);
+    runningControllers.delete(item.id);
   }
+}
+
+function combineAbortSignals(...signals: AbortSignal[]) {
+  const controller = new AbortController();
+  const abort = (signal: AbortSignal) => {
+    if (!controller.signal.aborted) controller.abort(signal.reason);
+  };
+  for (const signal of signals) {
+    if (signal.aborted) abort(signal);
+    else signal.addEventListener("abort", () => abort(signal), { once: true });
+  }
+  return controller.signal;
 }

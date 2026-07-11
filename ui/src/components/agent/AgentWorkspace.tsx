@@ -16,9 +16,13 @@ import { useAgentWorkspaceLayout } from "../../hooks/useAgentWorkspaceLayout";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { AgentChatPane } from "./AgentChatPane";
 import { AgentImageSheet } from "./AgentImageSheet";
+import { AgentQueueSheet } from "./AgentQueueSheet";
 import { AgentRightSidebar } from "./AgentRightSidebar";
 import { AgentSessionDrawer } from "./AgentSessionDrawer";
 import { AgentSessionSidebar } from "./AgentSessionSidebar";
+import { AgentPanePreference } from "./AgentSessionSidebar";
+import { AgentSessionRail } from "./AgentSessionRail";
+import { AGENT_PANE_PREFERENCE_STORAGE_KEY } from "../../store/persistenceRegistry";
 import { AgentTopBar } from "./AgentTopBar";
 import { attachAgentImageFiles } from "./agentAttachFiles";
 import {
@@ -129,7 +133,9 @@ export function AgentWorkspace() {
   const importLocalImageToHistory = useAppStore((s) => s.importLocalImageToHistory);
   const addHistoryItem = useAppStore((s) => s.addHistoryItem);
   const selectHistory = useAppStore((s) => s.selectHistory);
+  const showToast = useAppStore((s) => s.showToast);
   const bootstrapped = useRef(false);
+  const workspaceRequestSeq = useRef(0);
   const pendingTurnsRef = useRef(0);
   const knownImageIdsRef = useRef<Set<string> | null>(null);
   const [workspace, setWorkspace] = useState<AgentWorkspacePayload>(() => emptyWorkspace());
@@ -139,7 +145,18 @@ export function AgentWorkspace() {
   const [insertedPrompt, setInsertedPrompt] = useState<{ id: number; text: string } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [imageSheetOpen, setImageSheetOpen] = useState(false);
+  const [queueSheetOpen, setQueueSheetOpen] = useState(false);
   const [runtimeStatus, setRuntimeStatus] = useState<AgentRuntimeStatus>("reconnecting");
+  const [bootError, setBootError] = useState<string | null>(null);
+  const [panePreference, setPanePreference] = useState<"expanded" | "rail">(() => {
+    if (typeof window === "undefined") return "expanded";
+    return window.localStorage.getItem(AGENT_PANE_PREFERENCE_STORAGE_KEY) === "rail" ? "rail" : "expanded";
+  });
+
+  const errorMessage = useCallback((error: unknown) => error instanceof Error ? error.message : String(error), []);
+  const reportMutationError = useCallback((error: unknown) => {
+    showToast(t("agent.workspaceActionFailed", { reason: errorMessage(error) }), true);
+  }, [errorMessage, showToast, t]);
 
   const applyWorkspace = useCallback((payload: AgentWorkspacePayload) => {
     setWorkspace({ ...emptyWorkspace(), ...payload });
@@ -152,6 +169,16 @@ export function AgentWorkspace() {
     setSelectedSessionId(payload.selectedSessionId ?? null);
   }, []);
 
+  const applyMutationWorkspace = useCallback((payload: AgentWorkspacePayload) => {
+    workspaceRequestSeq.current += 1;
+    applyWorkspace(payload);
+  }, [applyWorkspace]);
+
+  const applyMutationWorkspaceWithLocalTurns = useCallback((payload: AgentWorkspacePayload, settledLocalIds: Set<string>) => {
+    workspaceRequestSeq.current += 1;
+    applyWorkspaceWithLocalTurns(payload, settledLocalIds);
+  }, [applyWorkspaceWithLocalTurns]);
+
   const beginGeneration = () => {
     pendingTurnsRef.current += 1;
     setRuntimeStatus("generating");
@@ -163,8 +190,11 @@ export function AgentWorkspace() {
   };
 
   const loadWorkspace = useCallback(async (preferredId?: string | null) => {
+    const requestSeq = ++workspaceRequestSeq.current;
     setRuntimeStatus("reconnecting");
+    setBootError(null);
     const loaded = await getAgentWorkspace(preferredId);
+    if (requestSeq !== workspaceRequestSeq.current) return;
     if (loaded.sessions.length > 0) {
       applyWorkspace(loaded);
       setRuntimeStatus("ready");
@@ -174,12 +204,15 @@ export function AgentWorkspace() {
       title: t("agent.newSession"),
       currentImage: currentGeneratedImage,
     });
+    if (requestSeq !== workspaceRequestSeq.current) return;
     applyWorkspace(created);
     setRuntimeStatus("ready");
   }, [applyWorkspace, currentGeneratedImage, t]);
 
   const refreshWorkspace = useCallback(async (preferredId?: string | null) => {
+    const requestSeq = ++workspaceRequestSeq.current;
     const loaded = await getAgentWorkspace(preferredId);
+    if (requestSeq !== workspaceRequestSeq.current) return;
     // Poll refreshes must keep local optimistic turns (pending spinner) alive;
     // a full replace would wipe them between enqueue and completion.
     applyWorkspaceWithLocalTurns(loaded, new Set());
@@ -190,10 +223,10 @@ export function AgentWorkspace() {
     if (bootstrapped.current) return;
     bootstrapped.current = true;
     void loadWorkspace().catch((error) => {
-      console.error(error);
-      setRuntimeStatus("ready");
+      setBootError(errorMessage(error));
+      setRuntimeStatus("reconnecting");
     });
-  }, [loadWorkspace]);
+  }, [errorMessage, loadWorkspace]);
 
   const selectedSession = workspace.sessions.find((session) => session.id === selectedSessionId) ?? null;
   const currentImage = workspace.currentImageId ? workspace.imagesById[workspace.currentImageId] ?? null : null;
@@ -205,6 +238,7 @@ export function AgentWorkspace() {
   const displayTurns = turns.filter((turn) => !isLocalPendingTurn(turn));
   const queueItems = selectedSessionId ? workspace.queueBySession[selectedSessionId] ?? [] : [];
   const selectedRunSummary = selectedSessionId ? workspace.runSummaryBySession[selectedSessionId] : undefined;
+  const activeJobCount = queueItems.filter((item) => item.status === "queued" || item.status === "running").length;
   const runProgress = deriveAgentRunProgress({
     turns,
     queueItems,
@@ -220,6 +254,11 @@ export function AgentWorkspace() {
         : "ready";
   const showRightSidebar = layoutMode !== "mobile-chat-image-sheet";
   const showAgentTopBar = isMobile && layoutMode !== "desktop-three-pane";
+  const useSessionRail = layoutMode === "desktop-three-pane" && panePreference === "rail";
+  const changePanePreference = (preference: "expanded" | "rail") => {
+    setPanePreference(preference);
+    window.localStorage.setItem(AGENT_PANE_PREFERENCE_STORAGE_KEY, preference);
+  };
 
   useEffect(() => {
     // Mirror freshly generated agent results into the main history store so
@@ -265,12 +304,10 @@ export function AgentWorkspace() {
 
   useEffect(() => {
     if (!selectedSessionId) return;
-    if (selectedRunSummary?.status !== "queued" && selectedRunSummary?.status !== "running") return;
-    // 600ms keeps tool turns and stage copy feeling live without SSE; the
-    // workspace payload is small enough that this stays cheap locally.
+    const hasActiveJobs = selectedRunSummary?.status === "queued" || selectedRunSummary?.status === "running";
     const timer = window.setInterval(() => {
-      void refreshWorkspace(selectedSessionId).catch(console.error);
-    }, 600);
+      void refreshWorkspace(selectedSessionId).catch(() => setRuntimeStatus("reconnecting"));
+    }, hasActiveJobs ? 1500 : 4000);
     return () => window.clearInterval(timer);
   }, [
     refreshWorkspace,
@@ -282,23 +319,24 @@ export function AgentWorkspace() {
 
   const selectSession = (id: string) => {
     setDrawerOpen(false);
-    void loadWorkspace(id).catch(console.error);
+    setQueueSheetOpen(false);
+    void loadWorkspace(id).catch(reportMutationError);
   };
   const createSession = () => {
     void createAgentSession({ title: t("agent.newSession"), currentImage: null })
-      .then(applyWorkspace)
-      .catch(console.error);
+      .then(applyMutationWorkspace)
+      .catch(reportMutationError);
   };
   const renameSession = (id: string) => {
     const session = workspace.sessions.find((item) => item.id === id);
     const title = window.prompt(t("agent.renameSession"), session?.title ?? "");
     if (!title?.trim()) return;
-    void updateAgentSession(id, { title: title.trim() }).then(applyWorkspace).catch(console.error);
+    void updateAgentSession(id, { title: title.trim() }).then(applyMutationWorkspace).catch(reportMutationError);
   };
   const deleteSession = (id: string) => {
     const session = workspace.sessions.find((item) => item.id === id);
     if (!session || !window.confirm(t("agent.deleteConfirm", { title: session.title }))) return;
-    void deleteAgentSession(id).then(applyWorkspace).catch(console.error);
+    void deleteAgentSession(id).then(applyMutationWorkspace).catch(reportMutationError);
   };
   const updateGenerationSettings = (patch: Partial<AgentGenerationSettings>) => {
     if (!selectedSessionId) return;
@@ -309,7 +347,7 @@ export function AgentWorkspace() {
         ? { ...session, generationSettings: nextSettings, webSearchEnabled: nextSettings.webSearchEnabled }
         : session),
     }));
-    void updateAgentSession(selectedSessionId, { generationSettings: patch }).then(applyWorkspace).catch(console.error);
+    void updateAgentSession(selectedSessionId, { generationSettings: patch }).then(applyMutationWorkspace).catch(reportMutationError);
   };
   const setSessionWebSearch = (enabled: boolean) => {
     updateGenerationSettings({ webSearchEnabled: enabled });
@@ -318,16 +356,16 @@ export function AgentWorkspace() {
     if (!selectedSessionId || workspace.currentImageId === imageId) return;
     const sessionId = selectedSessionId;
     setWorkspace((current) => ({ ...current, currentImageId: imageId }));
-    void updateAgentSession(sessionId, { currentImageId: imageId }).then(applyWorkspace).catch(console.error);
+    void updateAgentSession(sessionId, { currentImageId: imageId }).then(applyMutationWorkspace).catch(reportMutationError);
   };
   const insertPrompt = (text: string) => {
     setInsertedPrompt({ id: Date.now(), text });
   };
   const cancelQueue = (itemId: string) => {
-    void cancelAgentQueueItem(itemId).then(applyWorkspace).catch(console.error);
+    void cancelAgentQueueItem(itemId).then(applyMutationWorkspace).catch(reportMutationError);
   };
   const retryQueue = (itemId: string) => {
-    void retryAgentQueueItem(itemId).then(applyWorkspace).catch(console.error);
+    void retryAgentQueueItem(itemId).then(applyMutationWorkspace).catch(reportMutationError);
   };
   const attachFiles = (files: File[]) => {
     if (!selectedSessionId || files.length === 0) return;
@@ -335,8 +373,8 @@ export function AgentWorkspace() {
       sessionId: selectedSessionId,
       files,
       importLocalImageToHistory,
-      applyWorkspace,
-    }).catch(console.error);
+      applyWorkspace: applyMutationWorkspace,
+    }).catch(reportMutationError);
   };
   const sendMessage = (text: string) => {
     if (!selectedSessionId) return;
@@ -352,17 +390,38 @@ export function AgentWorkspace() {
     beginGeneration();
     setWorkspace((current) => appendTurns(current, sessionId, [userTurn, pendingTurn]));
     void enqueueAgentTurn(sessionId, text, selectedSettings)
-      .then((payload) => applyWorkspaceWithLocalTurns(payload.workspace, settledLocalIds))
+      .then((payload) => applyMutationWorkspaceWithLocalTurns(payload.workspace, settledLocalIds))
       .catch((error) => {
-        const message = error instanceof Error ? error.message : String(error);
+        const message = errorMessage(error);
         setWorkspace((current) => replacePendingWithError(current, sessionId, pendingTurn.id, message));
+        reportMutationError(error);
       })
       .finally(finishGeneration);
   };
 
+  if (bootError) {
+    return (
+      <main className={`agent-workspace agent-workspace--${layoutMode} agent-workspace--boot-error`} data-layout={layoutMode} aria-label={t("agent.workspace")}>
+        {showAgentTopBar ? (
+          <AgentTopBar layoutMode={layoutMode} session={null} currentImage={null} activeJobCount={0} onOpenSessions={() => {}} onOpenImage={() => {}} onOpenQueue={() => {}} />
+        ) : null}
+        <section className="agent-workspace__boot-error" role="alert">
+          <strong>{t("agent.bootFailed")}</strong>
+          <span title={bootError}>{bootError}</span>
+          <button type="button" onClick={() => void loadWorkspace().catch((error) => setBootError(errorMessage(error)))}>{t("agent.bootRetry")}</button>
+        </section>
+      </main>
+    );
+  }
+
   return (
-    <main className={`agent-workspace agent-workspace--${layoutMode}`} data-layout={layoutMode} aria-label={t("agent.workspace")}>
-      <AgentSessionSidebar
+    <main className={`agent-workspace agent-workspace--${layoutMode}${useSessionRail ? " agent-workspace--session-rail" : ""}`} data-layout={layoutMode} aria-label={t("agent.workspace")}>
+      {useSessionRail ? (
+        <div className="agent-session-rail-wrap">
+          <AgentPanePreference preference={panePreference} onChange={changePanePreference} />
+          <AgentSessionRail sessions={workspace.sessions} selectedId={selectedSessionId ?? ""} imagesById={workspace.imagesById} runSummaryBySession={workspace.runSummaryBySession} onCreate={createSession} onSelect={selectSession} onOpenDrawer={() => setDrawerOpen(true)} />
+        </div>
+      ) : <AgentSessionSidebar
         sessions={workspace.sessions}
         selectedId={selectedSessionId ?? ""}
         imagesById={workspace.imagesById}
@@ -373,14 +432,18 @@ export function AgentWorkspace() {
         onRename={renameSession}
         onDelete={deleteSession}
         onSettingsChange={updateGenerationSettings}
-      />
+        panePreference={panePreference}
+        onPanePreferenceChange={changePanePreference}
+      />}
       {showAgentTopBar ? (
         <AgentTopBar
           layoutMode={layoutMode}
           session={selectedSession}
           currentImage={currentImage}
+          activeJobCount={activeJobCount}
           onOpenSessions={() => setDrawerOpen(true)}
           onOpenImage={() => setImageSheetOpen(true)}
+          onOpenQueue={() => setQueueSheetOpen(true)}
         />
       ) : null}
       <div className="agent-workspace__body">
@@ -394,6 +457,7 @@ export function AgentWorkspace() {
           settings={selectedSettings}
           insertedPrompt={insertedPrompt}
           onSettingsChange={updateGenerationSettings}
+          onOpenModelTab={() => setSidebarTab("model")}
           onWebSearchChange={setSessionWebSearch}
           onAttachFiles={attachFiles}
           onImageSelect={selectImage}
@@ -420,6 +484,7 @@ export function AgentWorkspace() {
       </div>
       <AgentSessionDrawer open={drawerOpen} sessions={workspace.sessions} selectedId={selectedSessionId ?? ""} imagesById={workspace.imagesById} runSummaryBySession={workspace.runSummaryBySession} onClose={() => setDrawerOpen(false)} onCreate={createSession} onSelect={selectSession} onRename={renameSession} onDelete={deleteSession} />
       <AgentImageSheet open={imageSheetOpen} currentImage={currentImage} images={images} activeTab={activeTab} onTabChange={setActiveTab} onImageSelect={selectImage} onClose={() => setImageSheetOpen(false)} />
+      <AgentQueueSheet open={queueSheetOpen} items={queueItems} summary={selectedRunSummary} onCancel={cancelQueue} onRetry={retryQueue} onClose={() => setQueueSheetOpen(false)} />
     </main>
   );
 }

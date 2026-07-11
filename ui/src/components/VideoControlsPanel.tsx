@@ -34,6 +34,7 @@ export function VideoControlsPanel() {
   const setAspect = useAppStore((s) => s.setVideoAspectRatio);
   const videoTopic = useAppStore((s) => s.videoTopic);
   const setVideoTopic = useAppStore((s) => s.setVideoTopic);
+  const showToast = useAppStore((s) => s.showToast);
   const continuity = useAppStore((s) => s.videoContinuityLineage);
   const maxDuration = refCount >= 2 ? MAX_REF2V_DURATION_UI : 15;
   const mode = deriveVideoModeUI(refCount);
@@ -68,14 +69,19 @@ export function VideoControlsPanel() {
       .catch(() => {});
   }, []);
   const onPlannerChange = async (model: string) => {
+    const previousModel = plannerConfig?.model;
+    setPlannerConfig((prev) => prev ? { ...prev, model } : null);
     try {
-      await fetch("/api/config/grok-planner", {
+      const response = await fetch("/api/config/grok-planner", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ model }),
       });
-      setPlannerConfig((prev) => prev ? { ...prev, model } : null);
-    } catch {}
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    } catch {
+      setPlannerConfig((prev) => prev && previousModel ? { ...prev, model: previousModel } : prev);
+      showToast(t("video.plannerUpdateFailed"), true);
+    }
   };
 
   return (

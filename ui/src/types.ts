@@ -79,6 +79,9 @@ export type GenerateItem = {
   canvasVersion?: boolean;
   canvasSourceFilename?: string | null;
   canvasEditableFilename?: string | null;
+  annotationsBaked?: boolean;
+  annotationSnapshot?: import("./types/canvas").SavedCanvasAnnotations | null;
+  annotationOnly?: boolean;
   filename?: string;
   prompt?: string;
   userPrompt?: string | null;

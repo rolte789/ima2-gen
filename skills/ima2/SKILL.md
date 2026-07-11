@@ -110,6 +110,25 @@ For dense or important text, specify:
 - visual style;
 - whether extra readable text is forbidden.
 
+OpenAI's prompting guide additionally recommends: put literal text **in quotes
+or ALL CAPS**, state typography (font style, size, color, placement) as
+explicit constraints, and for exact copy demand it verbatim. The strongest
+official pattern is a dedicated text block:
+
+```text
+Poster headline (EXACT, verbatim, no extra characters):
+"Fresh and clean"
+Typography: bold sans-serif, high contrast, centered, clean kerning.
+Ensure the text appears once and is perfectly legible.
+```
+
+For tricky words such as brand names or uncommon spellings, spell them out
+letter-by-letter to improve character accuracy. Use `medium` or `high` quality
+whenever the image contains small text, dense panels, or multiple fonts. When
+localizing an existing image, translate the visible text verbatim, add no new
+words, and preserve everything else — layout, imagery, hierarchy — without
+reflowing the design.
+
 GPT Image 2 can generate both stylized and realistic outputs. State the style
 directly, for example:
 
@@ -133,6 +152,33 @@ ask follow-up questions. When using `--mode auto`, the server augments short
 prompts, but a detailed prompt still produces far better results than relying
 on auto-augmentation alone. For production assets, prefer `--mode direct` with
 a fully-specified prompt.
+
+### Structured Prompt Contract
+
+Detailed is not enough — the prompt must be **structured**. OpenAI's official
+gpt-image prompting guide recommends composing prompts in a consistent field
+order — **scene/background → subject → key details → constraints** — and using
+labeled segments or line breaks instead of one long paragraph for complex
+requests. OpenAI's own showcase prompts use labeled blocks such as `Context`,
+`Characters`, and `Composition`. Apply these rules to every agent-authored
+prompt:
+
+- **Write labeled sections, not a wall of prose.** Long prompts are fine; an
+  unstructured long prompt is not — it becomes impossible to iterate on.
+- **Order fields by priority.** Scene-first is the official default; lead with
+  the subject when identity or product fidelity dominates. Field order is a
+  priority signal to the model, not a fixed syntax.
+- **Bind attributes locally.** Keep each object's color, material, pose, count,
+  and position in the same sentence as the object, and state spatial
+  relationships explicitly (foreground/background, left/right, behind, facing,
+  closest to camera).
+- **Every sentence must change pixels.** State aspect intent, exact hex colors,
+  and transparent background needs directly; cut decorative filler words that
+  describe nothing visible.
+- **Do not wrap prompts in JSON.** Structured fields are an authoring tool;
+  render them as labeled natural-language sections. Vendors that support JSON
+  prompts (e.g. FLUX) document that JSON and prose are understood equally well
+  — JSON buys automation, not quality.
 
 ### Required Spec Fields
 
@@ -165,6 +211,27 @@ Avoid: <explicit negative constraints>
 | "logo on white" | "centered geometric mark: two interlocking triangles forming a hexagonal negative space, flat #1a1a2e on #ffffff, no gradients, strong silhouette at 32px, generous padding" |
 | "a dashboard screenshot" | "realistic SaaS dashboard UI: top nav with avatar, left sidebar with 6 nav items, main area showing a line chart (3 series, 12 months) and a 4-column data table with 8 rows, light theme, Inter font, compact density" |
 
+### Prompt Anti-Patterns
+
+These patterns are documented failure modes; reject them when authoring or
+reviewing prompts:
+
+| Anti-pattern | Why it fails | Do instead |
+|---|---|---|
+| Keyword soup (`beautiful, stunning, 8k, trending`) | Comma-separated tag piles are a documented anti-pattern for natural-language image models | Structured narrative sentences: subject + attributes + relations |
+| Unmotivated quality tokens (`masterpiece`, `8K`, `ultra-detailed`) | OpenAI's guide: lens, framing, and lighting language is more reliable for realism than generic quality tokens | Name the look: `shallow depth of field`, `soft window light from the left`, `editorial photography` |
+| Trusting precision specs (`85mm f/1.2`, `5600K`) | Official guidance: detailed camera specs may be interpreted loosely — they are look cues, not optical simulation | Prefer perceptual terms: `medium close-up`, `eye level`, `warm tungsten mood`; keep mm/Kelvin only as style hints |
+| Contradictory constraints (`minimalist` + 12 required objects) | Conflicting demands make the model silently drop some of them | Resolve conflicts before generating; one intent per field |
+| Rewriting everything each iteration | Loses working invariants, causes drift | Change ONE variable per pass, restate invariants |
+
+**Negative constraints are model-specific.** For GPT Image, write exclusions
+as plain prose inside the prompt — `No extra text, no logos, no watermark` —
+this is the officially recommended form; there is no separate negative-prompt
+parameter. Do not copy diffusion-style negative lists (`wall, frame`) into
+GPT Image prompts; that syntax belongs to models with a dedicated negative
+field (e.g. Imagen), where instruction words like "no/don't" are in turn
+discouraged.
+
 ### Quality and Size Selection
 
 | Asset Purpose | Quality | Size | Notes |
@@ -183,12 +250,28 @@ Avoid: <explicit negative constraints>
 
 When generating images with Korean text:
 - Write the exact Korean string in quotes: `"오늘의 추천"`, not "some Korean text"
+- Describe the scene in English and keep only the visible Hangul string in
+  Korean: `A clean summer poster with the exact Korean headline "여름 축제"`.
+  Practitioner testing found all-Korean prompts produced garbled Hangul while
+  English prompts with a quoted Korean string rendered correctly (heuristic,
+  not a guarantee)
+- Start with short, label-like strings (a headline, a button) before
+  attempting body copy; Hangul glyph complexity makes long dense text the
+  most failure-prone case
 - Specify font style explicitly: `고딕체 (Gothic/Sans-serif)` or `명조체 (Myeongjo/Serif)`
 - Specify placement (top-center, bottom-left) and approximate size relative to the canvas
 - For mixed Korean + English, specify which script appears where and in what hierarchy
 - After generation, always inspect the result with `view_image` — garbled or
   substituted Hangul is common and must be caught before use
 - For critical Korean text, generate 2-4 candidates (`-n 4`) and pick the cleanest render
+- If a render is right except for the text, do a targeted `ima2 edit` pass that
+  restates the exact string and changes only the text region; if spelling still
+  will not stabilize after a couple of passes, stop retrying
+- For legally or commercially exact Korean copy (packaging, UI, contracts),
+  the reproducible production path is: generate the image with a reserved
+  empty text area (`no text` in that region), then composite real type with an
+  actual Korean font in an editor or code. Korean text failure is a
+  cross-model limitation, not an ima2-specific one
 
 ### Multi-Candidate Strategy
 
@@ -212,6 +295,9 @@ Do not blindly use the first result.
 - On the next pass, make ONE targeted change and re-specify all constraints.
   Do not rewrite the entire prompt from scratch.
 - Repeat invariants every iteration to prevent drift.
+- This mirrors the official guidance: start from a clean baseline, iterate
+  with small single-variable follow-ups instead of overloading one prompt,
+  and when a detail drifts, restate it explicitly — never assume it persists.
 - If the model consistently fails on a detail, try rephrasing, breaking the
   request into a base generation + `ima2 edit` pass, or switching `--mode`.
 
@@ -282,6 +368,66 @@ ima2 edit input.png --prompt "make the object blue while preserving composition"
 ```
 
 Do not use positional edit prompts. `ima2 edit` requires `--prompt`.
+
+### Structured Edit Brief
+
+OpenAI's official edit pattern is `"change only X"` + `"keep everything else
+the same"` — an edit prompt does not need to re-describe the whole final
+image, but it must make the delta and the invariants explicit. Author every
+edit prompt as a brief:
+
+```text
+Desired result: <one sentence describing the edited image's final state>
+Change only: <the specific modification>
+Preserve exactly: <named lock list: facial structure, pose, product
+  silhouette, logo geometry, text spelling, framing, perspective, palette,
+  lighting, shadows>
+Do not add or remove: <protected elements>
+```
+
+"Keep everything else the same" alone is weak — name the fragile properties in
+the lock list, and repeat the same lock list on every iterative edit pass to
+prevent drift.
+
+**Annotated inputs.** If the edit source or a reference image carries drawn
+markup (arrows, boxes, circled regions, sticky notes), the model tends to
+treat the markup as image content and reproduce it. Prefer sending the clean
+image plus text instructions derived from the markup. When the annotated
+image must be sent, state before and after the edit list that the markup is
+temporary editing instructions only — interpret it, apply the edits, then
+remove every trace of it from the output.
+
+**Removal edits.** "Remove X" alone is weak. Pair the removal command with a
+positive description of what replaces it, then lock the rest: "Remove the
+sticky note. Show the continuous walnut desk surface where it was, matching
+the surrounding grain, lighting, and perspective — no residue, outline, or
+discoloration. Preserve every other object, the framing, and the color
+grading exactly." For stubborn removals, generate multiple candidates and
+re-edit only the residual region instead of enlarging the prompt.
+
+### Multi-Reference Rules
+
+When passing multiple `--ref` images, label each reference by index and role
+inside the prompt, then state the relationships explicitly:
+
+```text
+Image 1: base scene and composition.
+Image 2: subject identity reference.
+Image 3: style reference.
+
+Place the subject from Image 2 into Image 1. Apply only Image 3's palette and
+brushwork. Preserve Image 1's framing, background, perspective, and lighting.
+```
+
+- Put the most identity-critical reference (face, logo, product) **first**:
+  documented GPT Image behavior preserves the first input with the richest
+  texture and detail.
+- When several faces must all stay recognizable, combine them into one
+  composed reference image before generating instead of passing many separate
+  portraits.
+- For compositing, specify the source element, its destination and location,
+  the preserved context, and harmonization: scale, perspective, lighting,
+  shadows.
 
 ## Parallel Generation
 
@@ -884,6 +1030,26 @@ Negative constraints: no visible subtitles/text unless requested, preserve
 When creating a sequence, write both motions explicitly: "A motion" for the
 first clip and "B motion" for the continuation. For last-frame Ref2V, use ref 1
 as identity/style and ref 2 as current state/last frame.
+
+**Shot discipline (cross-vendor official guidance):**
+
+- **One camera move + one primary action per shot** is the most reliable
+  recipe; short clips follow instructions better than long ones. Write actions
+  as observable, timed beats: "takes four steps to the window, pauses, pulls
+  the curtain in the final second" — not abstract descriptions.
+- **Split audio into explicit channels**: Dialogue (speaker label + exact
+  short line), Ambience, SFX, Music. Declare music policy explicitly —
+  "diegetic only", "no score", or a concrete style. A 4-5s clip fits 1-2 short
+  dialogue exchanges at most.
+- **I2V prompts describe motion, not the image.** When a reference image or
+  last frame drives the clip, the image already fixes subject, composition,
+  color, and lighting — do not re-describe them. Write only: subject motion,
+  scene reaction, camera motion, motion style.
+- **Reuse identical anchor phrases across clips.** For multi-clip continuity,
+  repeat the same character/wardrobe/palette wording verbatim in every prompt
+  of the series.
+- **Failure recovery ladder**: freeze the camera, then simplify the action,
+  then clear the background, then re-add one element per iteration.
 
 **Example — product reveal (10s, 1.5, 1080p):**
 ```text
