@@ -65,13 +65,13 @@ inside `front` and `uiux` skills are loadable individually:
 ima2 skill front refs              # list reference modules with line counts
 ima2 skill front ref anti-slop     # load one module by name
 ima2 skill uiux ref design-isms    # load a uiux module
-ima2 skill install                  # install all skills to ~/.codex/skills/ (recommended)
-ima2 skill install --local          # install to ./.codex/skills/ (project)
-ima2 skill install --tmp            # install to temp dir (ephemeral)
+ima2 skill install --dir <path>     # install to agent's skill directory
+ima2 skill install --tmp            # install to temp dir (ephemeral fallback)
 ```
 
-**Recommended approach:** Run `ima2 skill install` so agents discover skills via
-filesystem and read `references/` natively. Avoid piping large bundled outputs.
+**Recommended approach:** The agent resolves its own skill directory path and runs
+`ima2 skill install --dir <path>`. Skills land on disk as directories (SKILL.md +
+references/) and the agent reads them natively. Avoid piping large bundled outputs.
 
 ## Devlog Phase Roadmap
 - Current active plans live under `devlog/_plan/`.

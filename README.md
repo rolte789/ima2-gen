@@ -117,8 +117,8 @@ ima2 skill front path    # print file path (for agents)
 ima2 skill front --json  # JSON wrapper (for agents)
 ima2 skill front refs    # list reference modules (35 files)
 ima2 skill front ref motion        # load one reference module
-ima2 skill install                  # install skills to ~/.codex/skills/ (recommended)
-ima2 skill install --tmp            # install to temp dir (ephemeral)
+ima2 skill install --dir <path>     # install skills to agent's skill dir
+ima2 skill install --tmp            # install to temp dir (fallback)
 ```
 
 The Frontend and UI/UX skills are production-grade design engineering guides

@@ -24,8 +24,8 @@ Start by discovering the local package and running server state:
 ima2 skill
 ima2 skill --json
 ima2 skill ls                     # list all skills (core, front, uiux)
-ima2 skill install                # install skills to ~/.codex/skills/ (recommended)
-ima2 skill install --tmp          # install to temp dir (ephemeral)
+ima2 skill install --dir <path>   # install skills to agent's skill directory
+ima2 skill install --tmp          # install to temp dir (ephemeral fallback)
 ima2 skill front refs             # list frontend reference modules
 ima2 skill front ref motion       # load one reference module
 ima2 capabilities --json
@@ -607,7 +607,7 @@ ima2 config keys --json
 - Use `ima2 skill path` when an agent needs the installed Markdown skill path.
 - Use `ima2 skill <name> refs` to discover reference modules for front/uiux skills.
 - Use `ima2 skill <name> ref <refname>` to load a specific reference module on demand.
-- Use `ima2 skill install` to copy skills to ~/.codex/skills/ so agents read them natively.
+- Use `ima2 skill install --dir <path>` to install skills to the agent's skill directory.
 - Use `ima2 inflight ls --json` or `ima2 ps --json` to inspect active jobs.
 
 ## Video Generation

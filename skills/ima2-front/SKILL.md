@@ -39,13 +39,14 @@ wiring, visual verification, and frontend platform rules.
 ## Modular References
 
 > **Loading references via CLI:**
-> **Recommended: install skills so agents read references natively from disk.**
+> **Recommended: install skills to your agent's skill directory.**
 > ```bash
-> ima2 skill install                 # copies all skills to ~/.codex/skills/ (global)
-> ima2 skill install --local         # copies to ./.codex/skills/ (project)
-> ima2 skill install --tmp           # copies to $TMPDIR/ima2-skills/ (ephemeral)
+> ima2 skill install --dir <agent-skill-path>   # agent provides its own path
+> ima2 skill install --tmp                       # ephemeral fallback
 > ```
-> After install, agents discover SKILL.md and follow `references/` paths naturally.
+> The agent determines its own skill directory (e.g. `~/.codex/skills/`,
+> `./skills/`, etc.) and passes it via `--dir`. After install, SKILL.md and
+> `references/` are on disk — the agent reads them natively via relative paths.
 >
 > **Ad-hoc reading (without install):**
 > ```bash
