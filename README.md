@@ -97,6 +97,32 @@ Ctrl+C now performs a clean shutdown — closing the database, stopping child pr
 - **Mobile shell**: use the app bar, compose sheet, and compact settings toggle on smaller screens.
 - **Observable jobs**: active and recent jobs are tracked with safe logs and request IDs.
 
+### Agent Skills
+
+ima2-gen ships three packaged skills for AI coding agents. These are Markdown
+instruction files that agents load to get structured workflows for image/video
+generation, frontend asset production, and design direction discovery.
+
+| Skill | Command | What It Covers |
+|-------|---------|----------------|
+| **Core** | `ima2 skill` | CLI reference, prompting protocol, provider routing, Korean text, video workflows |
+| **Frontend** | `ima2 skill front` | Asset pipeline (parallel gen, variant selection, provider routing), motion/video for web, responsive, a11y, anti-slop, 30+ reference files |
+| **UI/UX Design** | `ima2 skill uiux` | Image-first design direction discovery, UX states, design-isms, product personalities, DESIGN.md workflow, 18 reference files |
+
+```bash
+ima2 skill ls            # list available skills
+ima2 skill front         # print the frontend skill
+ima2 skill uiux          # print the design skill
+ima2 skill front path    # print file path (for agents)
+ima2 skill front --json  # JSON wrapper (for agents)
+```
+
+The Frontend and UI/UX skills are production-grade design engineering guides
+adapted for the ima2 workflow. They cover typography, color systems, layout
+discipline, Korean UX patterns, motion choreography, and visual verification,
+with every asset generation step mapped to `ima2 gen`, `ima2 video`, and
+`ima2 multimode` commands.
+
 ### SSE Multiplexing
 
 The web UI uses a single `GET /api/events` Server-Sent Events connection for all generation progress. Multimode, node, and video requests are submitted as async POST (`202 { requestId }`) and progress events are multiplexed through a shared event bus. This eliminates the browser 6-connection limit that previously caused gallery hangs during concurrent generation. CLI clients that do not send `async: true` still receive per-request SSE streams for backward compatibility.

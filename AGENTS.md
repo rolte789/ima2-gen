@@ -47,6 +47,19 @@ ima2-gen/
 └── package.json
 ```
 
+## Agent Skills (packaged)
+
+Three Markdown skill files ship inside `skills/` for AI coding agents:
+
+| Skill | Path | CLI | What It Covers |
+|-------|------|-----|----------------|
+| Core | `skills/ima2/SKILL.md` | `ima2 skill` | CLI reference, prompting protocol, provider routing, video workflows |
+| Frontend | `skills/ima2-front/SKILL.md` | `ima2 skill front` | Asset pipeline, motion/video, responsive, a11y, anti-slop, 28 reference files |
+| UI/UX Design | `skills/ima2-uiux/SKILL.md` | `ima2 skill uiux` | Image-first ism discovery, UX states, design-isms, product personalities, 18 reference files |
+
+Use `ima2 skill ls` to list, `ima2 skill <name> path` for file paths,
+`ima2 skill <name> --json` for JSON-wrapped content.
+
 ## Devlog Phase Roadmap
 - Current active plans live under `devlog/_plan/`.
 - Completed plans live under `devlog/_fin/`.

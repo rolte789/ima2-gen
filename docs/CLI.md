@@ -34,9 +34,16 @@ Agents should start from the packaged skill and capability commands instead of g
 
 | Command | Description |
 |---|---|
-| `ima2 skill` | Print the packaged Markdown skill from `skills/ima2/SKILL.md` |
-| `ima2 skill --json` | Print a JSON wrapper around the Markdown skill content |
-| `ima2 skill path` | Print the installed skill file path |
+| `ima2 skill` | Print the core Markdown skill (`skills/ima2/SKILL.md`) |
+| `ima2 skill front` | Print the frontend implementation skill (`skills/ima2-front/SKILL.md`) |
+| `ima2 skill uiux` | Print the design direction skill (`skills/ima2-uiux/SKILL.md`) |
+| `ima2 skill ls` | List all available packaged skills |
+| `ima2 skill --json` | Print a JSON wrapper around the core skill content |
+| `ima2 skill front --json` | Print a JSON wrapper around the frontend skill |
+| `ima2 skill uiux --json` | Print a JSON wrapper around the design skill |
+| `ima2 skill path` | Print the core skill file path |
+| `ima2 skill front path` | Print the frontend skill file path |
+| `ima2 skill uiux path` | Print the design skill file path |
 | `ima2 capabilities --json` | Print supported commands, model/quality/reasoning values, and advisory limits |
 | `ima2 defaults --json` | Print the running server's effective model/reasoning defaults, falling back to local config when no server is reachable |
 | `ima2 defaults --local --json` | Print local effective defaults without contacting the server |
@@ -404,6 +411,9 @@ ima2 storage status --json
 
 # Config
 ima2 skill --json
+ima2 skill ls
+ima2 skill front --json
+ima2 skill uiux path
 ima2 capabilities --json
 ima2 defaults set model gpt-5.5
 ima2 defaults set reasoning high
