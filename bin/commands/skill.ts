@@ -39,24 +39,27 @@ const HELP = `
     ima2 skill <name> path   Print skill file path
 
   Install to agent skill directory:
-    ima2 skill install --dir <path>   Copy all skills to <path>/
-    ima2 skill install --tmp          Copy to $TMPDIR/ima2-skills/ (ephemeral)
+    ima2 skill install --dir <path>          Copy all skills to <path>/
+    ima2 skill install front --dir <path>    Copy only the frontend skill
+    ima2 skill install uiux --dir <path>     Copy only the design skill
+    ima2 skill install --tmp                 Copy to $TMPDIR/ima2-skills/ (ephemeral)
+    ima2 skill install front --tmp           Copy one skill to temp dir
 
-    Each skill is copied as a directory (e.g. <path>/ima2-front/) containing
-    SKILL.md + references/. The agent determines its own skill discovery path
-    and passes it via --dir. Use --tmp when no persistent path is available.
+    Each skill is a directory (e.g. <path>/ima2-front/) with SKILL.md +
+    references/. The agent determines its own skill path and passes --dir.
+    Use --tmp when no persistent path is available.
 
   Reference modules (ad-hoc, without install):
     ima2 skill <name> refs          List reference modules for a skill
     ima2 skill <name> ref <name>    Print one reference module
 
   Examples:
-    ima2 skill install --dir ~/.codex/skills   Install for Codex
-    ima2 skill install --dir ./skills          Install into project
-    ima2 skill install --tmp                   Install to temp dir
-    ima2 skill front refs                      List frontend references
-    ima2 skill front ref motion                Print references/motion.md
-    ima2 skill uiux ref design-isms            Print references/design-isms.md
+    ima2 skill install --dir ~/.codex/skills        Install all skills
+    ima2 skill install front --dir ~/.codex/skills   Install frontend only
+    ima2 skill install --tmp                         Install to temp dir
+    ima2 skill front refs                            List frontend references
+    ima2 skill front ref motion                      Print references/motion.md
+    ima2 skill uiux ref design-isms                  Print references/design-isms.md
 
   Agent integration:
     The agent is responsible for resolving its own skill directory path.
@@ -178,15 +181,20 @@ function resolveInstallDir(args: Record<string, unknown>): string | null {
   return null;
 }
 
-function installSkills(targetBase: string, asJson: boolean) {
+function installSkills(targetBase: string, only: string[] | null, asJson: boolean) {
   const results: Array<{ name: string; dir: string; dest: string; files: number }> = [];
 
   for (const [name, info] of Object.entries(KNOWN_SKILLS)) {
+    if (only && !only.includes(name)) continue;
     const srcDir = join(SKILLS_DIR, info.dir);
     if (!existsSync(join(srcDir, "SKILL.md"))) continue;
     const destDir = join(targetBase, info.dir);
     const { files } = copySkillDir(srcDir, destDir);
     results.push({ name, dir: info.dir, dest: destDir, files });
+  }
+
+  if (results.length === 0 && only) {
+    die(2, `unknown skill: "${only.join(", ")}". Available: ${Object.keys(KNOWN_SKILLS).join(", ")}`);
   }
 
   if (asJson) {
@@ -200,7 +208,7 @@ function installSkills(targetBase: string, asJson: boolean) {
       target: targetBase,
     });
   } else {
-    out(`\n  Installed ${results.length} ima2 skills to ${targetBase}\n`);
+    out(`\n  Installed ${results.length} ima2 skill${results.length === 1 ? "" : "s"} to ${targetBase}\n`);
     for (const r of results) {
       out(`    ✓  ${r.dir.padEnd(12)} ${r.files} files → ${r.dest}`);
     }
@@ -223,9 +231,11 @@ export default async function skillCmd(argv: string[]) {
   if (positional[0] === "install") {
     const targetBase = resolveInstallDir(args);
     if (!targetBase) {
-      die(2, "specify --dir <path> or --tmp. The agent determines its own skill directory path.\n\n  Examples:\n    ima2 skill install --dir ~/.codex/skills\n    ima2 skill install --dir ./skills\n    ima2 skill install --tmp");
+      die(2, "specify --dir <path> or --tmp. The agent determines its own skill directory path.\n\n  Examples:\n    ima2 skill install --dir ~/.codex/skills\n    ima2 skill install front --dir ./skills\n    ima2 skill install --tmp");
     }
-    installSkills(targetBase, !!args.json);
+    // Collect optional skill names after "install"
+    const installNames = positional.slice(1).filter((p) => KNOWN_SKILLS[p]);
+    installSkills(targetBase, installNames.length > 0 ? installNames : null, !!args.json);
     return;
   }
 
@@ -253,7 +263,7 @@ export default async function skillCmd(argv: string[]) {
       out(`\n  Usage: ima2 skill <name>         Print a skill`);
       out(`         ima2 skill <name> path     Print its file path`);
       out(`         ima2 skill <name> refs     List reference modules`);
-      out(`         ima2 skill install --dir <path>  Install to agent skill dir\n`);
+      out(`         ima2 skill install [<name>] --dir <path>\n`);
     }
     return;
   }
@@ -312,8 +322,7 @@ export default async function skillCmd(argv: string[]) {
         out(`    ${r.name.padEnd(30)} ${String(r.lines).padStart(4)} lines`);
       }
       out(`\n  Load one:  ima2 skill ${skillName} ref <name>`);
-      out(`  Install:   ima2 skill install (recommended — copies SKILL.md + all refs)\n`);
-      out(`             ima2 skill install --dir <path>\n`);
+      out(`  Install:   ima2 skill install ${skillName} --dir <path>\n`);
     }
     return;
   }

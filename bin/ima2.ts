@@ -328,8 +328,20 @@ function showHelp() {
     config <sub>   Config get/set/ls/path/rm       (ima2 config --help)
     defaults <sub> Inspect/change model defaults   (ima2 defaults --help)
     capabilities   Agent capability metadata       (ima2 capabilities --help)
-    skill          Print packaged agent skills      (ima2 skill --help)
     ping           Ping running server / check health
+
+  Agent skills (SKILL.md + references/):
+    skill ls                         List packaged skills (ima2, front, uiux)
+    skill [front|uiux]               Print a skill's SKILL.md
+    skill [front|uiux] refs          List reference modules
+    skill [front|uiux] ref <name>    Print one reference module
+    skill install --dir <path>       Install all skills to a directory
+    skill install front --dir <path> Install one skill only
+    skill install --tmp              Install to temp dir (ephemeral)
+
+    Skills ship as directories (SKILL.md + references/). The agent resolves
+    its own skill path and passes it via --dir. After install, the agent
+    reads SKILL.md and follows references/ natively from disk.
 
   Options:
     -v, --version  Show version
@@ -360,8 +372,9 @@ function showHelp() {
     ima2 skill uiux                   Print design direction skill
     ima2 skill front refs             List frontend reference modules
     ima2 skill front ref motion       Load one reference module
-    ima2 skill install --dir <path>   Install skills to agent's skill dir
-    ima2 skill install --tmp          Install to temp dir (fallback)
+    ima2 skill install --dir <path>   Install all skills
+    ima2 skill install front --dir <path>  Install frontend skill only
+    ima2 skill install --tmp          Install to temp dir
     ima2 capabilities --json         Inspect supported models/options
     ima2 defaults --json             Inspect running server defaults
     ima2 ping                        Health check

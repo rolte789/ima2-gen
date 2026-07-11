@@ -87,7 +87,7 @@ describe("CLI packaged skill contract", () => {
   it("top-level CLI dispatch lets skill help reach the subcommand", () => {
     const src = readSource("bin/ima2.ts");
 
-    assert.match(src, /skill\s+Print packaged agent skill/);
+    assert.match(src, /Agent skills/);
     assert.match(src, /"skill"/);
     assert.match(src, /case "skill":/);
   });
