@@ -490,7 +490,7 @@ If YES to any: use the official package. Do not recreate CSS by hand.
 | GOV.UK | govuk-frontend | `import 'govuk-frontend/dist/govuk/all.scss'` |
 | USWDS | @uswds/uswds | `import '@uswds/uswds/css/uswds.css'` |
 
-If NO: proceed with `dev-uiux-design/references/design-system-bootstrap.md`.
+If NO: proceed with `ima2-uiux/references/design-system-bootstrap.md`.
 
 ### shadcn/ui and AI-Assisted UI
 
@@ -552,7 +552,7 @@ Before delivering:
 - [ ] Focus management on modals and popovers (§11)
 - [ ] Desktop/mobile/narrow screenshots checked for overlap, clipping, and asset rendering
 - [ ] Interactive components isolated as Client Components (if RSC)
-- [ ] Design Read declared before code generation (see dev-uiux-design §2)
+- [ ] Design Read declared before code generation (see ima2-uiux §2)
 - [ ] Eyebrow count ≤ ceil(sectionCount / 3) (see layout-discipline.md)
 - [ ] Section layout diversity: ≥4 different families per 8 sections
 - [ ] Color/shape/theme locks consistent across all sections (see consistency-locks.md)
