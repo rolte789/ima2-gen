@@ -59,7 +59,7 @@ wiring, visual verification, and frontend platform rules.
 | ----------------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------- |
 | `references/crud-ui.md`              | C2 list/detail/form product screens  | State coverage (loading/empty/error/permission), forms, objective UX gates         |
 | `references/anti-slop.md`            | New components or UI redesign        | 2026 AI slop patterns, Korean slop, oversized text, fake assets, default UI smells |
-| `references/aesthetics.md`           | Visual design decisions              | Domain-correct visual direction, typography, color, composition, serif three-role system, expressive/functional layers, AI-brand grammar                    |
+| `references/aesthetics.md`           | Implementing an established visual direction | Domain-correct typography, color, composition, serif three-role system, expressive/functional layers, AI-brand grammar                    |
 | `references/product-density.md`      | Apps, tools, dashboards              | Density profiles for landing, consumer app, SaaS, ops, finance, devtools          |
 | `references/asset-requirements.md`   | Any public/product/visual surface    | Required screenshots, images, diagrams, charts, generated bitmaps, or 3D assets, mockup production pipeline   |
 | `references/visual-verification.md`  | Changes affecting rendered layout    | Screenshot, viewport, text fit, state, asset, and motion verification              |
@@ -157,12 +157,12 @@ Two different kinds of rules live in this skill (see the work classifier):
 - **Objective UX gates (STRICT/DEFAULT)** — accessibility baseline (§7, §11), state coverage
   (loading/empty/error/permission), keyboard operability, visible focus, contrast. Missing
   these are review findings.
-- **Style direction (STYLE_SAMPLE)** — design thinking (§2), aesthetics, density profiles,
+- **Style direction (STYLE_SAMPLE)** — design direction intake (§2), aesthetics, density profiles,
   product personalities, preset tokens, and the concrete values in §4-§5 (palettes, font
   choices, pixel max-widths). These illustrate acceptable choices; they are NOT
   requirements, must not override an existing design system (Design System Detection stays
   MANDATORY), and must never be enforced as universal taste (UX-STYLE-01).
-## 2. Design Thinking
+## 2. Design Direction Intake
 
 > When the user cannot articulate a clear design direction, load `ima2-uiux` to
 > discover intent and choose a direction before implementing here.
