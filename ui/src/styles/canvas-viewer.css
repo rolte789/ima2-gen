@@ -60,7 +60,7 @@
 
 .settings-eyebrow {
   margin-bottom: 8px;
-  color: var(--text-faint);
+  color: var(--text-muted);
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.12em;
@@ -137,7 +137,7 @@
 }
 
 .settings-mobile-nav__item small {
-  color: var(--text-faint);
+  color: var(--text-muted);
   font-family: var(--mono);
   font-size: 10px;
   line-height: 1.2;
@@ -181,7 +181,7 @@
 }
 
 .settings-nav__item small {
-  color: var(--text-faint);
+  color: var(--text-muted);
   font-family: var(--mono);
   font-size: 10px;
 }
@@ -222,7 +222,7 @@
 
 .settings-section__header p {
   margin-top: 4px;
-  color: var(--text-faint);
+  color: var(--text-muted);
   font-family: var(--mono);
   font-size: 10px;
 }
@@ -237,10 +237,13 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 8px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
+  padding: 14px 2px;
+}
+
+.settings-row + .settings-row,
+.settings-row + .settings-note,
+.settings-note + .settings-row {
+  border-top: 1px solid var(--hairline-soft);
 }
 
 .settings-row__copy {
@@ -342,4 +345,3 @@
   color: var(--red);
   border-color: var(--red);
 }
-
