@@ -234,12 +234,12 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 
 | Area | File | Lines | Responsibility |
 |---|---|---:|---|
-| App shell | `ui/src/App.tsx` | 189 | Initial hydration, polling, classic/node/card-news canvas switch, Canvas Mode workspace mount, theme attributes, prompt library overlay, mobile shell |
+| App shell | `ui/src/App.tsx` | 162 | Initial hydration, polling, classic/node/card-news canvas switch, Canvas Mode workspace mount, prompt library overlay, mobile shell (dark-only since Phase 010) |
 | Entry | `ui/src/main.tsx` | 41 | React mount |
-| Types | `ui/src/types.ts` | 265 | Provider, quality, size, image model, theme family, embedded metadata, response types, web-search, reasoning effort, multimode |
+| Types | `ui/src/types.ts` | 254 | Provider, quality, size, image model, embedded metadata, response types, web-search, reasoning effort, multimode |
 | Canvas types | `ui/src/types/canvas.ts` | 98 | Canvas Mode shared types (annotations, versions, masks, brushes) |
-| Store | `ui/src/store/useAppStore.ts` | 508 | Zustand facade; classic/node/video/multimode/inflight/history logic split into `ui/src/store/store*Impl.ts` modules |
-| Persistence registry | `ui/src/store/persistenceRegistry.ts` | 90 | Single source of truth for `ima2.*` localStorage key names — covers gallery scope, gallery default scope, settings, and theme keys; prevents drift between hydration helpers and setters (#43) |
+| Store | `ui/src/store/useAppStore.ts` | 490 | Zustand facade; classic/node/video/multimode/inflight/history logic split into `ui/src/store/store*Impl.ts` modules |
+| Persistence registry | `ui/src/store/persistenceRegistry.ts` | 83 | Single source of truth for `ima2.*` localStorage key names — covers gallery scope, gallery default scope, and settings keys (theme keys removed in Phase 010); prevents drift between hydration helpers and setters (#43) |
 | Card-news store | `ui/src/store/cardNewsStore.ts` | 417 | Card-news plan, role/image template selection, planner draft, job polling, regenerate actions |
 | Mode/dev gates | `ui/src/lib/devMode.ts` | 16 | `IS_DEV_UI`, `ENABLE_NODE_MODE`, `ENABLE_CARD_NEWS_MODE` build-time flags |
 | API client | `ui/src/lib/api.ts` | 105 | Browser-side REST barrel re-export (`api-core`, `api-capabilities`, `api-inflight`, `api-generate`, …) |
@@ -415,7 +415,7 @@ The `tests/` directory now contains roughly 125 `*.test.js` / `*.test.mjs` / `*.
 |---|---|---|
 | `server.ts` is split | Route files own API surfaces; keep route map current | `03-server-api`, `06-infra-operations` |
 | `ui/src/index.css` is ~105 lines | Global shell only; feature CSS lives in `ui/src/styles/*` | `04-frontend-architecture` |
-| `useAppStore.ts` is a ~508-line facade | State split into `store*Impl.ts` modules; card-news remains in `cardNewsStore.ts` | `04-frontend-architecture`, `05-node-mode` |
+| `useAppStore.ts` is a ~490-line facade | State split into `store*Impl.ts` modules; card-news remains in `cardNewsStore.ts` | `04-frontend-architecture`, `05-node-mode` |
 | `cardNewsStore.ts` is a separate dev-only store at 417 lines | Card-news plan/job state is isolated from `useAppStore` | `04-frontend-architecture`, `06-infra-operations` |
 | `lib/oauthProxy/*` subtree | Largest OAuth helper is `generators.ts` (~502 lines); `lib/oauthProxy.ts` is a 4-line re-export shim | `03-server-api`, `05-node-mode` |
 | `routes/prompts.ts` is ~429 lines | Prompt library CRUD + folders + import/export grew beyond a single concern | `03-server-api`, `04-frontend-architecture` |

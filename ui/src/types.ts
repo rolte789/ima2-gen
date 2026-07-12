@@ -1,17 +1,6 @@
 export type UIMode = "classic" | "node" | "card-news" | "agent";
 export type SettingsSection = "account" | "generation" | "appearance" | "workspace" | "language" | "future";
 export type HistoryStripLayout = "rail" | "horizontal" | "sidebar";
-export type ThemePreference = "system" | "dark" | "light";
-export type ResolvedTheme = "dark" | "light";
-export type ResolvedThemeMode = "dark" | "light";
-export type ThemeFamily = "default" | "gpt" | "claude" | "gemini" | "grok";
-export const THEME_FAMILIES = [
-  "default",
-  "gpt",
-  "claude",
-  "gemini",
-  "grok",
-] as const satisfies readonly ThemeFamily[];
 export type Provider = "oauth" | "api" | "grok" | "grok-api" | "agy" | "gemini-api";
 export type Quality = "low" | "medium" | "high";
 export type Format = "png" | "jpeg" | "webp";

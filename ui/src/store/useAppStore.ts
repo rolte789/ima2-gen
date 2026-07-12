@@ -17,8 +17,6 @@ import { loadLocale, saveLocale } from "../i18n";
 import {
   loadRightPanelOpen,
   loadUIMode,
-  loadThemePreference,
-  loadThemeFamily,
   loadHistoryStripLayout,
   loadGalleryScope,
   loadCanvasExportBackground,
@@ -27,7 +25,6 @@ import {
   loadWebSearchEnabled,
   loadVideoDefaults,
   saveVideoDefaults,
-  resolveThemePreference,
   loadGenerationDefaults,
 } from "./storePersistence";
 import {
@@ -132,7 +129,7 @@ import {
   cancelInFlightJobImpl, syncFromStorageImpl, applyMergedCanvasImageImpl,
   addReferenceDataUrlImpl, addMetadataRestoreAsReferenceImpl,
   toggleRightPanelImpl, setGalleryScopeImpl, setGalleryDefaultScopeImpl,
-  setUIModeImpl, setThemeImpl, setThemeFamilyImpl, setHistoryStripLayoutImpl,
+  setUIModeImpl, setHistoryStripLayoutImpl,
   showToastImpl, dismissToastImpl, showErrorCardImpl, dismissErrorCardImpl,
   setGraphNodesImpl, setGraphEdgesImpl, toggleNodeSelectionModeImpl,
   selectNodeGraphImpl, cancelNodeBatchImpl, setCanvasPanImpl,
@@ -277,23 +274,8 @@ trashPending: null,
   uiMode: loadUIMode(),
   setUIMode: (m) => setUIModeImpl(m, set),
 
-  theme: loadThemePreference(),
-  resolvedTheme: resolveThemePreference(loadThemePreference()),
-  themeFamily: loadThemeFamily(),
   historyStripLayout: loadHistoryStripLayout(),
-  setTheme: (theme) => setThemeImpl(theme, set),
-  setThemeFamily: (family) => setThemeFamilyImpl(family, set),
   setHistoryStripLayout: (layout) => setHistoryStripLayoutImpl(layout, set),
-  syncThemeFromStorage: () => {
-    const theme = loadThemePreference();
-    set({ theme, resolvedTheme: resolveThemePreference(theme) });
-  },
-  syncThemeFamilyFromStorage: () => {
-    set({ themeFamily: loadThemeFamily() });
-  },
-  refreshResolvedTheme: () => {
-    set((s) => ({ resolvedTheme: resolveThemePreference(s.theme) }));
-  },
 
   locale: loadLocale(),
   setLocale: (l) => {

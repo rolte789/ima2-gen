@@ -1032,7 +1032,7 @@
       },
       "appearance": {
         "title": "화면",
-        "hint": "라이트/다크"
+        "hint": "히스토리 배치"
       },
       "workspace": {
         "title": "작업공간",
@@ -1170,8 +1170,6 @@
       "defaultScopeBody": "갤러리를 열 때 처음 보여줄 범위를 선택합니다."
     },
     "appearance": {
-      "themeTitle": "테마",
-      "themeBody": "이 기기에서 사용할 테마 스타일과 밝기를 선택합니다.",
       "historyStripLayoutTitle": "히스토리 썸네일",
       "historyStripLayoutBody": "작업공간 옆 작은 히스토리 배열 방식을 고릅니다.",
       "historyStripLayout": {

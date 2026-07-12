@@ -1032,7 +1032,7 @@
       },
       "appearance": {
         "title": "Appearance",
-        "hint": "Light and dark"
+        "hint": "History layout"
       },
       "workspace": {
         "title": "Workspace",
@@ -1170,8 +1170,6 @@
       "defaultScopeBody": "Choose what the gallery shows when you open it."
     },
     "appearance": {
-      "themeTitle": "Theme",
-      "themeBody": "Pick a theme style and brightness for this device.",
       "historyStripLayoutTitle": "History thumbnails",
       "historyStripLayoutBody": "Choose how the compact history strip sits beside the workspace.",
       "historyStripLayout": {

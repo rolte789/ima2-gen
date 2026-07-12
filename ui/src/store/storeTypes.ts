@@ -10,11 +10,8 @@ import type {
   MultimodeSequenceStatus,
   Provider,
   Quality,
-  ResolvedTheme,
   SettingsSection,
   SizePreset,
-  ThemeFamily,
-  ThemePreference,
   UIMode,
   VideoResolutionUI,
   VideoContinuityLineage,
@@ -282,16 +279,8 @@ export type AppState = {
   uiMode: UIMode;
   setUIMode: (m: UIMode) => void;
 
-  theme: ThemePreference;
-  resolvedTheme: ResolvedTheme;
-  themeFamily: ThemeFamily;
   historyStripLayout: HistoryStripLayout;
-  setTheme: (theme: ThemePreference) => void;
-  setThemeFamily: (family: ThemeFamily) => void;
   setHistoryStripLayout: (layout: HistoryStripLayout) => void;
-  syncThemeFromStorage: () => void;
-  syncThemeFamilyFromStorage: () => void;
-  refreshResolvedTheme: () => void;
 
   locale: Locale;
   setLocale: (l: Locale) => void;

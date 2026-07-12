@@ -146,7 +146,7 @@
   background: var(--surface-2);
   color: var(--text);
   cursor: pointer;
-  font-family: var(--font, "Outfit", sans-serif);
+  font-family: var(--font);
   font-size: 12px;
   transition: background 140ms ease, border-color 140ms ease;
 }
@@ -231,7 +231,7 @@
   background: transparent;
   color: var(--text);
   cursor: pointer;
-  font-family: var(--font, "Outfit", sans-serif);
+  font-family: var(--font);
   font-size: 12px;
   text-align: left;
   transition: background 140ms ease;

@@ -5,7 +5,6 @@ import { ImageModelSelect } from "./ImageModelSelect";
 import { ReasoningEffortSelect } from "./ReasoningEffortSelect";
 import { WebSearchToggle } from "./WebSearchToggle";
 import { LanguageToggle } from "./LanguageToggle";
-import { ThemeToggle } from "./ThemeToggle";
 import { HistoryStripLayoutToggle } from "./HistoryStripLayoutToggle";
 import { WorkspaceProfileSettings } from "./settings/WorkspaceProfileSettings";
 import { QuotaCard } from "./settings/QuotaCard";
@@ -279,15 +278,6 @@ export function SettingsWorkspace() {
             </SettingsSectionBlock>
 
             <SettingsSectionBlock id="appearance" setRef={setSectionRef}>
-              <article className="settings-row">
-                <div className="settings-row__copy">
-                  <h4>{t("settings.appearance.themeTitle")}</h4>
-                  <p>{t("settings.appearance.themeBody")}</p>
-                </div>
-                <div className="settings-row__control">
-                  <ThemeToggle />
-                </div>
-              </article>
               <article className="settings-row">
                 <div className="settings-row__copy">
                   <h4>{t("settings.appearance.historyStripLayoutTitle")}</h4>

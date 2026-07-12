@@ -18,15 +18,12 @@ import {
   GALLERY_SCOPE_STORAGE_KEY,
   HISTORY_STRIP_LAYOUT_STORAGE_KEY,
   RIGHT_PANEL_OPEN_STORAGE_KEY,
-  THEME_FAMILY_STORAGE_KEY,
-  THEME_STORAGE_KEY,
   UI_MODE_STORAGE_KEY,
 } from "./persistenceRegistry";
 import {
   loadImageModel,
   loadSelectedFilename,
   loadVideoDefaults,
-  resolveThemePreference,
   persistCanvasExportBackground,
 } from "./storePersistence";
 import {
@@ -38,7 +35,7 @@ import type { GalleryScope, GraphNode, GraphEdge, StoreSet, StoreGet } from "./s
 import type { ClientNodeId } from "../lib/graph";
 import type { ImaErrorCode } from "../lib/errorCodes";
 import type { CanvasExportBackground, HexColor } from "../types/canvas";
-import type { ThemePreference, ThemeFamily, HistoryStripLayout, UIMode } from "../types";
+import type { HistoryStripLayout, UIMode } from "../types";
 import { abortFlight } from "./flightAbortRegistry";
 
 export async function cancelInFlightJobImpl(
@@ -160,16 +157,6 @@ export function setUIModeImpl(m: UIMode, set: StoreSet): void {
         m;
   try { localStorage.setItem(UI_MODE_STORAGE_KEY, next); } catch {}
   set({ uiMode: next });
-}
-
-export function setThemeImpl(theme: ThemePreference, set: StoreSet): void {
-  try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch {}
-  set({ theme, resolvedTheme: resolveThemePreference(theme) });
-}
-
-export function setThemeFamilyImpl(family: ThemeFamily, set: StoreSet): void {
-  try { localStorage.setItem(THEME_FAMILY_STORAGE_KEY, family); } catch {}
-  set({ themeFamily: family });
 }
 
 export function setHistoryStripLayoutImpl(layout: HistoryStripLayout, set: StoreSet): void {
