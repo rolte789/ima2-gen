@@ -1018,9 +1018,7 @@
     "navAria": "설정 섹션",
     "contentAria": "설정 내용",
     "jumpTo": "{section} 섹션으로 이동",
-    "eyebrow": "작업공간 설정",
     "title": "설정",
-    "subtitle": "프로바이더, 작업공간 동작, 인터페이스 설정을 이곳에 모아 생성 흐름은 가볍게 유지합니다.",
     "sections": {
       "providers": {
         "title": "프로바이더",

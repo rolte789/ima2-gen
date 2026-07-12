@@ -37,18 +37,20 @@
 .settings-header {
   flex: 0 0 auto;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 22px 24px;
+  padding: 14px 24px;
   border-bottom: 1px solid var(--border);
 }
 
 .settings-header h2 {
   color: var(--text);
-  font-size: clamp(30px, 4vw, 48px);
-  font-weight: 760;
-  letter-spacing: -0.06em;
-  line-height: 0.98;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
 }
 
 .settings-header p {
@@ -214,10 +216,12 @@
 }
 
 .settings-section__header h3 {
-  color: var(--text);
-  font-size: 15px;
-  font-weight: 720;
-  letter-spacing: 0;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
 }
 
 .settings-section__header p {

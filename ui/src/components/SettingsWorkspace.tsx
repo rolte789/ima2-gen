@@ -37,12 +37,9 @@ function SettingsSectionBlock({ id, setRef, children }: SettingsSectionBlockProp
       aria-labelledby={`settings-section-${id}`}
     >
       <header className="settings-section__header">
-        <div>
-          <h3 id={`settings-section-${id}`}>
-            {t(`settings.sections.${id}.title`)}
-          </h3>
-          <p>{t(`settings.sections.${id}.hint`)}</p>
-        </div>
+        <h3 id={`settings-section-${id}`}>
+          {t(`settings.sections.${id}.title`)}
+        </h3>
       </header>
       <div className="settings-section__body">{children}</div>
     </section>
@@ -133,9 +130,7 @@ export function SettingsWorkspace() {
       <div className="settings-shell">
         <header className="settings-header">
           <div>
-            <p className="settings-eyebrow">{t("settings.eyebrow")}</p>
             <h2 id="settings-title">{t("settings.title")}</h2>
-            <p>{t("settings.subtitle")}</p>
           </div>
           <button
             type="button"

@@ -114,13 +114,30 @@
 .provider-card__head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 6px;
 }
 .provider-card__head h4 {
   font-size: 13px;
   font-weight: 600;
+}
+.provider-card__head .provider-chip {
+  margin-left: auto;
+}
+.provider-card__brand {
+  display: inline-flex;
+  color: var(--text-dim);
+  flex: none;
+}
+.provider-card__eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .provider-card p {
   color: var(--text-dim);

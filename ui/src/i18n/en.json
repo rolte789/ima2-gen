@@ -1018,9 +1018,7 @@
     "navAria": "Settings sections",
     "contentAria": "Settings content",
     "jumpTo": "Jump to {section}",
-    "eyebrow": "Workspace settings",
     "title": "Settings",
-    "subtitle": "Providers, workspace behavior, and interface preferences live here so the generator stays focused.",
     "sections": {
       "providers": {
         "title": "Providers",
