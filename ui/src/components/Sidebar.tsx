@@ -2,7 +2,6 @@ import { PromptComposer } from "./PromptComposer";
 import { GenerateButton } from "./GenerateButton";
 import { InFlightList } from "./InFlightList";
 import { SessionPicker } from "./SessionPicker";
-import { SettingsButton } from "./SettingsButton";
 import { ImageModelSelect } from "./ImageModelSelect";
 import { CardNewsComposer } from "./card-news/CardNewsComposer";
 import { SidebarHistory } from "./history/SidebarHistory";
@@ -91,7 +90,6 @@ export function SidebarChrome({ agentSettings, onAgentSettingsChange }: SidebarC
         <div className="logo-actions">
           <PromptLibraryButton />
           <ImageModelSelect variant="sidebar" agentSettings={agentSettings} onAgentSettingsChange={onAgentSettingsChange} />
-          <SettingsButton />
         </div>
       </div>
     </>
