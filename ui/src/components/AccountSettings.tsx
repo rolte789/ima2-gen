@@ -18,6 +18,12 @@ function statusLabel(t: (key: string) => string, status?: string): string {
   return t("settings.account.status.checking");
 }
 
+function statusTone(status?: string): "ok" | "warn" | "err" {
+  if (status === "ready") return "ok";
+  if (status === "error" || status === "offline") return "err";
+  return "warn";
+}
+
 export function AccountSettings() {
   const { t } = useI18n();
   const oauth = useOAuthStatus();
@@ -30,62 +36,68 @@ export function AccountSettings() {
     data?.apiKeySource === "env" ||
     data?.apiKeySource === "config" ||
     data?.apiKeyValid === true;
-  const oauthReady = oauth?.status === "ready";
   const apiSource =
     data?.apiKeySource === "config"
       ? t("settings.account.apiSourceConfig")
       : t("settings.account.apiSourceEnv");
   const apiReady = data?.apiKeyValid === true;
-  const grokReady = grok?.status === "ready";
 
   return (
     <>
-      <article className="settings-row">
+      <article className="provider-card">
+        <div className="provider-card__head">
+          <h4>{t("settings.account.oauthTitle")}</h4>
+          <span className={`provider-chip provider-chip--${statusTone(oauth?.status)}`}>
+            {statusLabel(t, oauth?.status)}
+          </span>
+        </div>
         <div className="settings-row__copy">
           <p className="settings-eyebrow">{t("settings.account.primaryEyebrow")}</p>
-          <h4>{t("settings.account.oauthTitle")}</h4>
           <p>{t("settings.account.oauthBody")}</p>
-        </div>
-        <div className={`settings-status${oauthReady ? " is-ok" : ""}`}>
-          <span aria-hidden="true" />
-          {statusLabel(t, oauth?.status)}
         </div>
       </article>
 
       {showApiKeyCard ? (
-        <article className="settings-row">
+        <article className="provider-card">
+          <div className="provider-card__head">
+            <h4>{t("settings.account.apiTitle")}</h4>
+            <span className={`provider-chip provider-chip--${error ? "err" : apiReady ? "ok" : "warn"}`}>
+              {error
+                ? t("settings.account.apiUnknown")
+                : apiReady
+                  ? t("settings.account.apiReady")
+                  : t("settings.account.apiUnavailable")}
+            </span>
+          </div>
           <div className="settings-row__copy">
             <p className="settings-eyebrow">{apiSource}</p>
-            <h4>{t("settings.account.apiTitle")}</h4>
             <p>{t("settings.account.apiBody")}</p>
-          </div>
-          <div className={`settings-status${apiReady ? " is-ok" : " is-muted"}`}>
-            <span aria-hidden="true" />
-            {error
-              ? t("settings.account.apiUnknown")
-              : apiReady
-                ? t("settings.account.apiReady")
-                : t("settings.account.apiUnavailable")}
           </div>
         </article>
       ) : null}
 
-      <article className="settings-row">
+      <article className="provider-card">
+        <div className="provider-card__head">
+          <h4>{t("settings.account.grokTitle")}</h4>
+          <span className={`provider-chip provider-chip--${statusTone(grok?.status)}`}>
+            {statusLabel(t, grok?.status)}
+          </span>
+        </div>
         <div className="settings-row__copy">
           <p className="settings-eyebrow">{t("settings.account.grokEyebrow")}</p>
-          <h4>{t("settings.account.grokTitle")}</h4>
           <p>{t("settings.account.grokBody")}</p>
-        </div>
-        <div className={`settings-status${grokReady ? " is-ok" : " is-muted"}`}>
-          <span aria-hidden="true" />
-          {statusLabel(t, grok?.status)}
         </div>
       </article>
 
-      <article className="settings-row">
+      <article className="provider-card">
+        <div className="provider-card__head">
+          <h4>{t("settings.account.agyTitle")}</h4>
+          <span className={`provider-chip provider-chip--${agy?.installed ? "ok" : "warn"}`}>
+            {agy?.installed ? t("settings.account.agyInstalled") : t("settings.account.agyMissing")}
+          </span>
+        </div>
         <div className="settings-row__copy">
           <p className="settings-eyebrow">{t("settings.account.agyEyebrow")}</p>
-          <h4>{t("settings.account.agyTitle")}</h4>
           {agy?.installed ? (
             <p>{t("settings.account.agyInstalledBody")}</p>
           ) : (
@@ -103,10 +115,6 @@ export function AccountSettings() {
           <p style={{ fontSize: "12px", color: "var(--text-dim, #888)", marginTop: "4px" }}>
             {t("settings.account.agyFineprint")}
           </p>
-        </div>
-        <div className={`settings-status${agy?.installed ? " is-ok" : " is-muted"}`}>
-          <span aria-hidden="true" />
-          {agy?.installed ? t("settings.account.agyInstalled") : t("settings.account.agyMissing")}
         </div>
       </article>
 

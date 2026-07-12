@@ -1020,31 +1020,19 @@
     "jumpTo": "Jump to {section}",
     "eyebrow": "Workspace settings",
     "title": "Settings",
-    "subtitle": "Account, display, and future workspace controls live here so the generator stays focused.",
+    "subtitle": "Providers, workspace behavior, and interface preferences live here so the generator stays focused.",
     "sections": {
-      "account": {
-        "title": "Account",
-        "hint": "GPT OAuth status"
-      },
-      "generation": {
-        "title": "Generation",
-        "hint": "Model defaults"
-      },
-      "appearance": {
-        "title": "Appearance",
-        "hint": "History layout"
+      "providers": {
+        "title": "Providers",
+        "hint": "Accounts, keys, models"
       },
       "workspace": {
         "title": "Workspace",
-        "hint": "Profile"
+        "hint": "Profile, layout, gallery"
       },
-      "language": {
-        "title": "Language",
-        "hint": "Interface copy"
-      },
-      "future": {
-        "title": "Future",
-        "hint": "Reserved"
+      "general": {
+        "title": "General",
+        "hint": "Language"
       }
     },
     "account": {
@@ -1181,10 +1169,6 @@
     "language": {
       "title": "Language",
       "body": "Switch the UI language without changing generated content."
-    },
-    "future": {
-      "title": "Reserved for later",
-      "body": "Future provider repair and workspace controls will appear here when they become useful."
     }
   },
   "nodeCanvas": {
@@ -1201,21 +1185,6 @@
     "label": "Language",
     "ko": "한국어",
     "en": "English"
-  },
-  "theme": {
-    "label": "Theme",
-    "modeLabel": "Brightness",
-    "styleLabel": "Theme style",
-    "system": "System",
-    "dark": "Dark",
-    "light": "Light",
-    "family": {
-      "default": "Default",
-      "gpt": "GPT",
-      "claude": "Claude",
-      "gemini": "Gemini",
-      "grok": "Grok"
-    }
   },
   "errorCard": {
     "close": "Close",

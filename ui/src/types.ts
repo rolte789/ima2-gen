@@ -1,5 +1,5 @@
 export type UIMode = "classic" | "node" | "card-news" | "agent";
-export type SettingsSection = "account" | "generation" | "appearance" | "workspace" | "language" | "future";
+export type SettingsSection = "providers" | "workspace" | "general";
 export type HistoryStripLayout = "rail" | "horizontal" | "sidebar";
 export type Provider = "oauth" | "api" | "grok" | "grok-api" | "agy" | "gemini-api";
 export type Quality = "low" | "medium" | "high";

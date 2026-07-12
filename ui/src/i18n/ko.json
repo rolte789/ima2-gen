@@ -1020,31 +1020,19 @@
     "jumpTo": "{section} 섹션으로 이동",
     "eyebrow": "작업공간 설정",
     "title": "설정",
-    "subtitle": "계정, 화면, 앞으로 늘어날 작업공간 옵션을 이곳에 모아 생성 흐름은 가볍게 유지합니다.",
+    "subtitle": "프로바이더, 작업공간 동작, 인터페이스 설정을 이곳에 모아 생성 흐름은 가볍게 유지합니다.",
     "sections": {
-      "account": {
-        "title": "계정",
-        "hint": "GPT OAuth 상태"
-      },
-      "generation": {
-        "title": "생성",
-        "hint": "모델 기본값"
-      },
-      "appearance": {
-        "title": "화면",
-        "hint": "히스토리 배치"
+      "providers": {
+        "title": "프로바이더",
+        "hint": "계정 · 키 · 모델"
       },
       "workspace": {
         "title": "작업공간",
-        "hint": "프로필"
+        "hint": "프로필 · 배치 · 갤러리"
       },
-      "language": {
-        "title": "언어",
-        "hint": "UI 문구"
-      },
-      "future": {
-        "title": "예정",
-        "hint": "확장 공간"
+      "general": {
+        "title": "일반",
+        "hint": "언어"
       }
     },
     "account": {
@@ -1181,10 +1169,6 @@
     "language": {
       "title": "언어",
       "body": "생성 프롬프트와 무관하게 인터페이스 언어만 바꿉니다."
-    },
-    "future": {
-      "title": "나중을 위한 자리",
-      "body": "GPT OAuth 복구 도구나 작업공간 옵션이 실제로 필요해지면 이곳에 추가합니다."
     }
   },
   "nodeCanvas": {
@@ -1201,21 +1185,6 @@
     "label": "언어",
     "ko": "한국어",
     "en": "English"
-  },
-  "theme": {
-    "label": "테마",
-    "modeLabel": "밝기",
-    "styleLabel": "테마 스타일",
-    "system": "시스템",
-    "dark": "다크",
-    "light": "라이트",
-    "family": {
-      "default": "기본",
-      "gpt": "GPT",
-      "claude": "Claude",
-      "gemini": "Gemini",
-      "grok": "Grok"
-    }
   },
   "errorCard": {
     "close": "닫기",

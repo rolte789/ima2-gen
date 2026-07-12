@@ -58,12 +58,12 @@ test("desktop settings rows use a compact title-control-description stack", () =
 test("workspace profile settings use a dropdown followed by selected-profile help", () => {
   const workspaceSettings = readFileSync(join(root, "ui/src/components/settings/WorkspaceProfileSettings.tsx"), "utf8");
 
-  assert.match(workspaceSettings, /<select[\s\S]*id="workspace-profile-select"/);
-  assert.match(workspaceSettings, /onChange=\{\(event\) => setProfile\(event\.target\.value as WorkspaceProfile\)\}/);
-  assert.match(workspaceSettings, /aria-label=\{t\("workspace\.profileLabel"\)\}/);
+  assert.match(workspaceSettings, /<Select[\s\S]*id="workspace-profile-select"/);
+  assert.match(workspaceSettings, /onChange=\{\(v\) => setProfile\(v as WorkspaceProfile\)\}/);
+  assert.match(workspaceSettings, /ariaLabel=\{t\("workspace\.profileLabel"\)\}/);
   assert.doesNotMatch(workspaceSettings, /type="radio"/);
   assert.doesNotMatch(workspaceSettings, /settings-radio-option/);
   assert.doesNotMatch(workspaceSettings, /settings-field__label/);
   assert.doesNotMatch(workspaceSettings, /settings-field__description/);
-  assert.match(css, /\.settings-field__select\s*\{[\s\S]*?min-height:\s*34px;/);
+  assert.match(settingsControlsCss, /\.settings-row__control \.ctl-select\s*\{[\s\S]*?min-width:/);
 });
