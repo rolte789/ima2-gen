@@ -1,4 +1,3 @@
-import { UIModeSwitch } from "./UIModeSwitch";
 import { PromptComposer } from "./PromptComposer";
 import { GenerateButton } from "./GenerateButton";
 import { InFlightList } from "./InFlightList";
@@ -95,7 +94,6 @@ export function SidebarChrome({ agentSettings, onAgentSettingsChange }: SidebarC
           <SettingsButton />
         </div>
       </div>
-      <UIModeSwitch />
     </>
   );
 }

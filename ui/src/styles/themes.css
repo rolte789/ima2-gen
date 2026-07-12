@@ -23,60 +23,60 @@ body {
   display: grid;
   --gallery-rail-w: clamp(61px, 6vw, 95px);
   --history-strip-h: 74px;
-  grid-template-columns: 260px var(--gallery-rail-w) minmax(0, 1fr) auto;
+  --nav-rail-w: 52px;
+  grid-template-columns: var(--nav-rail-w) 260px var(--gallery-rail-w) minmax(0, 1fr) auto;
   height: 100dvh;
   overflow: hidden;
 }
 .app--history-horizontal {
-  grid-template-columns: 260px minmax(0, 1fr) auto;
+  grid-template-columns: var(--nav-rail-w) 260px minmax(0, 1fr) auto;
   grid-template-rows: var(--history-strip-h) minmax(0, 1fr);
 }
 .app--history-horizontal .sidebar {
-  grid-column: 1;
+  grid-column: 2;
   grid-row: 1 / span 2;
 }
 .app--history-horizontal .history-strip {
-  grid-column: 2;
+  grid-column: 3;
   grid-row: 1;
 }
 .app--history-horizontal .canvas,
 .app--history-horizontal .node-canvas,
 .app--history-horizontal .card-news-workspace,
 .app--history-horizontal .settings-workspace {
-  grid-column: 2;
+  grid-column: 3;
   grid-row: 2;
   height: calc(100dvh - var(--history-strip-h));
   min-height: 0;
 }
 .app--history-horizontal .right-panel {
-  grid-column: 3;
+  grid-column: 4;
   grid-row: 1 / span 2;
 }
 .app--history-horizontal .settings-shell {
   height: calc(100dvh - var(--history-strip-h) - 48px);
 }
 .app--history-sidebar {
-  grid-template-columns: 260px minmax(0, 1fr) auto;
+  grid-template-columns: var(--nav-rail-w) 260px minmax(0, 1fr) auto;
   grid-template-rows: minmax(0, 1fr) var(--history-strip-h);
 }
 .app--history-sidebar .sidebar {
-  grid-column: 1;
+  grid-column: 2;
   grid-row: 1;
   height: auto;
 }
 .app--history-sidebar .history-strip {
-  grid-column: 1;
+  grid-column: 2;
   grid-row: 2;
 }
 .app--history-sidebar .canvas,
 .app--history-sidebar .node-canvas,
 .app--history-sidebar .card-news-workspace,
 .app--history-sidebar .settings-workspace {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-}
-.app--history-sidebar .right-panel {
   grid-column: 3;
   grid-row: 1 / span 2;
 }
-
+.app--history-sidebar .right-panel {
+  grid-column: 4;
+  grid-row: 1 / span 2;
+}

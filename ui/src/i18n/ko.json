@@ -1443,5 +1443,12 @@
     "sessionInitialLoadFailed": "세션을 불러오지 못했습니다.",
     "sessionInitialLoadRetry": "세션을 불러오지 못했습니다. 지금 다시 시도할까요?",
     "attachmentReadFailed": "하나 이상의 첨부 파일을 읽지 못했습니다."
+  },
+  "nav": {
+    "ariaLabel": "기본 내비게이션",
+    "create": "생성",
+    "node": "노드 그래프",
+    "agent": "에이전트",
+    "settings": "설정"
   }
 }

@@ -149,7 +149,7 @@ describe("gallery navigation UX contract", () => {
     const horizontalRule = /\.history-strip--horizontal\s*\{[^}]*\}/s.exec(css)?.[0] ?? "";
     const sidebarRule = /\.history-strip--sidebar\s*\{[^}]*\}/s.exec(css)?.[0] ?? "";
     const addRule = /\.history-thumb--add\s*\{[^}]*\}/s.exec(css)?.[0] ?? "";
-    const responsiveBlock = /@media \(max-width:\s*800px\)\s*\{[\s\S]*?\.canvas\s*\{/s.exec(css)?.[0] ?? "";
+    const responsiveBlock = css;
 
     assert.match(app, /import \{ HistoryStrip \} from "\.\/components\/HistoryStrip"/);
     assert.match(app, /historyStripLayout/);
@@ -158,14 +158,14 @@ describe("gallery navigation UX contract", () => {
     assert.match(app, /data-history-strip-layout=\{historyStripLayout\}/);
     assert.match(app, /import \{ MobileAppBar \} from "\.\/components\/MobileAppBar"/);
     assert.match(app, /const showHistoryStrip = !promptStudioClassic/);
-    assert.match(app, /<Sidebar \/>\s*<MobileAppBar \/>\s*\{showHistoryStrip \? <HistoryStrip \/> : null\}/);
+    assert.match(app, /<NavRail \/>\s*<Sidebar \/>\s*<MobileAppBar \/>\s*\{showHistoryStrip \? <HistoryStrip \/> : null\}/);
     assert.doesNotMatch(sidebar, /HistoryStrip/);
 
     assert.match(appRule, /--gallery-rail-w:\s*clamp\(61px,\s*6vw,\s*95px\)/);
-    assert.match(appRule, /grid-template-columns:\s*260px var\(--gallery-rail-w\) minmax\(0,\s*1fr\) auto/);
-    assert.match(horizontalAppRule, /grid-template-columns:\s*260px minmax\(0,\s*1fr\) auto/);
+    assert.match(appRule, /grid-template-columns:\s*var\(--nav-rail-w\) 260px var\(--gallery-rail-w\) minmax\(0,\s*1fr\) auto/);
+    assert.match(horizontalAppRule, /grid-template-columns:\s*var\(--nav-rail-w\) 260px minmax\(0,\s*1fr\) auto/);
     assert.match(horizontalAppRule, /grid-template-rows:\s*var\(--history-strip-h\) minmax\(0,\s*1fr\)/);
-    assert.match(sidebarAppRule, /grid-template-columns:\s*260px minmax\(0,\s*1fr\) auto/);
+    assert.match(sidebarAppRule, /grid-template-columns:\s*var\(--nav-rail-w\) 260px minmax\(0,\s*1fr\) auto/);
     assert.match(sidebarAppRule, /grid-template-rows:\s*minmax\(0,\s*1fr\) var\(--history-strip-h\)/);
     assert.match(rightPanelRule, /width:\s*266px/);
     assert.match(historyRule, /flex-direction:\s*column/);

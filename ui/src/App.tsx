@@ -14,6 +14,7 @@ import { OnboardingPopup } from "./components/OnboardingPopup";
 import { TrashUndoToast } from "./components/TrashUndoToast";
 import { MobileSettingsToggle } from "./components/MobileSettingsToggle";
 import { MobileAppBar } from "./components/MobileAppBar";
+import { NavRail } from "./components/NavRail";
 import { MobileComposeSheet } from "./components/MobileComposeSheet";
 import { useAppStore, flushGraphSaveBeacon } from "./store/useAppStore";
 import { onResync, ensureConnected, onConnectionStateChange } from "./lib/eventChannel";
@@ -121,6 +122,7 @@ export default function App() {
         data-mobile={isMobile ? "1" : undefined}
         data-ui-mode={uiMode}
       >
+        <NavRail />
         <Sidebar />
         <MobileAppBar />
         {showHistoryStrip ? <HistoryStrip /> : null}

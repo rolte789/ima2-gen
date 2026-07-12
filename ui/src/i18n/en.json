@@ -1443,5 +1443,12 @@
     "sessionInitialLoadFailed": "Sessions could not be loaded.",
     "sessionInitialLoadRetry": "Sessions could not be loaded. Retry now?",
     "attachmentReadFailed": "Could not read one or more attachments."
+  },
+  "nav": {
+    "ariaLabel": "Main navigation",
+    "create": "Create",
+    "node": "Node graph",
+    "agent": "Agent",
+    "settings": "Settings"
   }
 }

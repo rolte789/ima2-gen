@@ -138,6 +138,7 @@ body::after {
 
 @import "./styles/themes.css";
 @import "./styles/controls.css";
+@import "./styles/nav-rail.css";
 @import "./styles/sidebar.css";
 @import "./styles/form-controls.css";
 @import "./styles/canvas-viewer.css";
