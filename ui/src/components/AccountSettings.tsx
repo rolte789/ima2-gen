@@ -7,6 +7,7 @@ import { useI18n } from "../i18n";
 import { ApiKeyInput } from "./ApiKeyInput";
 import { GeminiKeySection } from "./GeminiKeySection";
 import { useKeyStatus } from "../hooks/useKeyStatus";
+import { useQuotaData, CodexQuota, GrokQuota } from "./settings/QuotaCard";
 
 function statusLabel(t: (key: string) => string, status?: string): string {
   if (status === "ready") return t("settings.account.status.ready");
@@ -31,6 +32,7 @@ export function AccountSettings() {
   const agy = useAgyStatus();
   const { data, error } = useBilling();
   const { data: keyStatus, mutate: mutateKeys } = useKeyStatus();
+  const quota = useQuotaData();
   const [keysOpen, setKeysOpen] = useState(false);
   const showApiKeyCard =
     data?.apiKeySource === "env" ||
@@ -55,6 +57,7 @@ export function AccountSettings() {
           <p className="settings-eyebrow">{t("settings.account.primaryEyebrow")}</p>
           <p>{t("settings.account.oauthBody")}</p>
         </div>
+        <CodexQuota data={quota.data} loading={quota.loading} onRefresh={quota.refreshQuota} />
       </article>
 
       {showApiKeyCard ? (
@@ -87,6 +90,7 @@ export function AccountSettings() {
           <p className="settings-eyebrow">{t("settings.account.grokEyebrow")}</p>
           <p>{t("settings.account.grokBody")}</p>
         </div>
+        <GrokQuota data={quota.data} loading={quota.loading} onRefresh={quota.refreshQuota} />
       </article>
 
       <article className="provider-card">

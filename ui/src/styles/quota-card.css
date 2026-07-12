@@ -6,10 +6,8 @@
 }
 
 .quota-card {
-  padding: 10px 2px;
-}
-
-.quota-card + .quota-card {
+  margin-top: 12px;
+  padding-top: 10px;
   border-top: 1px solid var(--hairline-soft);
 }
 

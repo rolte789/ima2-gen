@@ -1069,8 +1069,6 @@
       }
     },
     "quota": {
-      "eyebrow": "사용량 쿼타",
-      "title": "속도 제한",
       "codexNotLoggedIn": "로그인 필요",
       "fetchError": "쿼타를 불러올 수 없음",
       "noData": "사용량 데이터 없음",

@@ -214,8 +214,8 @@ function SwitchAccountButton({ provider, onComplete }: { provider: "grok" | "cod
   );
 }
 
-export function QuotaCard() {
-  const { t } = useI18n();
+/** Shared quota fetch — call once in the parent and pass results down. */
+export function useQuotaData() {
   const [data, setData] = useState<QuotaResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -233,74 +233,85 @@ export function QuotaCard() {
     return () => clearTimeout(timer);
   }, [refreshQuota]);
 
+  return { data, loading, refreshQuota };
+}
+
+type QuotaBlockProps = {
+  data: QuotaResponse | null;
+  loading: boolean;
+  onRefresh: () => void;
+};
+
+/** Codex rate-limit block — lives inside the GPT OAuth provider card. */
+export function CodexQuota({ data, loading, onRefresh }: QuotaBlockProps) {
+  const { t } = useI18n();
   const codex = data?.codex;
-  const grok = data?.grok;
   const hasCodexWindows = codex?.windows && codex.windows.length > 0;
-  const hasGrokWindows = grok?.windows && grok.windows.length > 0;
   const accountLine = codex?.account
     ? [codex.account.email, codex.account.plan].filter(Boolean).join(" · ")
     : null;
+
+  return (
+    <div className="quota-card">
+      <div className="quota-card__header">
+        <CodexIcon />
+        <strong>Codex</strong>
+        {accountLine && <span className="quota-card__account">{accountLine}</span>}
+      </div>
+      {loading ? (
+        <span className="quota-card__loading">{t("common.loading")}</span>
+      ) : hasCodexWindows ? (
+        codex!.windows.map((w) => <QuotaBar key={w.label} window={w} />)
+      ) : codex?.authenticated === false ? (
+        <span className="quota-card__hint">{t("settings.quota.codexNotLoggedIn")}</span>
+      ) : codex?.error ? (
+        <span className="quota-card__hint">{t("settings.quota.fetchError")}</span>
+      ) : (
+        <span className="quota-card__hint">{t("settings.quota.noData")}</span>
+      )}
+      <SwitchAccountButton provider="codex" onComplete={onRefresh} />
+    </div>
+  );
+}
+
+/** Grok quota block — lives inside the Grok provider card. */
+export function GrokQuota({ data, loading, onRefresh }: QuotaBlockProps) {
+  const { t } = useI18n();
+  const grok = data?.grok;
+  const hasGrokWindows = grok?.windows && grok.windows.length > 0;
   const grokAccountLine = grok?.account
     ? [grok.account.email, grok.account.plan].filter(Boolean).join(" · ")
     : null;
 
   return (
-    <article className="settings-row">
-      <div className="settings-row__copy">
-        <p className="settings-eyebrow">{t("settings.quota.eyebrow")}</p>
-        <h4>{t("settings.quota.title")}</h4>
+    <div className="quota-card">
+      <div className="quota-card__header" style={{ display: "flex", alignItems: "center" }}>
+        <GrokIcon />
+        <strong>Grok</strong>
+        {grokAccountLine && <span className="quota-card__account">{grokAccountLine}</span>}
+        {grok?.billing && (
+          <span style={{ marginLeft: "auto", fontSize: "11px", color: "var(--text-dim, #888)", whiteSpace: "nowrap" }}>
+            ${grok.billing.usedUsd.toFixed(1)}/${grok.billing.limitUsd}
+          </span>
+        )}
       </div>
-      <div className="settings-row__control quota-cards">
-        <div className="quota-card">
-          <div className="quota-card__header">
-            <CodexIcon />
-            <strong>Codex</strong>
-            {accountLine && <span className="quota-card__account">{accountLine}</span>}
-          </div>
-          {loading ? (
-            <span className="quota-card__loading">{t("common.loading")}</span>
-          ) : hasCodexWindows ? (
-            codex!.windows.map((w) => <QuotaBar key={w.label} window={w} />)
-          ) : codex?.authenticated === false ? (
-            <span className="quota-card__hint">{t("settings.quota.codexNotLoggedIn")}</span>
-          ) : codex?.error ? (
-            <span className="quota-card__hint">{t("settings.quota.fetchError")}</span>
-          ) : (
-            <span className="quota-card__hint">{t("settings.quota.noData")}</span>
-          )}
-          <SwitchAccountButton provider="codex" onComplete={refreshQuota} />
-        </div>
-
-        <div className="quota-card">
-          <div className="quota-card__header" style={{ display: "flex", alignItems: "center" }}>
-            <GrokIcon />
-            <strong>Grok</strong>
-            {grokAccountLine && <span className="quota-card__account">{grokAccountLine}</span>}
-            {grok?.billing && (
-              <span style={{ marginLeft: "auto", fontSize: "11px", color: "var(--text-dim, #888)", whiteSpace: "nowrap" }}>
-                ${grok.billing.usedUsd.toFixed(1)}/${grok.billing.limitUsd}
-              </span>
-            )}
-          </div>
-          {loading ? (
-            <span className="quota-card__loading">{t("common.loading")}</span>
-          ) : hasGrokWindows ? (
-            grok!.windows.map((w) => <QuotaBar key={w.label} window={w} />)
-          ) : grok?.authenticated === false ? (
-            <span className="quota-card__hint">Not logged in</span>
-          ) : (
-            <a
-              href="https://grok.com/?_s=usage"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="settings-action-btn"
-            >
-              {t("settings.quota.grokUsageLink")}
-            </a>
-          )}
-          <SwitchAccountButton provider="grok" onComplete={refreshQuota} />
-        </div>
-      </div>
-    </article>
+      {loading ? (
+        <span className="quota-card__loading">{t("common.loading")}</span>
+      ) : hasGrokWindows ? (
+        grok!.windows.map((w) => <QuotaBar key={w.label} window={w} />)
+      ) : grok?.authenticated === false ? (
+        <span className="quota-card__hint">Not logged in</span>
+      ) : (
+        <a
+          href="https://grok.com/?_s=usage"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="settings-action-btn"
+        >
+          {t("settings.quota.grokUsageLink")}
+        </a>
+      )}
+      <SwitchAccountButton provider="grok" onComplete={onRefresh} />
+    </div>
   );
 }

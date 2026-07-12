@@ -1069,8 +1069,6 @@
       }
     },
     "quota": {
-      "eyebrow": "Usage quota",
-      "title": "Rate limits",
       "codexNotLoggedIn": "Not logged in",
       "fetchError": "Could not load quota",
       "noData": "No usage data",
