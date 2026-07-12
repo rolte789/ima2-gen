@@ -201,7 +201,7 @@ describe("gallery navigation UX contract", () => {
     assert.match(historyStrip, /ref=\{\(node\) => \{/);
     assert.match(settings, /HistoryStripLayoutToggle/);
     assert.match(toggle, /history-layout-toggle/);
-    assert.match(toggle, /aria-pressed=\{layout === option\}/);
+    assert.match(toggle, /<Segmented<HistoryStripLayout>/);
     assert.match(toggle, /\["rail", "horizontal", "sidebar"\]/);
     assert.match(en, /historyStripLayoutTitle/);
     assert.match(ko, /historyStripLayoutTitle/);

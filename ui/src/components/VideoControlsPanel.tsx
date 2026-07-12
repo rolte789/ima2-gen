@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAppStore } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import { OptionGroup } from "./OptionGroup";
+import { Select } from "./controls";
 import { deriveVideoModeUI, GROK_VIDEO_MODEL_15, GROK_VIDEO_MODEL_BASE, MAX_REF2V_DURATION_UI, supportsVideoResolutionUI } from "../lib/imageModels";
 import { ACTIVE_VIDEO_PROMPT_GUIDANCE, continuitySummary } from "../lib/videoContinuity";
 import type { VideoResolutionUI } from "../types";
@@ -153,16 +154,13 @@ export function VideoControlsPanel() {
       />
       {plannerConfig && (
         <div className="video-controls__pills">
-          <select
+          <Select
             className="video-controls__pill"
+            items={plannerConfig.options.map((model) => ({ value: model, label: model }))}
             value={plannerConfig.model}
-            onChange={(e) => void onPlannerChange(e.target.value)}
-            aria-label={t("video.plannerModelTitle")}
-          >
-            {plannerConfig.options.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
+            onChange={(model) => void onPlannerChange(model)}
+            ariaLabel={t("video.plannerModelTitle")}
+          />
         </div>
       )}
       <details className="provider-compat-details" style={{ marginTop: 8 }}>
