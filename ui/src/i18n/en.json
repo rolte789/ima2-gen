@@ -1450,5 +1450,14 @@
     "node": "Node graph",
     "agent": "Agent",
     "settings": "Settings"
+  },
+  "chain": {
+    "ariaLabel": "Quick actions",
+    "animate": "Animate",
+    "edit": "Edit in canvas",
+    "useAsRef": "Use as reference",
+    "rebake": "Re-generate",
+    "refAdded": "Added as reference image",
+    "refFailed": "Could not add reference"
   }
 }
