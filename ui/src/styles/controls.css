@@ -77,6 +77,7 @@
   cursor: pointer;
   min-width: 0;
   overflow: hidden;
+  white-space: nowrap;
 }
 .ctl-select__item.is-active {
   background: var(--control-hover);
