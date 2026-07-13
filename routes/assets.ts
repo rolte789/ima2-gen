@@ -1,5 +1,5 @@
 import type { Express, Request, Response } from "express";
-import { existsSync } from "fs";
+import { existsSync, lstatSync } from "fs";
 import { config } from "../config.js";
 import { errInfo } from "../lib/errInfo.js";
 import { logEvent } from "../lib/logger.js";
@@ -52,7 +52,7 @@ async function resolveValidatedFilePath(kind: string, raw: unknown): Promise<str
     return null;
   }
   const abs = resolveInGenerated(config.storage.generatedDir, rel);
-  if (!existsSync(abs)) {
+  if (!existsSync(abs) || !lstatSync(abs).isFile()) {
     throw httpError(400, "INVALID_FILENAME", "file does not exist in generated storage");
   }
   await assertRegularGeneratedPath(abs);

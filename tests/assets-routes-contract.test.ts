@@ -12,6 +12,7 @@ const GENERATED_DIR = join(TEST_DIR, "generated");
 mkdirSync(GENERATED_DIR, { recursive: true });
 writeFileSync(join(GENERATED_DIR, "a.png"), "png!");
 writeFileSync(join(GENERATED_DIR, "b.mp4"), "mp4!");
+mkdirSync(join(GENERATED_DIR, "subdir"), { recursive: true });
 
 const { registerAssetsRoutes } = await import("../routes/assets.ts");
 const db = await import("../lib/db.ts");
@@ -61,6 +62,7 @@ describe("assets routes contract", () => {
     for (const payload of [
       { filePath: "../x", kind: "image", code: "INVALID_FILENAME" },
       { filePath: "missing.png", kind: "image", code: "INVALID_FILENAME" },
+      { filePath: "subdir", kind: "image", code: "INVALID_FILENAME" },
       { filePath: "a.png", kind: "audio", code: "INVALID_ASSET_KIND" },
     ]) {
       const result = await request(base, "/api/assets", "POST", payload);

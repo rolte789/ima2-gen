@@ -6,19 +6,25 @@ import type { AssetsFilters, StoreGet, StoreSet } from "./storeTypes";
 
 const logError = (error: unknown) => console.error("[assets]", error instanceof Error ? error.message : String(error));
 
+/** Monotonic request generation: a newer load (filter reset) invalidates any
+ *  in-flight response so stale results never overwrite current filters. */
+let assetsRequestGeneration = 0;
+
 async function refreshFolders(set: StoreSet): Promise<void> {
   const { folders } = await getAssetFolders();
   set({ assetsFolders: folders });
 }
 
 export async function loadAssetsImpl(reset: boolean | undefined, set: StoreSet, get: StoreGet): Promise<void> {
-  if (get().assetsLoading) return;
   const replace = reset !== false;
+  if (!replace && get().assetsLoading) return;
+  const generation = ++assetsRequestGeneration;
   set({ assetsLoading: true });
   try {
     const filters = get().assetsFilters;
     const page = await getAssets({ ...filters, cursor: replace ? null : get().assetsCursor });
     const extras = replace ? await Promise.all([getAssetFolders(), getAssetTags()]) : null;
+    if (generation !== assetsRequestGeneration) return;
     set((state) => ({
       assets: replace ? page.assets : [...state.assets, ...page.assets.filter((item) => !state.assets.some((current) => current.id === item.id))],
       assetsCursor: page.nextCursor,
@@ -27,7 +33,7 @@ export async function loadAssetsImpl(reset: boolean | undefined, set: StoreSet, 
     }));
   } catch (error) {
     logError(error);
-    set({ assetsLoading: false });
+    if (generation === assetsRequestGeneration) set({ assetsLoading: false });
   }
 }
 
@@ -46,7 +52,10 @@ export async function saveToAssetsImpl(item: GenerateItem, set: StoreSet, get: S
   const metadata = Object.fromEntries(Object.entries({ prompt: item.prompt, provider: item.provider, model: item.model, mediaType: item.mediaType, requestId: item.requestId, sessionId: item.sessionId, createdAt: item.createdAt }).filter(([, value]) => value !== undefined));
   try {
     const { asset } = await createAsset({ filePath: item.filename, kind: isVideoItem(item) ? "video" : "image", name: (item.prompt || "").trim().slice(0, 80) || item.filename, tags: [], metadata });
-    if (get().assets.length > 0) set((state) => ({ assets: [asset, ...state.assets.filter((entry) => entry.id !== asset.id)] }));
+    const filters = get().assetsFilters;
+    const admitted =
+      (!filters.kind || filters.kind === asset.kind) && !filters.tag && !(filters.q || "").trim() && !filters.folderId;
+    if (admitted) set((state) => ({ assets: [asset, ...state.assets.filter((entry) => entry.id !== asset.id)] }));
     return true;
   } catch (error) { logError(error); return false; }
 }

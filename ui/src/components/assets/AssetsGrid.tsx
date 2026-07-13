@@ -60,7 +60,11 @@ export function AssetsGrid() {
   useEffect(() => {
     const node = rootRef.current;
     if (!node) return;
-    const update = () => setWidth(node.clientWidth);
+    const update = () => {
+      const cs = getComputedStyle(node);
+      const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+      setWidth(Math.max(0, node.clientWidth - pad));
+    };
     update(); const observer = new ResizeObserver(update); observer.observe(node);
     return () => observer.disconnect();
   }, []);
