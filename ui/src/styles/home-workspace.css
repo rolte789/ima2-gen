@@ -1,54 +1,10 @@
-.app[data-ui-mode="home"] {
-  grid-template-columns: var(--nav-rail-w) minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
-}
-.app[data-ui-mode="home"] > .sidebar { display: none; }
-
-.home-workspace__brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 32px;
-}
-
-.home-chrome-logo {
-  font-family: var(--font-display, 'Clash Display', system-ui, sans-serif);
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1;
-  color: transparent;
-  background: linear-gradient(180deg, #ffffff 0%, #c8ccd8 35%, #6f7484 60%, #e8eaf1 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-}
-
-.home-workspace__wordmark {
-  width: 100%;
-  margin-top: 56px;
-  font: 700 clamp(80px, 14vw, 180px) / 0.85 var(--font-display, 'Clash Display', system-ui, sans-serif);
-  letter-spacing: 0;
-  white-space: nowrap;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(244, 244, 246, 0.28);
-  overflow: hidden;
-}
-
-
 .home-workspace {
-  grid-column: 2;
-  grid-row: 1;
-  width: 100%;
-  min-height: 0;
-  height: 100dvh;
-  overflow-y: auto;
+  width: min(100%, 1000px);
+  min-height: 100dvh;
+  margin-inline: auto;
   padding: clamp(32px, 5vw, 72px) clamp(20px, 4vw, 48px) 72px;
   color: var(--text, var(--text-primary));
   font-family: var(--font);
-}
-
-.home-workspace__inner {
-  width: min(100%, 1000px);
-  margin-inline: auto;
 }
 
 .home-workspace__hero {
@@ -123,9 +79,16 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-width: 140px;
   color: var(--text-muted);
   font: 500 12px/1 var(--mono);
+}
+
+.home-prompt__provider-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--green) 55%, transparent);
 }
 
 .home-prompt__generate {
@@ -170,27 +133,6 @@
 .home-preset-section__tabs { margin: 0; }
 .home-preset-section__tabs .option-row { flex-wrap: nowrap; }
 
-.home-preset-section__controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.home-preset-search {
-  width: clamp(140px, 20vw, 220px);
-  height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--control-bg, var(--surface-2));
-  color: var(--text);
-  font: 400 13px/1 var(--font);
-  transition: border-color 160ms ease;
-}
-
-.home-preset-search::placeholder { color: var(--text-faint); }
-.home-preset-search:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
-
 .home-preset-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -221,7 +163,7 @@
 .home-preset-card__thumb {
   display: block;
   width: 100%;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 16 / 9;
   background: #31313a;
 }
 
@@ -254,44 +196,6 @@
 
 .home-preset-card.is-selected .home-preset-card__check { opacity: 1; transform: scale(1); }
 
-.home-recent-row {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 8px;
-}
-
-.home-recent-row::-webkit-scrollbar { height: 4px; }
-.home-recent-row::-webkit-scrollbar-track { background: transparent; }
-.home-recent-row::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-.home-recent-card {
-  flex: 0 0 auto;
-  width: clamp(140px, 18vw, 200px);
-  aspect-ratio: 1 / 1;
-  border-radius: 12px;
-  overflow: hidden;
-  scroll-snap-align: start;
-  background: var(--surface, #14141a);
-  border: 1px solid var(--glass-line, var(--border));
-  cursor: pointer;
-  transition: transform 160ms ease, border-color 160ms ease;
-}
-
-.home-recent-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent);
-}
-
-.home-recent-card img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 @media (max-width: 768px) {
   .home-workspace { padding: 28px 20px 56px; }
   .home-workspace__presets { margin-top: 40px; }
@@ -309,7 +213,6 @@
   .home-preset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .home-preset-card { min-height: 138px; }
   .home-preset-card__meta { padding: 10px; }
-  .home-recent-card { width: 120px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

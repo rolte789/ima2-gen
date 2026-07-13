@@ -9,12 +9,8 @@ import type {
   Provider,
   Quality,
   SizePreset,
-  ThemeFamily,
-  ThemePreference,
-  ResolvedTheme,
   UIMode,
 } from "../types";
-import { THEME_FAMILIES } from "../types";
 import {
   DEFAULT_IMAGE_MODEL,
   isImageModel,
@@ -29,6 +25,7 @@ import { DEFAULT_WEB_SEARCH_ENABLED } from "../lib/webSearch";
 import { ENABLE_AGENT_MODE, ENABLE_CARD_NEWS_MODE, ENABLE_NODE_MODE } from "../lib/devMode";
 import { normalizeGenerationCount } from "../lib/generationLimits";
 import { parseRequestedCustomSide } from "../lib/size";
+import { getPresetById } from "../lib/presets";
 import {
   ACTIVE_SESSION_ID_STORAGE_KEY,
   CANVAS_EXPORT_BG_KEY,
@@ -38,8 +35,6 @@ import {
   REASONING_EFFORT_STORAGE_KEY,
   RIGHT_PANEL_OPEN_STORAGE_KEY,
   SELECTED_FILENAME_STORAGE_KEY,
-  THEME_FAMILY_STORAGE_KEY,
-  THEME_STORAGE_KEY,
   UI_MODE_STORAGE_KEY,
   VIDEO_DEFAULTS_STORAGE_KEY,
   WEB_SEARCH_STORAGE_KEY,
@@ -123,27 +118,11 @@ export function loadUIMode(): UIMode {
     if (raw === "agent") return ENABLE_AGENT_MODE ? raw : "classic";
     if (raw === "card-news") return ENABLE_CARD_NEWS_MODE ? raw : "classic";
     if (raw === "node") return ENABLE_NODE_MODE ? raw : "classic";
+    if (raw === "assets") return raw;
+    if (raw === "home") return raw;
     if (raw === "classic") return raw;
   } catch {}
   return "classic";
-}
-
-export function loadThemePreference(): ThemePreference {
-  try {
-    const raw = localStorage.getItem(THEME_STORAGE_KEY);
-    if (raw === "system" || raw === "dark" || raw === "light") return raw;
-  } catch {}
-  return "system";
-}
-
-export function loadThemeFamily(): ThemeFamily {
-  try {
-    const raw = localStorage.getItem(THEME_FAMILY_STORAGE_KEY);
-    if (raw && (THEME_FAMILIES as readonly string[]).includes(raw)) {
-      return raw as ThemeFamily;
-    }
-  } catch {}
-  return "default";
 }
 
 export function loadHistoryStripLayout(): HistoryStripLayout {
@@ -257,14 +236,6 @@ export function saveVideoDefaults(patch: Partial<VideoDefaults>): void {
     const current = loadVideoDefaults();
     localStorage.setItem(VIDEO_DEFAULTS_STORAGE_KEY, JSON.stringify({ ...current, ...patch }));
   } catch {}
-}
-
-export function resolveThemePreference(theme: ThemePreference): ResolvedTheme {
-  if (theme === "dark" || theme === "light") return theme;
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-    return "dark";
-  }
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
 }
 
 export function loadSelectedFilename(): string | null {
@@ -388,6 +359,11 @@ export function loadGenerationDefaults(): GenerationDefaults {
     if (typeof parsed.prompt === "string") out.prompt = parsed.prompt;
     const insertedPrompts = normalizeInsertedPromptArray(parsed.insertedPrompts);
     if (insertedPrompts) out.insertedPrompts = insertedPrompts;
+    if (Array.isArray(parsed.presetIds)) {
+      out.presetIds = [
+        ...new Set(parsed.presetIds.filter((id): id is string => typeof id === "string" && !!getPresetById(id))),
+      ];
+    }
     return out;
   } catch {
     return {};
