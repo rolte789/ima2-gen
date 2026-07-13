@@ -16,13 +16,19 @@ const CATEGORY_ITEMS: ReadonlyArray<SegmentedItem<CategoryFilter>> = [
 
 export function PresetGrid() {
   const [category, setCategory] = useState<CategoryFilter>("camera-motion");
+  const [query, setQuery] = useState("");
   const selectedPresetIds = useAppStore((state) => state.selectedPresetIds);
   const togglePreset = useAppStore((state) => state.togglePreset);
   const { t } = useI18n();
   const selectedIds = useMemo(() => new Set(selectedPresetIds), [selectedPresetIds]);
   const presets = useMemo(
-    () => category === "all" ? getAllPresets() : getPresetsByCategory(category),
-    [category],
+    () => {
+      const base = category === "all" ? getAllPresets() : getPresetsByCategory(category);
+      if (!query.trim()) return base;
+      const q = query.trim().toLowerCase();
+      return base.filter((p) => p.name.toLowerCase().includes(q) || p.id.includes(q));
+    },
+    [category, query],
   );
 
   return (
@@ -34,12 +40,22 @@ export function PresetGrid() {
             {t("home.selectedCount", { count: selectedPresetIds.length })}
           </span>
         </div>
-        <Segmented
-          className="home-preset-section__tabs"
-          items={CATEGORY_ITEMS}
-          value={category}
-          onChange={setCategory}
-        />
+        <div className="home-preset-section__controls">
+          <input
+            type="search"
+            className="home-preset-search"
+            value={query}
+            placeholder={t("home.presetSearch")}
+            aria-label={t("home.presetSearch")}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <Segmented
+            className="home-preset-section__tabs"
+            items={CATEGORY_ITEMS}
+            value={category}
+            onChange={setCategory}
+          />
+        </div>
       </div>
 
       <div className="home-preset-grid">
@@ -53,7 +69,7 @@ export function PresetGrid() {
               aria-pressed={selected}
               onClick={() => togglePreset(preset.id)}
             >
-              <span className="home-preset-card__thumb" aria-hidden="true" />
+              <img className="home-preset-card__thumb" src={`/presets/thumbs/${preset.id}.png`} alt="" loading="lazy" />
               <span className="home-preset-card__meta">
                 <span className="home-preset-card__name">{preset.name}</span>
                 <span className="home-preset-card__category">{preset.category.replace("-", " ")}</span>
