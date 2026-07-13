@@ -117,6 +117,7 @@ export function loadUIMode(): UIMode {
     if (raw === "agent") return ENABLE_AGENT_MODE ? raw : "classic";
     if (raw === "card-news") return ENABLE_CARD_NEWS_MODE ? raw : "classic";
     if (raw === "node") return ENABLE_NODE_MODE ? raw : "classic";
+    if (raw === "assets") return raw;
     if (raw === "classic") return raw;
   } catch {}
   return "classic";

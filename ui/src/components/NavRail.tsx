@@ -12,12 +12,14 @@ const HASH_TO_MODE: Record<string, UIMode | "settings"> = {
   "#canvas": "classic", // canvas-mode is a sub-state of classic for now
   "#node": "node",
   "#agent": "agent",
+  "#assets": "assets",
 };
 
 const MODE_TO_HASH: Record<string, string> = {
   classic: "#create",
   node: "#node",
   agent: "#agent",
+  assets: "#assets",
 };
 
 function resolveHash(): { mode: UIMode; settings: boolean } | null {
@@ -73,6 +75,15 @@ function IconSettings() {
   );
 }
 
+function IconAssets() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+      <path d="M8 12h8" />
+    </svg>
+  );
+}
+
 /* ── Rail items ── */
 
 type RailItem = {
@@ -89,6 +100,7 @@ const RAIL_ITEMS: RailItem[] = [
   { id: "create", mode: "classic", icon: IconCreate, labelKey: "nav.create", enabled: true },
   { id: "node", mode: "node", icon: IconNode, labelKey: "nav.node", enabled: ENABLE_NODE_MODE },
   { id: "agent", mode: "agent", icon: IconAgent, labelKey: "nav.agent", enabled: ENABLE_AGENT_MODE },
+  { id: "assets", mode: "assets", icon: IconAssets, labelKey: "nav.assets", enabled: true },
   { id: "settings", settingsAction: true, icon: IconSettings, labelKey: "nav.settings", enabled: true, bottom: true },
 ];
 

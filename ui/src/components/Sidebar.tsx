@@ -23,6 +23,7 @@ export function SidebarStack() {
     uiModeRaw === "agent" && ENABLE_AGENT_MODE ? "agent" :
       uiModeRaw === "card-news" && ENABLE_CARD_NEWS_MODE ? "card-news" :
       uiModeRaw === "node" && ENABLE_NODE_MODE ? "node" :
+      uiModeRaw === "assets" ? "assets" :
         "classic";
   const workspaceSettings = resolveWorkspaceSettings(workspaceProfile);
   const promptStudioDesktop =

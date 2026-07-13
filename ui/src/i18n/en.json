@@ -1449,6 +1449,7 @@
     "create": "Create",
     "node": "Node graph",
     "agent": "Agent",
+    "assets": "Assets",
     "settings": "Settings"
   },
   "chain": {
@@ -1458,6 +1459,35 @@
     "useAsRef": "Use as reference",
     "rebake": "Re-generate",
     "refAdded": "Added as reference image",
-    "refFailed": "Could not add reference"
+    "refFailed": "Could not add reference",
+    "saveToAssets": "Save to assets",
+    "savedToAssets": "Saved to assets",
+    "saveToAssetsFailed": "Could not save to assets"
+  },
+  "assets": {
+    "title": "Assets",
+    "searchPlaceholder": "Search assets…",
+    "allAssets": "All assets",
+    "newFolder": "New folder",
+    "kindAll": "All types",
+    "kindImage": "Images",
+    "kindVideo": "Videos",
+    "kindElement": "Elements",
+    "kindPreset": "Presets",
+    "kindTemplate": "Templates",
+    "emptyTitle": "No assets yet",
+    "emptyBody": "Save results from the gallery with “Save to assets” to build your library.",
+    "emptySearchTitle": "No matches",
+    "emptySearchBody": "Try a different search, tag, or type filter.",
+    "emptyFolderTitle": "This folder is empty",
+    "emptyFolderBody": "Move assets here or save new results into this folder.",
+    "deleteAsset": "Remove from assets",
+    "confirmDelete": "Confirm?",
+    "loadMore": "Load more",
+    "rootFolder": "Top level",
+    "renameFolder": "Rename folder",
+    "deleteFolder": "Delete folder",
+    "actionFailed": "Action failed",
+    "itemCount": "{count} items"
   }
 }

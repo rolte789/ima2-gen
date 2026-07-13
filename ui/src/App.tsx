@@ -37,6 +37,9 @@ const LazyCardNewsWorkspace = lazy(() =>
 const LazyAgentWorkspace = lazy(() =>
   import("./components/agent/AgentWorkspace").then((module) => ({ default: module.AgentWorkspace })),
 );
+const LazyAssetsWorkspace = lazy(() =>
+  import("./components/assets/AssetsWorkspace").then((module) => ({ default: module.AssetsWorkspace })),
+);
 const LazyPromptLibraryPanel = lazy(() =>
   import("./components/PromptLibraryPanel").then((module) => ({ default: module.PromptLibraryPanel })),
 );
@@ -63,8 +66,10 @@ export default function App() {
     uiModeRaw === "agent" && ENABLE_AGENT_MODE ? "agent" :
       uiModeRaw === "card-news" && ENABLE_CARD_NEWS_MODE ? "card-news" :
       uiModeRaw === "node" && ENABLE_NODE_MODE ? "node" :
+      uiModeRaw === "assets" ? "assets" :
         "classic";
   const isAgentMode = uiMode === "agent";
+  const isAssetsMode = uiMode === "assets";
   const isMobile = useIsMobile();
   const workspaceSettings = resolveWorkspaceSettings(workspaceProfile);
   const promptStudioClassic =
@@ -72,7 +77,7 @@ export default function App() {
     uiMode === "classic" &&
     workspaceSettings.composerPlacement === "bottom" &&
     workspaceSettings.multimodeHistoryGrouping === "sequence";
-  const showHistoryStrip = !promptStudioClassic && !isAgentMode;
+  const showHistoryStrip = !promptStudioClassic && !isAgentMode && !isAssetsMode;
 
   useBrowserAttentionBadge(unseenGeneratedCount);
 
@@ -137,11 +142,13 @@ export default function App() {
             <LazyCardNewsWorkspace />
           ) : uiMode === "agent" ? (
             <LazyAgentWorkspace />
+          ) : uiMode === "assets" ? (
+            <LazyAssetsWorkspace />
           ) : (
             <Canvas />
           )}
         </Suspense>
-        {uiMode === "agent" ? null : uiMode === "card-news" ? null : <RightPanel />}
+        {uiMode === "agent" ? null : uiMode === "card-news" ? null : uiMode === "assets" ? null : <RightPanel />}
       </div>
       <CustomSizeConfirmModal />
       <TrashUndoToast />

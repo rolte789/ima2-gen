@@ -8,7 +8,7 @@ import { isVideoItem } from "./videoMedia";
 
 /* ── Action definitions ── */
 
-export type ChainingActionId = "animate" | "edit" | "useAsRef" | "rebake";
+export type ChainingActionId = "animate" | "edit" | "useAsRef" | "rebake" | "saveToAssets";
 
 export interface ChainingAction {
   id: ChainingActionId;
@@ -38,6 +38,11 @@ export const CHAINING_ACTIONS: ChainingAction[] = [
     labelKey: "chain.rebake",
     available: (item) => Boolean(item.prompt || item.filename),
   },
+  {
+    id: "saveToAssets",
+    labelKey: "chain.saveToAssets",
+    available: (item) => Boolean(item.filename),
+  },
 ];
 
 /* ── Execution (calls into the Zustand store) ── */
@@ -57,6 +62,7 @@ export async function executeChaining(
     selectHistory: (item: GenerateItem) => void;
     addReferences: (files: File[]) => Promise<void>;
     showToast: (message: string, isError?: boolean) => void;
+    saveToAssets: (item: GenerateItem) => Promise<boolean>;
   },
   t: ChainingTranslate,
 ): Promise<void> {
@@ -109,6 +115,15 @@ export async function executeChaining(
       if (promptEl) {
         promptEl.focus();
         promptEl.setSelectionRange(promptEl.value.length, promptEl.value.length);
+      }
+      break;
+    }
+    case "saveToAssets": {
+      try {
+        const ok = await store.saveToAssets(item);
+        store.showToast(t(ok ? "chain.savedToAssets" : "chain.saveToAssetsFailed"), !ok);
+      } catch {
+        store.showToast(t("chain.saveToAssetsFailed"), true);
       }
       break;
     }

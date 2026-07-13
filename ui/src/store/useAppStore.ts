@@ -135,8 +135,13 @@ import {
   selectNodeGraphImpl, cancelNodeBatchImpl, setCanvasPanImpl,
   setCanvasExportBackgroundImpl, setCanvasExportMatteColorImpl,
 } from "./storeUIImpl";
+import {
+  loadAssetsImpl, loadMoreAssetsImpl, setAssetsFiltersImpl, saveToAssetsImpl,
+  updateAssetItemImpl, deleteAssetItemImpl, createAssetFolderImpl,
+  renameAssetFolderImpl, moveAssetFolderImpl, deleteAssetFolderImpl,
+} from "./storeAssetsImpl";
 
-export type { GalleryScope, ComposeSheetTab, ImageNodeStatus, ImageNodeData, GraphNode, GraphEdge, MultimodeSequenceState } from "./storeTypes";
+export type { GalleryScope, ComposeSheetTab, ImageNodeStatus, ImageNodeData, GraphNode, GraphEdge, MultimodeSequenceState, AssetItem, AssetFolder, AssetsFilters } from "./storeTypes";
 export { flushGraphSaveBeacon, selectCurrentSessionId } from "./storeGraphSave";
 import type { AppState } from "./storeTypes";
 const storedGenerationDefaults = loadGenerationDefaults();
@@ -147,6 +152,22 @@ const initialProvider =
   isGrokImageModel(storedImageModel) ? "grok" : (storedGenerationDefaults.provider ?? "oauth") === "grok" ? "oauth" : (storedGenerationDefaults.provider ?? "oauth");
 
 export const useAppStore = create<AppState>((set, get) => ({
+  assets: [],
+  assetsFolders: [],
+  assetsTags: [],
+  assetsLoading: false,
+  assetsCursor: null,
+  assetsFilters: { kind: null, folderId: null, tag: null, q: "" },
+  loadAssets: (reset) => loadAssetsImpl(reset, set, get),
+  loadMoreAssets: () => loadMoreAssetsImpl(set, get),
+  setAssetsFilters: (patch) => setAssetsFiltersImpl(patch, set, get),
+  saveToAssets: (item) => saveToAssetsImpl(item, set, get),
+  updateAssetItem: (id, patch) => updateAssetItemImpl(id, patch, set),
+  deleteAssetItem: (id) => deleteAssetItemImpl(id, set),
+  createAssetFolder: (name, parentId) => createAssetFolderImpl(name, parentId, set),
+  renameAssetFolder: (id, name) => renameAssetFolderImpl(id, name, set),
+  moveAssetFolder: (id, parentId) => moveAssetFolderImpl(id, parentId, set),
+  deleteAssetFolder: (id) => deleteAssetFolderImpl(id, set),
   provider: initialProvider,
   quality: storedGenerationDefaults.quality ?? "medium",
   sizePreset: storedGenerationDefaults.sizePreset ?? "1024x1024",
