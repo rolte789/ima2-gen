@@ -21,6 +21,7 @@ type Props<V extends string> = {
   ariaLabel?: string;
   className?: string;
   id?: string;
+  disabled?: boolean;
 };
 
 /**
@@ -35,6 +36,7 @@ export function Select<V extends string>({
   ariaLabel,
   className,
   id,
+  disabled,
 }: Props<V>) {
   const listId = useId();
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -124,6 +126,7 @@ export function Select<V extends string>({
         aria-expanded={open}
         aria-controls={listId}
         aria-label={ariaLabel}
+        disabled={disabled}
         onClick={() => (open ? setOpen(false) : openList())}
         onKeyDown={onKeyDown}
       >
