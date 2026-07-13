@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { useAppStore } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import { OptionGroup } from "./OptionGroup";
-import { Select } from "./controls";
+import { Chip, ChipRow, Select } from "./controls";
 import { deriveVideoModeUI, GROK_VIDEO_MODEL_15, GROK_VIDEO_MODEL_BASE, MAX_REF2V_DURATION_UI, supportsVideoResolutionUI } from "../lib/imageModels";
 import { ACTIVE_VIDEO_PROMPT_GUIDANCE, continuitySummary } from "../lib/videoContinuity";
+import { getPresetById } from "../lib/presets";
 import type { VideoResolutionUI } from "../types";
 
 interface PlannerConfig { model: string; options: string[]; }
@@ -37,6 +38,11 @@ export function VideoControlsPanel() {
   const setVideoTopic = useAppStore((s) => s.setVideoTopic);
   const showToast = useAppStore((s) => s.showToast);
   const continuity = useAppStore((s) => s.videoContinuityLineage);
+  const selectedPresetIds = useAppStore((s) => s.selectedPresetIds);
+  const removePreset = useAppStore((s) => s.removePreset);
+  const cameraPresets = selectedPresetIds
+    .map((id) => getPresetById(id))
+    .filter((preset): preset is NonNullable<typeof preset> => preset?.category === "camera-motion");
   const maxDuration = refCount >= 2 ? MAX_REF2V_DURATION_UI : 15;
   const mode = deriveVideoModeUI(refCount);
   const summary = continuitySummary(continuity);
@@ -114,6 +120,15 @@ export function VideoControlsPanel() {
           <span>{summary}</span>
         </div>
       ) : null}
+      {cameraPresets.length > 0 && (
+        <ChipRow ariaLabel="Selected camera motion presets">
+          {cameraPresets.map((preset) => (
+            <Chip key={preset.id} onRemove={() => removePreset(preset.id)}>
+              {preset.name}
+            </Chip>
+          ))}
+        </ChipRow>
+      )}
       <div className="option-group">
         <div className="section-title">{t("video.seriesTopicTitle") ?? "시리즈 주제"}</div>
         <input

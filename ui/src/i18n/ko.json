@@ -301,6 +301,12 @@
     "button": "생성",
     "buttonLoading": "생성 중 ({n})"
   },
+  "home": {
+    "recentTitle": "이어가기",
+    "presetsTitle": "프리셋",
+    "selectedCount": "{count}개 선택",
+    "selectedPresets": "선택한 프리셋"
+  },
   "billing": {
     "label": "API 상태",
     "checking": "확인 중...",

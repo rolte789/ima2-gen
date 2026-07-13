@@ -201,9 +201,19 @@ export type GenerationDefaults = Partial<{
   promptMode: "auto" | "direct";
   prompt: string;
   insertedPrompts: InsertedPrompt[];
+  presetIds: string[];
 }>;
 
-export type AppState = {
+export type PresetState = {
+  selectedPresetIds: string[];
+  addPreset: (id: string) => void;
+  removePreset: (id: string) => void;
+  togglePreset: (id: string) => void;
+  clearPresets: () => void;
+  restorePresetIds: (ids: string[]) => void;
+};
+
+export type AppState = PresetState & {
   assets: AssetItem[];
   assetsFolders: AssetFolder[];
   assetsTags: string[];

@@ -25,6 +25,7 @@ import { DEFAULT_WEB_SEARCH_ENABLED } from "../lib/webSearch";
 import { ENABLE_AGENT_MODE, ENABLE_CARD_NEWS_MODE, ENABLE_NODE_MODE } from "../lib/devMode";
 import { normalizeGenerationCount } from "../lib/generationLimits";
 import { parseRequestedCustomSide } from "../lib/size";
+import { getPresetById } from "../lib/presets";
 import {
   ACTIVE_SESSION_ID_STORAGE_KEY,
   CANVAS_EXPORT_BG_KEY,
@@ -118,6 +119,7 @@ export function loadUIMode(): UIMode {
     if (raw === "card-news") return ENABLE_CARD_NEWS_MODE ? raw : "classic";
     if (raw === "node") return ENABLE_NODE_MODE ? raw : "classic";
     if (raw === "assets") return raw;
+    if (raw === "home") return raw;
     if (raw === "classic") return raw;
   } catch {}
   return "classic";
@@ -357,6 +359,11 @@ export function loadGenerationDefaults(): GenerationDefaults {
     if (typeof parsed.prompt === "string") out.prompt = parsed.prompt;
     const insertedPrompts = normalizeInsertedPromptArray(parsed.insertedPrompts);
     if (insertedPrompts) out.insertedPrompts = insertedPrompts;
+    if (Array.isArray(parsed.presetIds)) {
+      out.presetIds = [
+        ...new Set(parsed.presetIds.filter((id): id is string => typeof id === "string" && !!getPresetById(id))),
+      ];
+    }
     return out;
   } catch {
     return {};

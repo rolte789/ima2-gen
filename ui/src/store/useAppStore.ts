@@ -140,6 +140,7 @@ import {
   updateAssetItemImpl, deleteAssetItemImpl, createAssetFolderImpl,
   renameAssetFolderImpl, moveAssetFolderImpl, deleteAssetFolderImpl,
 } from "./storeAssetsImpl";
+import { createPresetSlice } from "./storePresetImpl";
 
 export type { GalleryScope, ComposeSheetTab, ImageNodeStatus, ImageNodeData, GraphNode, GraphEdge, MultimodeSequenceState, AssetItem, AssetFolder, AssetsFilters } from "./storeTypes";
 export { flushGraphSaveBeacon, selectCurrentSessionId } from "./storeGraphSave";
@@ -151,7 +152,8 @@ const initialProvider =
   storedVideoDefaults.model ? "grok" :
   isGrokImageModel(storedImageModel) ? "grok" : (storedGenerationDefaults.provider ?? "oauth") === "grok" ? "oauth" : (storedGenerationDefaults.provider ?? "oauth");
 
-export const useAppStore = create<AppState>((set, get) => ({
+export const useAppStore = create<AppState>((set, get, store) => ({
+  ...createPresetSlice(set, get, store),
   assets: [],
   assetsFolders: [],
   assetsTags: [],

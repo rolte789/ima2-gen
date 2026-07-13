@@ -6,6 +6,8 @@ import { WebSearchToggle } from "./WebSearchToggle";
 import { continueFromItem } from "../lib/continueFromItem";
 import { isVideoItem, extractLastFrame } from "../lib/videoMedia";
 import type { VideoReferenceDragPayload } from "../lib/videoContinuity";
+import { getPresetById } from "../lib/presets";
+import { Chip, ChipRow } from "./controls";
 
 type PromptComposerProps = {
   variant?: "sidebar" | "bottom";
@@ -25,6 +27,8 @@ export function PromptComposer({ variant = "sidebar" }: PromptComposerProps) {
   const removeInsertedPrompt = useAppStore((s) => s.removeInsertedPromptFromComposer);
   const moveInsertedPrompt = useAppStore((s) => s.moveInsertedPromptInComposer);
   const generate = useAppStore((s) => s.generate);
+  const selectedPresetIds = useAppStore((s) => s.selectedPresetIds);
+  const removePreset = useAppStore((s) => s.removePreset);
   const { t } = useI18n();
 
   const refs = useAppStore((s) => s.referenceImages);
@@ -292,6 +296,20 @@ export function PromptComposer({ variant = "sidebar" }: PromptComposerProps) {
         <div className="composer__prompt-chips">
           {beforePrompts.map(renderPromptChip)}
         </div>
+      )}
+
+      {selectedPresetIds.length > 0 && (
+        <ChipRow ariaLabel="Selected presets">
+          {selectedPresetIds.map((id) => {
+            const preset = getPresetById(id);
+            if (!preset) return null;
+            return (
+              <Chip key={id} onRemove={() => removePreset(id)}>
+                {preset.name}
+              </Chip>
+            );
+          })}
+        </ChipRow>
       )}
 
       <textarea

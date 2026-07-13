@@ -158,7 +158,7 @@ describe("gallery navigation UX contract", () => {
     assert.match(app, /data-history-strip-layout=\{historyStripLayout\}/);
     assert.match(app, /import \{ MobileAppBar \} from "\.\/components\/MobileAppBar"/);
     assert.match(app, /const showHistoryStrip = !promptStudioClassic/);
-    assert.match(app, /<NavRail \/>\s*<Sidebar \/>\s*<MobileAppBar \/>\s*\{showHistoryStrip \? <HistoryStrip \/> : null\}/);
+    assert.match(app, /<NavRail \/>\s*\{isHomeMode \? null : <Sidebar \/>\}\s*<MobileAppBar \/>/);
     assert.doesNotMatch(sidebar, /HistoryStrip/);
 
     assert.match(appRule, /--gallery-rail-w:\s*clamp\(61px,\s*6vw,\s*95px\)/);

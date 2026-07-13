@@ -40,6 +40,9 @@ const LazyAgentWorkspace = lazy(() =>
 const LazyAssetsWorkspace = lazy(() =>
   import("./components/assets/AssetsWorkspace").then((module) => ({ default: module.AssetsWorkspace })),
 );
+const HomeWorkspace = lazy(() =>
+  import("./components/home/HomeWorkspace").then((module) => ({ default: module.HomeWorkspace })),
+);
 const LazyPromptLibraryPanel = lazy(() =>
   import("./components/PromptLibraryPanel").then((module) => ({ default: module.PromptLibraryPanel })),
 );
@@ -66,10 +69,12 @@ export default function App() {
     uiModeRaw === "agent" && ENABLE_AGENT_MODE ? "agent" :
       uiModeRaw === "card-news" && ENABLE_CARD_NEWS_MODE ? "card-news" :
       uiModeRaw === "node" && ENABLE_NODE_MODE ? "node" :
+      uiModeRaw === "home" ? "home" :
       uiModeRaw === "assets" ? "assets" :
         "classic";
   const isAgentMode = uiMode === "agent";
   const isAssetsMode = uiMode === "assets";
+  const isHomeMode = uiMode === "home";
   const isMobile = useIsMobile();
   const workspaceSettings = resolveWorkspaceSettings(workspaceProfile);
   const promptStudioClassic =
@@ -77,7 +82,7 @@ export default function App() {
     uiMode === "classic" &&
     workspaceSettings.composerPlacement === "bottom" &&
     workspaceSettings.multimodeHistoryGrouping === "sequence";
-  const showHistoryStrip = !promptStudioClassic && !isAgentMode && !isAssetsMode;
+  const showHistoryStrip = !promptStudioClassic && !isAgentMode && !isAssetsMode && !isHomeMode;
 
   useBrowserAttentionBadge(unseenGeneratedCount);
 
@@ -128,7 +133,7 @@ export default function App() {
         data-ui-mode={uiMode}
       >
         <NavRail />
-        <Sidebar />
+        {isHomeMode ? null : <Sidebar />}
         <MobileAppBar />
         {showHistoryStrip ? <HistoryStrip /> : null}
         <Suspense fallback={<WorkspaceFallback />}>
@@ -144,11 +149,13 @@ export default function App() {
             <LazyAgentWorkspace />
           ) : uiMode === "assets" ? (
             <LazyAssetsWorkspace />
+          ) : uiMode === "home" ? (
+            <HomeWorkspace />
           ) : (
             <Canvas />
           )}
         </Suspense>
-        {uiMode === "agent" ? null : uiMode === "card-news" ? null : uiMode === "assets" ? null : <RightPanel />}
+        {uiMode === "agent" ? null : uiMode === "card-news" ? null : uiMode === "assets" ? null : uiMode === "home" ? null : <RightPanel />}
       </div>
       <CustomSizeConfirmModal />
       <TrashUndoToast />

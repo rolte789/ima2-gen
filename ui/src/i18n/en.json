@@ -301,6 +301,12 @@
     "button": "Generate",
     "buttonLoading": "Generating ({n})"
   },
+  "home": {
+    "recentTitle": "Continue",
+    "presetsTitle": "Presets",
+    "selectedCount": "{count} selected",
+    "selectedPresets": "Selected presets"
+  },
   "billing": {
     "label": "API Status",
     "checking": "Checking...",

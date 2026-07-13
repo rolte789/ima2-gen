@@ -19,6 +19,7 @@ import "./styles/agent-panels-composer.css";
 import "./styles/agent-workspace-image.css";
 import "./styles/agent-workspace-sidebar.css";
 import "./styles/assets-workspace.css";
+import "./styles/home-workspace.css";
 import "./styles/quota-card.css";
 import App from "./App";
 
