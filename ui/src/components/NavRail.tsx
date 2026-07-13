@@ -55,13 +55,10 @@ function IconNode() {
 
 function IconAgent() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12 8V4H8" />
-      <rect x="4" y="8" width="16" height="12" rx="2" />
-      <path d="M2 14h2" />
-      <path d="M20 14h2" />
-      <path d="M15 13v2" />
-      <path d="M9 13v2" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" />
+      <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(-30 12 12)" />
+      <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(30 12 12)" />
     </svg>
   );
 }
