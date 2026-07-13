@@ -20,17 +20,9 @@ import type { AppState, ImageNodeData } from "./storeTypes";
 import type { ClientNodeId } from "../lib/graph";
 import { clearFlightAbort, registerFlightAbort } from "./flightAbortRegistry";
 import { t } from "../i18n";
-import { compilePresets, type PresetProvider } from "../../../lib/presetCompiler.js";
-import { getAllPresets } from "../lib/presets";
 
 type StoreSet = (p: Partial<AppState>) => void;
 type StoreGet = () => AppState;
-
-function toPresetProvider(provider: AppState["provider"]): PresetProvider {
-  if (provider === "grok" || provider === "grok-api") return "grok";
-  if (provider === "gemini-api") return "gemini";
-  return "gpt";
-}
 
 export async function runVideoGenerateImpl(
   nodeId: ClientNodeId | undefined,
@@ -40,21 +32,11 @@ export async function runVideoGenerateImpl(
   const node = nodeId ? get().graphNodes.find((n) => n.id === nodeId) : null;
   const refs = node ? (node.data.referenceImages ?? []) : get().referenceImages;
   const mode = deriveVideoModeUI(refs.length);
-  const userPrompt = node ? node.data.prompt.trim() : composePrompt(get().prompt, get().insertedPrompts);
-  if (!userPrompt.trim()) {
+  const prompt = node ? node.data.prompt.trim() : composePrompt(get().prompt, get().insertedPrompts);
+  if (!prompt.trim()) {
     get().showToast(ACTIVE_VIDEO_PROMPT_GUIDANCE, true);
     return;
   }
-  const presetState = get();
-  const compiled = compilePresets({
-    catalog: getAllPresets(),
-    presetIds: presetState.selectedPresetIds,
-    provider: toPresetProvider(presetState.provider),
-    mode: "video",
-  });
-  const prompt = compiled.promptFragment
-    ? `${compiled.promptFragment} ${userPrompt}`
-    : userPrompt;
 
   let parentSourceFilename: string | undefined;
   let parentVideoFrameRef: string | undefined;
@@ -112,27 +94,25 @@ export async function runVideoGenerateImpl(
   get().startInFlightPolling();
   try {
     const providerUrl = get().providerUrlReference;
-    const payload = {
-      prompt,
-      requestId: flightId,
-      model: (typeof get().videoModelSelected === "string" && get().videoModelSelected) || undefined,
-      referenceImages: refs.length >= 2 ? refs : undefined,
-      sourceImage: refs.length === 1 ? refs[0] : parentVideoFrameRef,
-      sourceFilename: refs.length === 0 && !parentVideoFrameRef ? parentSourceFilename : undefined,
-      continueFromVideo,
-      continuityLineage: parentVideoContinuity,
-      duration: clampVideoDurationUI(get().videoDuration, mode),
-      resolution: get().videoResolution,
-      aspectRatio: get().videoAspectRatio,
-      topic: get().videoTopic || undefined,
-      storyboard: get().storyboardActive || undefined,
-      presetIds: compiled.appliedPresetIds,
-      sessionId: requestSessionId,
-      clientNodeId: nodeId ?? null,
-      ...(providerUrl ? { providerUrl } : {}),
-    };
     const result = await postVideoGenerateStream(
-      payload,
+      {
+        prompt,
+        requestId: flightId,
+        model: (typeof get().videoModelSelected === "string" && get().videoModelSelected) || undefined,
+        referenceImages: refs.length >= 2 ? refs : undefined,
+        sourceImage: refs.length === 1 ? refs[0] : parentVideoFrameRef,
+        sourceFilename: refs.length === 0 && !parentVideoFrameRef ? parentSourceFilename : undefined,
+        continueFromVideo,
+        continuityLineage: parentVideoContinuity,
+        duration: clampVideoDurationUI(get().videoDuration, mode),
+        resolution: get().videoResolution,
+        aspectRatio: get().videoAspectRatio,
+        topic: get().videoTopic || undefined,
+        storyboard: get().storyboardActive || undefined,
+        sessionId: requestSessionId,
+        clientNodeId: nodeId ?? null,
+        ...(providerUrl ? { providerUrl } : {}),
+      },
       {
         onPlanning: () => set({ inFlight: get().inFlight.map((f) => f.id === flightId ? { ...f, phase: "planning" } : f) }),
         onSubmitted: () => set({ inFlight: get().inFlight.map((f) => f.id === flightId ? { ...f, phase: "streaming" } : f) }),
@@ -242,16 +222,6 @@ export async function animateImageImpl(
     get().showToast(ACTIVE_VIDEO_PROMPT_GUIDANCE, true);
     throw new Error(ACTIVE_VIDEO_PROMPT_GUIDANCE);
   }
-  const presetState = get();
-  const compiled = compilePresets({
-    catalog: getAllPresets(),
-    presetIds: presetState.selectedPresetIds,
-    provider: toPresetProvider(presetState.provider),
-    mode: "video",
-  });
-  const finalPrompt = compiled.promptFragment
-    ? `${compiled.promptFragment} ${p}`
-    : p;
   const startedAt = Date.now();
   const autoSelectStartedAt = startedAt;
   const flightId = `vid_${startedAt}_${Math.random().toString(36).slice(2, 6)}`;
@@ -259,24 +229,14 @@ export async function animateImageImpl(
   registerFlightAbort(flightId, controller);
   const nextInFlight: PersistedInFlight[] = [
     ...get().inFlight,
-    { id: flightId, prompt: finalPrompt, startedAt, kind: "video" as const, sessionId: get().activeSessionId, clientNodeId: null },
+    { id: flightId, prompt: p, startedAt, kind: "video" as const, sessionId: get().activeSessionId, clientNodeId: null },
   ];
   saveInFlight(nextInFlight);
   set({ inFlight: nextInFlight, activeGenerations: nextInFlight.length, videoProgress: 0 });
   get().startInFlightPolling();
   try {
-    const payload = {
-      prompt: finalPrompt,
-      presetIds: compiled.appliedPresetIds,
-      requestId: flightId,
-      mode: "image-to-video" as const,
-      sourceFilename: filename,
-      duration: 5,
-      resolution: "480p",
-      aspectRatio: "auto",
-    };
     const result = await postVideoGenerateStream(
-      payload,
+      { prompt: p, requestId: flightId, mode: "image-to-video", sourceFilename: filename, duration: 5, resolution: "480p", aspectRatio: "auto" },
       {
         onPlanning: () => set({ inFlight: get().inFlight.map((f) => f.id === flightId ? { ...f, phase: "planning" } : f) }),
         onSubmitted: () => set({ inFlight: get().inFlight.map((f) => f.id === flightId ? { ...f, phase: "streaming" } : f) }),
@@ -289,7 +249,7 @@ export async function animateImageImpl(
       filename: result.filename,
       url: result.url,
       mediaType: "video",
-      prompt: finalPrompt,
+      prompt: p,
       elapsed: result.elapsed,
       video: result.video as Record<string, unknown> ?? {},
       videoSeries: result.videoSeries ?? null,

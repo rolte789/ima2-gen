@@ -74,12 +74,12 @@ routes/
 |---|---:|---|
 | `server.ts` | 491 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, route registration, static serving |
 | `config.ts` | 367 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
-| `routes/index.ts` | 65 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, and (when `features.cardNews`) cardNews |
+| `routes/index.ts` | 63 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, and (when `features.cardNews`) cardNews |
 | `routes/capabilities.ts` | 35 | `GET /api/capabilities` — agent-facing runtime defaults; `GET/PATCH /api/config/grok-planner` — Grok planner model query/update |
-| `routes/generate.ts` | 13 | Classic generation API route wiring |
+| `routes/generate.ts` | 10 | Classic generation API route wiring |
 | `routes/edit.ts` | 407 | Edit API, mask validation, cancellation, OAuth/API edit response save, provider/web-search/reasoning-effort plumbing |
 | `routes/multimode.ts` | 10 | `POST /api/generate/multimode` route wiring |
-| `routes/video.ts` | 436 | `POST /api/video/generate` SSE: Grok video T2V/I2V/Ref2V, active prompt guard, continuation lineage, sidecar persistence |
+| `routes/video.ts` | 433 | `POST /api/video/generate` SSE: Grok video T2V/I2V/Ref2V, active prompt guard, continuation lineage, sidecar persistence |
 | `routes/videoExtended.ts` | 300 | Video edit, extension, frame extraction, and Grok 4.3 first/last-frame analysis |
 | `routes/nodes.ts` | 28 | Node generation and node fetch route wiring |
 | `routes/sessions.ts` | 318 | SQLite-backed session list/load/save/rename/delete, style-sheet get/put/enable/extract, graph save |
@@ -144,7 +144,7 @@ routes/
 | `lib/styleSheet.ts` | 140 | Session style-sheet extraction and prefix composition |
 | `lib/assetLifecycle.ts` | 175 | Soft delete (OS trash via `trash` dep), restore, node asset-missing marking |
 | `lib/systemTrash.ts` | 21 | Cross-platform OS-trash helper wrapping the `trash` dependency |
-| `lib/db.ts` | 335 | SQLite bootstrap and migrations: sessions, nodes, edges, inflight, prompts, prompt folders, canvas versions |
+| `lib/db.ts` | 298 | SQLite bootstrap and migrations: sessions, nodes, edges, inflight, prompts, prompt folders, canvas versions |
 | `lib/nodeStore.ts` | 92 | Node image and metadata load/save |
 | `lib/inflight.ts` | 349 | SQLite-backed active job registry for classic/node/multimode, abort controllers, cancel state, and short-lived terminal job snapshots |
 | `lib/logger.ts` | 162 | Safe structured logging, redaction, level filtering, and test sink helpers |
@@ -185,7 +185,7 @@ routes/
 | `lib/refs.ts` | 134 | Reference image validation, count/size limits |
 | `lib/referenceImageCompress.ts` | 85 | Sharp-based reference image compression below the configured byte cap |
 | `lib/imageModels.ts` | 216 | Image model allowlist and `normalizeImageModel(ctx, raw)` helper |
-| `lib/imageMetadata.ts` | 123 | `ima2.generation.v1` payload schema, XMP build/parse, embed limits |
+| `lib/imageMetadata.ts` | 117 | `ima2.generation.v1` payload schema, XMP build/parse, embed limits |
 | `lib/imageMetadataStore.ts` | 68 | Sharp-based embed/read of XMP metadata into PNG/JPEG/WebP |
 | `lib/canvasVersionStore.ts` | 331 | Canvas version snapshot storage, list, restore, and pruning |
 | `lib/comfyBridge.ts` | 236 | ComfyUI bridge: workflow export, image staging, integration helper handoff |
@@ -234,15 +234,15 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 
 | Area | File | Lines | Responsibility |
 |---|---|---:|---|
-| App shell | `ui/src/App.tsx` | 178 | Initial hydration, polling, classic/node/card-news canvas switch, Canvas Mode workspace mount, prompt library overlay, mobile shell (dark-only since Phase 010) |
-| Entry | `ui/src/main.tsx` | 43 | React mount |
-| Types | `ui/src/types.ts` | 254 | Provider, quality, size, image model, embedded metadata, response types, web-search, reasoning effort, multimode |
+| App shell | `ui/src/App.tsx` | 189 | Initial hydration, polling, classic/node/card-news canvas switch, Canvas Mode workspace mount, theme attributes, prompt library overlay, mobile shell |
+| Entry | `ui/src/main.tsx` | 41 | React mount |
+| Types | `ui/src/types.ts` | 265 | Provider, quality, size, image model, theme family, embedded metadata, response types, web-search, reasoning effort, multimode |
 | Canvas types | `ui/src/types/canvas.ts` | 98 | Canvas Mode shared types (annotations, versions, masks, brushes) |
-| Store | `ui/src/store/useAppStore.ts` | 513 | Zustand facade; classic/node/video/multimode/inflight/history logic split into `ui/src/store/store*Impl.ts` modules |
-| Persistence registry | `ui/src/store/persistenceRegistry.ts` | 83 | Single source of truth for `ima2.*` localStorage key names — covers gallery scope, gallery default scope, and settings keys (theme keys removed in Phase 010); prevents drift between hydration helpers and setters (#43) |
+| Store | `ui/src/store/useAppStore.ts` | 508 | Zustand facade; classic/node/video/multimode/inflight/history logic split into `ui/src/store/store*Impl.ts` modules |
+| Persistence registry | `ui/src/store/persistenceRegistry.ts` | 90 | Single source of truth for `ima2.*` localStorage key names — covers gallery scope, gallery default scope, settings, and theme keys; prevents drift between hydration helpers and setters (#43) |
 | Card-news store | `ui/src/store/cardNewsStore.ts` | 417 | Card-news plan, role/image template selection, planner draft, job polling, regenerate actions |
 | Mode/dev gates | `ui/src/lib/devMode.ts` | 16 | `IS_DEV_UI`, `ENABLE_NODE_MODE`, `ENABLE_CARD_NEWS_MODE` build-time flags |
-| API client | `ui/src/lib/api.ts` | 110 | Browser-side REST barrel re-export (`api-core`, `api-capabilities`, `api-inflight`, `api-generate`, …) |
+| API client | `ui/src/lib/api.ts` | 105 | Browser-side REST barrel re-export (`api-core`, `api-capabilities`, `api-inflight`, `api-generate`, …) |
 | Card-news API client | `ui/src/lib/cardNewsApi.ts` | 276 | Card-news templates, draft, jobs, regenerate, set/manifest helpers |
 | Node API client | `ui/src/lib/nodeApi.ts` | 153 | Node generation JSON/SSE client and node error status propagation |
 | Node graph helpers | `ui/src/lib/nodeGraph.ts` | 42 | Visual-edge parent derivation and incoming-edge conflict helpers |
@@ -415,7 +415,7 @@ The `tests/` directory now contains roughly 125 `*.test.js` / `*.test.mjs` / `*.
 |---|---|---|
 | `server.ts` is split | Route files own API surfaces; keep route map current | `03-server-api`, `06-infra-operations` |
 | `ui/src/index.css` is ~105 lines | Global shell only; feature CSS lives in `ui/src/styles/*` | `04-frontend-architecture` |
-| `useAppStore.ts` is a ~490-line facade | State split into `store*Impl.ts` modules; card-news remains in `cardNewsStore.ts` | `04-frontend-architecture`, `05-node-mode` |
+| `useAppStore.ts` is a ~508-line facade | State split into `store*Impl.ts` modules; card-news remains in `cardNewsStore.ts` | `04-frontend-architecture`, `05-node-mode` |
 | `cardNewsStore.ts` is a separate dev-only store at 417 lines | Card-news plan/job state is isolated from `useAppStore` | `04-frontend-architecture`, `06-infra-operations` |
 | `lib/oauthProxy/*` subtree | Largest OAuth helper is `generators.ts` (~502 lines); `lib/oauthProxy.ts` is a 4-line re-export shim | `03-server-api`, `05-node-mode` |
 | `routes/prompts.ts` is ~429 lines | Prompt library CRUD + folders + import/export grew beyond a single concern | `03-server-api`, `04-frontend-architecture` |

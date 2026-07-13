@@ -1,7 +1,9 @@
+import { UIModeSwitch } from "./UIModeSwitch";
 import { PromptComposer } from "./PromptComposer";
 import { GenerateButton } from "./GenerateButton";
 import { InFlightList } from "./InFlightList";
 import { SessionPicker } from "./SessionPicker";
+import { SettingsButton } from "./SettingsButton";
 import { ImageModelSelect } from "./ImageModelSelect";
 import { CardNewsComposer } from "./card-news/CardNewsComposer";
 import { SidebarHistory } from "./history/SidebarHistory";
@@ -23,7 +25,6 @@ export function SidebarStack() {
     uiModeRaw === "agent" && ENABLE_AGENT_MODE ? "agent" :
       uiModeRaw === "card-news" && ENABLE_CARD_NEWS_MODE ? "card-news" :
       uiModeRaw === "node" && ENABLE_NODE_MODE ? "node" :
-      uiModeRaw === "assets" ? "assets" :
         "classic";
   const workspaceSettings = resolveWorkspaceSettings(workspaceProfile);
   const promptStudioDesktop =
@@ -91,8 +92,10 @@ export function SidebarChrome({ agentSettings, onAgentSettingsChange }: SidebarC
         <div className="logo-actions">
           <PromptLibraryButton />
           <ImageModelSelect variant="sidebar" agentSettings={agentSettings} onAgentSettingsChange={onAgentSettingsChange} />
+          <SettingsButton />
         </div>
       </div>
+      <UIModeSwitch />
     </>
   );
 }

@@ -1,6 +1,5 @@
 import { useAppStore } from "../store/useAppStore";
 import { useI18n } from "../i18n";
-import { Toggle } from "./controls";
 
 type WebSearchToggleProps = {
   variant?: "label" | "compact";
@@ -11,17 +10,6 @@ export function WebSearchToggle({ variant = "label" }: WebSearchToggleProps) {
   const webSearchEnabled = useAppStore((s) => s.webSearchEnabled);
   const setWebSearchEnabled = useAppStore((s) => s.setWebSearchEnabled);
   const label = webSearchEnabled ? t("settings.webSearch.on") : t("settings.webSearch.off");
-
-  if (variant === "label") {
-    return (
-      <Toggle
-        checked={webSearchEnabled}
-        onChange={setWebSearchEnabled}
-        label={label}
-        className="web-search-toggle web-search-toggle--label"
-      />
-    );
-  }
 
   return (
     <button

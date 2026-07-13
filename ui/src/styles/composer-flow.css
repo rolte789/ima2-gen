@@ -42,7 +42,7 @@
 }
 
 .composer__prompt-chips-label {
-  color: var(--text-muted);
+  color: var(--text-faint);
   font-size: 10px;
   font-weight: 700;
 }

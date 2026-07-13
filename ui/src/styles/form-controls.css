@@ -47,8 +47,8 @@
   flex: 1;
   min-width: 0;
   padding: 6px 4px;
-  background: var(--control-bg);
-  border: 1px solid var(--hairline-soft);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-dim);
   font-family: var(--mono);
@@ -61,12 +61,11 @@
   text-overflow: ellipsis;
 }
 .option-btn:hover {
-  background: var(--control-hover);
-  border-color: var(--hairline);
+  border-color: var(--border-strong);
   color: var(--text);
 }
 .option-btn.active {
-  border-color: var(--hairline);
+  border-color: var(--accent);
   color: var(--accent-bright);
   background: var(--accent-soft);
 }
@@ -321,3 +320,4 @@
     transform: rotate(360deg);
   }
 }
+

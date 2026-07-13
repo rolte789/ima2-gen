@@ -4,7 +4,7 @@ import { resolve, sep } from "path";
 import { moveToSystemTrash } from "./systemTrash.js";
 import { config } from "../config.js";
 
-export function resolveInGenerated(rootDir: string, relPath: string): string {
+function resolveInGenerated(rootDir: string, relPath: string): string {
   void rootDir;
   if (typeof relPath !== "string" || relPath.length === 0) {
     const err: any = new Error("filename required");
@@ -29,7 +29,7 @@ export function resolveInGenerated(rootDir: string, relPath: string): string {
   return target;
 }
 
-export async function assertRegularGeneratedPath(path: string): Promise<void> {
+async function assertRegularGeneratedPath(path: string): Promise<void> {
   const baseDir = await realpath(resolve(config.storage.generatedDir));
   const stat = await lstat(path);
   if (stat.isSymbolicLink()) {

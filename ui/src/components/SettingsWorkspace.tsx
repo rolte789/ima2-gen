@@ -5,19 +5,23 @@ import { ImageModelSelect } from "./ImageModelSelect";
 import { ReasoningEffortSelect } from "./ReasoningEffortSelect";
 import { WebSearchToggle } from "./WebSearchToggle";
 import { LanguageToggle } from "./LanguageToggle";
+import { ThemeToggle } from "./ThemeToggle";
 import { HistoryStripLayoutToggle } from "./HistoryStripLayoutToggle";
 import { WorkspaceProfileSettings } from "./settings/WorkspaceProfileSettings";
+import { QuotaCard } from "./settings/QuotaCard";
 import { GrokPlannerSelect } from "./settings/GrokPlannerSelect";
 import { useAppStore } from "../store/useAppStore";
 import type { GalleryScope } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import type { SettingsSection } from "../types";
-import { Select } from "./controls";
 
 const SETTINGS_SECTIONS: SettingsSection[] = [
-  "providers",
+  "account",
+  "generation",
+  "appearance",
   "workspace",
-  "general",
+  "language",
+  "future",
 ];
 
 type SettingsSectionBlockProps = {
@@ -37,9 +41,12 @@ function SettingsSectionBlock({ id, setRef, children }: SettingsSectionBlockProp
       aria-labelledby={`settings-section-${id}`}
     >
       <header className="settings-section__header">
-        <h3 id={`settings-section-${id}`}>
-          {t(`settings.sections.${id}.title`)}
-        </h3>
+        <div>
+          <h3 id={`settings-section-${id}`}>
+            {t(`settings.sections.${id}.title`)}
+          </h3>
+          <p>{t(`settings.sections.${id}.hint`)}</p>
+        </div>
       </header>
       <div className="settings-section__body">{children}</div>
     </section>
@@ -59,9 +66,12 @@ export function SettingsWorkspace() {
   const unlockTimerRef = useRef<number | null>(null);
   const isProgrammaticScroll = useRef(false);
   const sectionRefs = useRef<Record<SettingsSection, HTMLElement | null>>({
-    providers: null,
+    account: null,
+    generation: null,
+    appearance: null,
     workspace: null,
-    general: null,
+    language: null,
+    future: null,
   });
 
   const setSectionRef = (id: SettingsSection, element: HTMLElement | null) => {
@@ -130,7 +140,9 @@ export function SettingsWorkspace() {
       <div className="settings-shell">
         <header className="settings-header">
           <div>
+            <p className="settings-eyebrow">{t("settings.eyebrow")}</p>
             <h2 id="settings-title">{t("settings.title")}</h2>
+            <p>{t("settings.subtitle")}</p>
           </div>
           <button
             type="button"
@@ -178,8 +190,9 @@ export function SettingsWorkspace() {
           </nav>
 
           <section className="settings-content" aria-label={t("settings.contentAria")}>
-            <SettingsSectionBlock id="providers" setRef={setSectionRef}>
+            <SettingsSectionBlock id="account" setRef={setSectionRef}>
               <AccountSettings />
+              <QuotaCard />
               <article className="settings-row">
                 <div className="settings-row__copy">
                   <h4>{t("readiness.settingsTitle")}</h4>
@@ -191,6 +204,9 @@ export function SettingsWorkspace() {
                   </button>
                 </div>
               </article>
+            </SettingsSectionBlock>
+
+            <SettingsSectionBlock id="generation" setRef={setSectionRef}>
               <article className="settings-row">
                 <div className="settings-row__copy">
                   <h4>{t("settings.imageModel.title")}</h4>
@@ -242,6 +258,45 @@ export function SettingsWorkspace() {
                   </article>
                 </>
               )}
+              <article className="settings-row">
+                <div className="settings-row__copy">
+                  <h4>{t("settings.gallery.defaultScopeTitle")}</h4>
+                  <p>{t("settings.gallery.defaultScopeBody")}</p>
+                </div>
+                <div className="settings-row__control">
+                  <select
+                    value={galleryDefaultScope}
+                    onChange={(e) =>
+                      setGalleryDefaultScope(e.target.value as GalleryScope)
+                    }
+                    aria-label={t("settings.gallery.defaultScopeTitle")}
+                  >
+                    <option value="current-session">{t("gallery.scope.current")}</option>
+                    <option value="all">{t("gallery.scope.all")}</option>
+                  </select>
+                </div>
+              </article>
+            </SettingsSectionBlock>
+
+            <SettingsSectionBlock id="appearance" setRef={setSectionRef}>
+              <article className="settings-row">
+                <div className="settings-row__copy">
+                  <h4>{t("settings.appearance.themeTitle")}</h4>
+                  <p>{t("settings.appearance.themeBody")}</p>
+                </div>
+                <div className="settings-row__control">
+                  <ThemeToggle />
+                </div>
+              </article>
+              <article className="settings-row">
+                <div className="settings-row__copy">
+                  <h4>{t("settings.appearance.historyStripLayoutTitle")}</h4>
+                  <p>{t("settings.appearance.historyStripLayoutBody")}</p>
+                </div>
+                <div className="settings-row__control">
+                  <HistoryStripLayoutToggle />
+                </div>
+              </article>
             </SettingsSectionBlock>
 
             <SettingsSectionBlock id="workspace" setRef={setSectionRef}>
@@ -254,35 +309,9 @@ export function SettingsWorkspace() {
                   <WorkspaceProfileSettings />
                 </div>
               </article>
-              <article className="settings-row">
-                <div className="settings-row__copy">
-                  <h4>{t("settings.appearance.historyStripLayoutTitle")}</h4>
-                  <p>{t("settings.appearance.historyStripLayoutBody")}</p>
-                </div>
-                <div className="settings-row__control">
-                  <HistoryStripLayoutToggle />
-                </div>
-              </article>
-              <article className="settings-row">
-                <div className="settings-row__copy">
-                  <h4>{t("settings.gallery.defaultScopeTitle")}</h4>
-                  <p>{t("settings.gallery.defaultScopeBody")}</p>
-                </div>
-                <div className="settings-row__control">
-                  <Select
-                    ariaLabel={t("settings.gallery.defaultScopeTitle")}
-                    value={galleryDefaultScope}
-                    onChange={(v) => setGalleryDefaultScope(v as GalleryScope)}
-                    items={[
-                      { value: "current-session", label: t("gallery.scope.current") },
-                      { value: "all", label: t("gallery.scope.all") },
-                    ]}
-                  />
-                </div>
-              </article>
             </SettingsSectionBlock>
 
-            <SettingsSectionBlock id="general" setRef={setSectionRef}>
+            <SettingsSectionBlock id="language" setRef={setSectionRef}>
               <article className="settings-row">
                 <div className="settings-row__copy">
                   <h4>{t("settings.language.title")}</h4>
@@ -291,6 +320,13 @@ export function SettingsWorkspace() {
                 <div className="settings-row__control">
                   <LanguageToggle />
                 </div>
+              </article>
+            </SettingsSectionBlock>
+
+            <SettingsSectionBlock id="future" setRef={setSectionRef}>
+              <article className="settings-note">
+                <h4>{t("settings.future.title")}</h4>
+                <p>{t("settings.future.body")}</p>
               </article>
             </SettingsSectionBlock>
           </section>

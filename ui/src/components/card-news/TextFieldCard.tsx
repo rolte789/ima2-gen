@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useI18n } from "../../i18n";
 import type {
   CardNewsRenderMode,
@@ -7,7 +6,6 @@ import type {
   CardNewsTextKind,
   CardNewsTextPlacement,
 } from "../../lib/cardNewsApi";
-import { Select, type SelectItem } from "../controls/Select";
 import { PlacementBadge, placementLabel } from "./PlacementBadge";
 
 const TEXT_KINDS: CardNewsTextKind[] = ["headline", "body", "caption", "cta", "badge", "number"];
@@ -46,14 +44,6 @@ export function TextFieldCard({ field, locked, selected = false, onSelect, onCha
   const chars = field.text.length;
   const overLimit = typeof field.maxChars === "number" && chars > field.maxChars;
   const useTextarea = field.maxChars === null || field.maxChars > 80;
-  const kindItems = useMemo<SelectItem<CardNewsTextKind>[]>(() =>
-    TEXT_KINDS.map((k) => ({ value: k, label: enumLabel("textKinds", k, t) })), [t]);
-  const placementItems = useMemo<SelectItem<CardNewsTextPlacement>[]>(() =>
-    PLACEMENTS.map((p) => ({ value: p, label: placementLabel(p, t) })), [t]);
-  const renderModeItems = useMemo<SelectItem<CardNewsRenderMode>[]>(() =>
-    RENDER_MODES.map((m) => ({ value: m, label: enumLabel("renderModes", m, t) })), [t]);
-  const hierarchyItems = useMemo<SelectItem<CardNewsTextHierarchy>[]>(() =>
-    HIERARCHIES.map((h) => ({ value: h, label: enumLabel("hierarchy", h, t) })), [t]);
 
   return (
     <div
@@ -85,22 +75,54 @@ export function TextFieldCard({ field, locked, selected = false, onSelect, onCha
       <div className="card-news-text-field-card__grid">
         <label className="card-news-field">
           <span>{t("cardNews.textKind")}</span>
-          <Select<CardNewsTextKind> items={kindItems} value={field.kind} disabled={locked} onChange={(v) => onChange({ kind: v, source: "user" })} />
+          <select
+            value={field.kind}
+            disabled={locked}
+            onChange={(e) => onChange({ kind: e.target.value as CardNewsTextKind, source: "user" })}
+          >
+            {TEXT_KINDS.map((kind) => (
+              <option key={kind} value={kind}>{enumLabel("textKinds", kind, t)}</option>
+            ))}
+          </select>
         </label>
 
         <label className="card-news-field">
           <span>{t("cardNews.placement")}</span>
-          <Select<CardNewsTextPlacement> items={placementItems} value={field.placement} disabled={locked} onChange={(v) => onChange({ placement: v, source: "user" })} />
+          <select
+            value={field.placement}
+            disabled={locked}
+            onChange={(e) => onChange({ placement: e.target.value as CardNewsTextPlacement, source: "user" })}
+          >
+            {PLACEMENTS.map((placement) => (
+              <option key={placement} value={placement}>{placementLabel(placement, t)}</option>
+            ))}
+          </select>
         </label>
 
         <label className="card-news-field">
           <span>{t("cardNews.renderMode")}</span>
-          <Select<CardNewsRenderMode> items={renderModeItems} value={field.renderMode} disabled={locked} onChange={(v) => onChange({ renderMode: v, source: "user" })} />
+          <select
+            value={field.renderMode}
+            disabled={locked}
+            onChange={(e) => onChange({ renderMode: e.target.value as CardNewsRenderMode, source: "user" })}
+          >
+            {RENDER_MODES.map((mode) => (
+              <option key={mode} value={mode}>{enumLabel("renderModes", mode, t)}</option>
+            ))}
+          </select>
         </label>
 
         <label className="card-news-field">
           <span>{t("cardNews.hierarchyLabel")}</span>
-          <Select<CardNewsTextHierarchy> items={hierarchyItems} value={field.hierarchy} disabled={locked} onChange={(v) => onChange({ hierarchy: v, source: "user" })} />
+          <select
+            value={field.hierarchy}
+            disabled={locked}
+            onChange={(e) => onChange({ hierarchy: e.target.value as CardNewsTextHierarchy, source: "user" })}
+          >
+            {HIERARCHIES.map((hierarchy) => (
+              <option key={hierarchy} value={hierarchy}>{enumLabel("hierarchy", hierarchy, t)}</option>
+            ))}
+          </select>
         </label>
       </div>
 
