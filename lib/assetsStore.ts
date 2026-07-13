@@ -425,3 +425,10 @@ export function listTags(): string[] {
     .prepare("SELECT DISTINCT tag FROM asset_tags ORDER BY tag")
     .all() as Array<{ tag: string }>).map((row) => row.tag);
 }
+
+export function clearAllAssets(): number {
+  const db = getDb();
+  db.prepare("DELETE FROM asset_tags").run();
+  const res = db.prepare("DELETE FROM assets").run();
+  return res.changes;
+}

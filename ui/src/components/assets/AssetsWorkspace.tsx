@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../../i18n";
 import { useAppStore } from "../../store/useAppStore";
+import { clearAllAssets as apiClearAll } from "../../lib/api-assets";
 import { Select, type SelectItem } from "../controls/Select";
 import { AssetsFolderTree } from "./AssetsFolderTree";
 import { AssetsGrid } from "./AssetsGrid";
@@ -32,7 +33,9 @@ export function AssetsWorkspace() {
     <main className="assets-workspace__main">
       <header className="assets-toolbar"><div className="assets-toolbar__title"><h1 id="assets-title">{t("assets.title")}</h1><span>{t("assets.itemCount", { count: assets.length })}</span></div>
         <div className="assets-toolbar__controls"><input type="search" value={query} placeholder={t("assets.searchPlaceholder")} aria-label={t("assets.searchPlaceholder")} onChange={(e) => setQuery(e.target.value)} />
-          <Select<KindValue> items={kindItems} value={(filters.kind ?? "") as KindValue} onChange={(v) => setFilters({ kind: v || null })} ariaLabel={t("assets.kindAll")} /></div>
+          <Select<KindValue> items={kindItems} value={(filters.kind ?? "") as KindValue} onChange={(v) => setFilters({ kind: v || null })} ariaLabel={t("assets.kindAll")} />
+          {assets.length > 0 && <button type="button" className="assets-clear-btn" onClick={async () => { if (confirm(t("assets.clearConfirm"))) { await apiClearAll(); void loadAssets(true); } }}>{t("assets.clearAll")}</button>}
+        </div>
         {tags.length > 0 && <div className="assets-tag-filter">{tags.map((tag) => <button type="button" key={tag} className={filters.tag === tag ? "is-active" : ""} onClick={() => setFilters({ tag: filters.tag === tag ? null : tag })}>{tag}</button>)}</div>}
       </header>
       {empty ? <div className="assets-empty"><h2>{t(emptyTitle)}</h2><p>{t(emptyBody)}</p></div> : <AssetsGrid />}

@@ -59,3 +59,7 @@ export function deleteAssetFolder(id: string): Promise<{ ok: true }> {
 export function getAssetTags(): Promise<{ tags: string[] }> {
   return jsonFetch("/api/assets/tags");
 }
+
+export function clearAllAssets(): Promise<{ ok: true; deletedCount: number }> {
+  return jsonFetch("/api/assets/all", { method: "DELETE" });
+}

@@ -16,6 +16,7 @@ import {
   listTags,
   updateAsset,
   updateFolder,
+  clearAllAssets,
 } from "../lib/assetsStore.js";
 
 type IdParams = { id: string };
@@ -25,6 +26,16 @@ function httpError(status: number, code: string, message: string): Error {
   err.status = status;
   err.code = code;
   return err;
+
+  app.delete("/api/assets/all", (_req: Request, res: Response) => {
+    try {
+      const count = clearAllAssets();
+      logEvent("assets", "clear_all", { deletedCount: count });
+      res.json({ ok: true, deletedCount: count });
+    } catch (e) {
+      sendError(res, e);
+    }
+  });
 }
 
 function sendError(res: Response, e: unknown) {
@@ -37,10 +48,30 @@ function sendError(res: Response, e: unknown) {
       ? (e as { code: string }).code
       : "DB_ERROR";
   res.status(status).json({ error: { code, message: errInfo(e).message } });
+
+  app.delete("/api/assets/all", (_req: Request, res: Response) => {
+    try {
+      const count = clearAllAssets();
+      logEvent("assets", "clear_all", { deletedCount: count });
+      res.json({ ok: true, deletedCount: count });
+    } catch (e) {
+      sendError(res, e);
+    }
+  });
 }
 
 function queryStr(value: unknown): string | undefined {
   return typeof value === "string" && value !== "" ? value : undefined;
+
+  app.delete("/api/assets/all", (_req: Request, res: Response) => {
+    try {
+      const count = clearAllAssets();
+      logEvent("assets", "clear_all", { deletedCount: count });
+      res.json({ ok: true, deletedCount: count });
+    } catch (e) {
+      sendError(res, e);
+    }
+  });
 }
 
 async function resolveValidatedFilePath(kind: string, raw: unknown): Promise<string | null> {
@@ -57,6 +88,16 @@ async function resolveValidatedFilePath(kind: string, raw: unknown): Promise<str
   }
   await assertRegularGeneratedPath(abs);
   return rel;
+
+  app.delete("/api/assets/all", (_req: Request, res: Response) => {
+    try {
+      const count = clearAllAssets();
+      logEvent("assets", "clear_all", { deletedCount: count });
+      res.json({ ok: true, deletedCount: count });
+    } catch (e) {
+      sendError(res, e);
+    }
+  });
 }
 
 export function registerAssetsRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
@@ -196,6 +237,56 @@ export function registerAssetsRoutes(app: Express, ctxRaw: RouteRuntimeContext) 
       }
       logEvent("assets", "delete", { assetId: req.params.id });
       res.json({ ok: true });
+    } catch (e) {
+      sendError(res, e);
+    }
+  });
+
+  app.delete("/api/assets/all", (_req: Request, res: Response) => {
+    try {
+      const count = clearAllAssets();
+      logEvent("assets", "clear_all", { deletedCount: count });
+      res.json({ ok: true, deletedCount: count });
+    } catch (e) {
+      sendError(res, e);
+    }
+  });
+
+  app.delete("/api/assets/all", (_req: Request, res: Response) => {
+    try {
+      const count = clearAllAssets();
+      logEvent("assets", "clear_all", { deletedCount: count });
+      res.json({ ok: true, deletedCount: count });
+    } catch (e) {
+      sendError(res, e);
+    }
+  });
+
+  app.delete("/api/assets/all", (_req: Request, res: Response) => {
+    try {
+      const count = clearAllAssets();
+      logEvent("assets", "clear_all", { deletedCount: count });
+      res.json({ ok: true, deletedCount: count });
+    } catch (e) {
+      sendError(res, e);
+    }
+  });
+
+  app.delete("/api/assets/all", (_req: Request, res: Response) => {
+    try {
+      const count = clearAllAssets();
+      logEvent("assets", "clear_all", { deletedCount: count });
+      res.json({ ok: true, deletedCount: count });
+    } catch (e) {
+      sendError(res, e);
+    }
+  });
+
+  app.delete("/api/assets/all", (_req: Request, res: Response) => {
+    try {
+      const count = clearAllAssets();
+      logEvent("assets", "clear_all", { deletedCount: count });
+      res.json({ ok: true, deletedCount: count });
     } catch (e) {
       sendError(res, e);
     }

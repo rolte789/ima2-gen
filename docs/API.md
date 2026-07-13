@@ -546,6 +546,7 @@ files inside `generated/`; deleting an asset never deletes the file.
 | `POST` | `/api/assets` | Promote/create an asset (`filePath`, `kind`, `name?`, `folderId?`, `tags?`, `metadata?`) |
 | `PATCH` | `/api/assets/:id` | Update name/folder/notes/tags/metadata |
 | `DELETE` | `/api/assets/:id` | Delete the catalog row only (file untouched) |
+| `DELETE` | `/api/assets/all` | Delete all asset records (files untouched) |
 | `GET` | `/api/assets/folders` | List folders (flat; tree assembled client-side) |
 | `POST` | `/api/assets/folders` | Create folder (`name`, `parentId?`) |
 | `PATCH` | `/api/assets/folders/:id` | Rename/move folder (cycle-safe) |
