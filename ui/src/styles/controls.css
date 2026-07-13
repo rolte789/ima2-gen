@@ -53,6 +53,7 @@
   left: 0;
   right: 0;
   max-height: 260px;
+  overflow-x: hidden;
   overflow-y: auto;
   margin: 0;
   padding: 4px;
@@ -74,6 +75,8 @@
   font-size: 12.5px;
   color: var(--text-dim);
   cursor: pointer;
+  min-width: 0;
+  overflow: hidden;
 }
 .ctl-select__item.is-active {
   background: var(--control-hover);
@@ -92,6 +95,11 @@
   font-family: var(--mono);
   font-size: 10.5px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 /* ---- Toggle (switch) ---- */
