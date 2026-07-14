@@ -90,7 +90,8 @@
   },
   "bundleDependencies": [
     "progrok",
-    "openai-oauth"
+    "openai-oauth",
+    "zod"
   ],
   "allowScripts": {
     "better-sqlite3@12.9.0": true,

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, sep } from "node:path";
 
 import { spawnNpmSync } from "./npm-subprocess.mjs";
 import { parsePackOutput } from "./release-artifact-contract.mjs";
@@ -58,6 +58,19 @@ function candidateTarball(root) {
   return join(packDir, parsePackOutput(packed.stdout).filename);
 }
 
+function assertPackagedZod(prefix) {
+  const globalRoot = runNpm(["root", "--global", "--prefix", prefix]).stdout.trim();
+  const packageRoot = join(globalRoot, "ima2-gen");
+  const installedRequire = createRequire(join(packageRoot, "package.json"));
+  const zodRoot = realpathSync(join(packageRoot, "node_modules", "zod"));
+  const zodV4Entry = realpathSync(installedRequire.resolve("zod/v4"));
+  assert.ok(
+    zodV4Entry.startsWith(`${zodRoot}${sep}`),
+    `zod/v4 should resolve from the packaged ima2-gen tree: ${zodV4Entry}`,
+  );
+  return packageRoot;
+}
+
 function runGlobalShim(prefix, args, options = {}) {
   const shim = process.platform === "win32" ? join(prefix, "ima2.cmd") : join(prefix, "bin", "ima2");
   assert.equal(existsSync(shim), true, `global ima2 shim should exist: ${shim}`);
@@ -79,14 +92,17 @@ function main() {
     mkdirSync(unrelatedCwd, { recursive: true });
     writeFileSync(join(config, "config.json"), JSON.stringify({ provider: "oauth" }));
 
+    const tarball = candidateTarball(root);
+    const cleanPrefix = join(root, "clean-prefix");
+    installGlobal(cleanPrefix, tarball);
+    assertPackagedZod(cleanPrefix);
+
     const baseline = process.env.IMA2_UPDATE_BASELINE || "ima2-gen@latest";
     installGlobal(prefix, baseline);
     const baselineVersion = runGlobalShim(prefix, ["--version"], { cwd: unrelatedCwd }).stdout.trim();
 
-    const tarball = candidateTarball(root);
     installGlobal(prefix, tarball);
-    const globalRoot = runNpm(["root", "--global", "--prefix", prefix]).stdout.trim();
-    const packageRoot = join(globalRoot, "ima2-gen");
+    const packageRoot = assertPackagedZod(prefix);
     const cliPath = join(packageRoot, "bin", "ima2.js");
     const installed = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
     const installedRequire = createRequire(join(packageRoot, "package.json"));
