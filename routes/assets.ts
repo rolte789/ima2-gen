@@ -25,17 +25,7 @@ function httpError(status: number, code: string, message: string): Error {
   const err = new Error(message) as Error & { status: number; code: string };
   err.status = status;
   err.code = code;
-  return err;
-
-  app.delete("/api/assets/all", (_req: Request, res: Response) => {
-    try {
-      const count = clearAllAssets();
-      logEvent("assets", "clear_all", { deletedCount: count });
-      res.json({ ok: true, deletedCount: count });
-    } catch (e) {
-      sendError(res, e);
-    }
-  });
+ return err;
 }
 
 function sendError(res: Response, e: unknown) {
@@ -47,31 +37,11 @@ function sendError(res: Response, e: unknown) {
     status !== 500 && typeof (e as { code?: unknown })?.code === "string"
       ? (e as { code: string }).code
       : "DB_ERROR";
-  res.status(status).json({ error: { code, message: errInfo(e).message } });
-
-  app.delete("/api/assets/all", (_req: Request, res: Response) => {
-    try {
-      const count = clearAllAssets();
-      logEvent("assets", "clear_all", { deletedCount: count });
-      res.json({ ok: true, deletedCount: count });
-    } catch (e) {
-      sendError(res, e);
-    }
-  });
+ res.status(status).json({ error: { code, message: errInfo(e).message } });
 }
 
 function queryStr(value: unknown): string | undefined {
-  return typeof value === "string" && value !== "" ? value : undefined;
-
-  app.delete("/api/assets/all", (_req: Request, res: Response) => {
-    try {
-      const count = clearAllAssets();
-      logEvent("assets", "clear_all", { deletedCount: count });
-      res.json({ ok: true, deletedCount: count });
-    } catch (e) {
-      sendError(res, e);
-    }
-  });
+ return typeof value === "string" && value !== "" ? value : undefined;
 }
 
 async function resolveValidatedFilePath(kind: string, raw: unknown): Promise<string | null> {
@@ -87,17 +57,7 @@ async function resolveValidatedFilePath(kind: string, raw: unknown): Promise<str
     throw httpError(400, "INVALID_FILENAME", "file does not exist in generated storage");
   }
   await assertRegularGeneratedPath(abs);
-  return rel;
-
-  app.delete("/api/assets/all", (_req: Request, res: Response) => {
-    try {
-      const count = clearAllAssets();
-      logEvent("assets", "clear_all", { deletedCount: count });
-      res.json({ ok: true, deletedCount: count });
-    } catch (e) {
-      sendError(res, e);
-    }
-  });
+ return rel;
 }
 
 export function registerAssetsRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
@@ -240,47 +200,7 @@ export function registerAssetsRoutes(app: Express, ctxRaw: RouteRuntimeContext) 
     } catch (e) {
       sendError(res, e);
     }
-  });
-
-  app.delete("/api/assets/all", (_req: Request, res: Response) => {
-    try {
-      const count = clearAllAssets();
-      logEvent("assets", "clear_all", { deletedCount: count });
-      res.json({ ok: true, deletedCount: count });
-    } catch (e) {
-      sendError(res, e);
-    }
-  });
-
-  app.delete("/api/assets/all", (_req: Request, res: Response) => {
-    try {
-      const count = clearAllAssets();
-      logEvent("assets", "clear_all", { deletedCount: count });
-      res.json({ ok: true, deletedCount: count });
-    } catch (e) {
-      sendError(res, e);
-    }
-  });
-
-  app.delete("/api/assets/all", (_req: Request, res: Response) => {
-    try {
-      const count = clearAllAssets();
-      logEvent("assets", "clear_all", { deletedCount: count });
-      res.json({ ok: true, deletedCount: count });
-    } catch (e) {
-      sendError(res, e);
-    }
-  });
-
-  app.delete("/api/assets/all", (_req: Request, res: Response) => {
-    try {
-      const count = clearAllAssets();
-      logEvent("assets", "clear_all", { deletedCount: count });
-      res.json({ ok: true, deletedCount: count });
-    } catch (e) {
-      sendError(res, e);
-    }
-  });
+ });
 
   app.delete("/api/assets/all", (_req: Request, res: Response) => {
     try {
