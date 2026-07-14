@@ -152,7 +152,7 @@ routes/
 | `lib/codexDetect.ts` | 154 | Codex OAuth session detection helper |
 | `lib/packageCli.ts` | 54 | Package-local dependency CLI resolution and Node invocation contract |
 | `lib/errorClassify.ts` | 110 | Upstream/OAuth error classifier for stable error codes, including provider validation errors |
-| `lib/generationErrors.ts` | 241 | Generation error normalization, retry classification, status mapping |
+| `lib/generationErrors.ts` | 243 | Generation error normalization, retry classification, status mapping |
 | `lib/historyList.ts` | 199 | History reconstruction from generated assets, sidecars, embedded XMP metadata fallback, session-aware rows |
 | `lib/videoContinuity.ts` | 181 | Video active-prompt guard, generated video sidecar lineage read/normalize/append, max-4 continuity retention, planner context formatting |
 | `lib/videoFrameExtract.ts` | 79 | Generated-dir-safe MP4 validation and ffmpeg frame extraction for video frame/analyze/continue workflows |
@@ -163,9 +163,9 @@ routes/
 | `lib/oauthLauncher.ts` | 119 | OAuth proxy child process startup and actual ready-port capture |
 | `lib/oauthProxy.ts` | 4 | Re-export shim for the `lib/oauthProxy/` subtree (kept for callers that imported the original module path) |
 | `lib/oauthProxy/index.ts` | 29 | Public surface — re-exports generators, streams, prompts, references, runtime, and shared types |
-| `lib/oauthProxy/generators.ts` | 220 | OAuth Responses single-image generation and stable generator exports |
+| `lib/oauthProxy/generators.ts` | 229 | OAuth Responses single-image generation and stable generator exports |
 | `lib/oauthProxy/multimodeGenerators.ts` | 304 | OAuth Responses multimode and edit generators, masked-edit guard |
-| `lib/generatePipeline.ts` | 505 | Classic generation pipeline, provider retry, persistence, and event publication |
+| `lib/generatePipeline.ts` | 507 | Classic generation pipeline, provider retry, persistence, and event publication |
 | `lib/multimodePipeline.ts` | 486 | Multimode streaming pipeline, persistence, cancellation, and partial timeout |
 | `lib/nodeGeneration.ts` | 477 | Node provider routing, retry, persistence, and SSE publication |
 | `lib/nodeValidation.ts` | 44 | Node prompt, references, and moderation validation |
