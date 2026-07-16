@@ -124,7 +124,7 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
         cwd: process.cwd(),
       });
       const packManifest = [parsePackOutput(pack.stdout)];
-      for (const bundled of ["progrok", "openai-oauth"]) {
+      for (const bundled of ["progrok", "openai-oauth", "zod"]) {
         assert.ok(packManifest[0].bundled.includes(bundled), `packed artifact should bundle ${bundled}`);
       }
       tarball = join(packDir, packManifest[0].filename);
@@ -170,7 +170,7 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
     const progrokBin = packageBin("progrok", "progrok");
     const oauthBin = packageBin("openai-oauth", "openai-oauth");
     const codexBin = packageBin("@openai/codex", "codex");
-    assert.doesNotThrow(() => installedRequire.resolve("zod"));
+    assert.doesNotThrow(() => installedRequire.resolve("zod/v4"));
 
     const oauthRoot = join(packageRoot, "node_modules", "openai-oauth");
     const oauthPackage = JSON.parse(readFileSync(join(oauthRoot, "package.json"), "utf8"));
